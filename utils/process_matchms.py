@@ -91,18 +91,3 @@ if False:
     compute_adjacency_matrix(np.array([[0.5,0.6], [0.6,0.5]]), 0.55)
 
 
-def extract_hex_from_rgb_string(rgb_string):
-    """ Extracts hex code from rgb string."""
-    floats = re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", rgb_string)
-    #print(floats)
-    ints = [round(float(elem)) for elem in floats]
-    #print(ints)
-    ints = [255 if (elem > 255) else elem for elem in ints]
-    ints = [0 if (elem < 0) else elem for elem in ints]
-    #print(ints)
-    ints = tuple(ints)
-    return('#%02x%02x%02x' % ints)
-
-if False:
-    txt =  'rgb(230.01, 255.99999999, -0.6)' # too high nums, too low nums are fixed automatically.
-    print(extract_hex_from_rgb_string(txt))

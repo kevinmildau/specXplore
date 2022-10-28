@@ -5,14 +5,25 @@ from dash import Dash, dcc, html, ctx
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.express as px
+import plotly
 import pandas as pd
 import numpy as np
 from utils import dashboard_components as _dc
+from utils import loading as load_utils
+from utils import visuals as visual_utils
+from utils import process_matchms as _myfun
+from utils import utils054
+from utils import egonet
+from utils import augmap
+from utils import tsne_plotting
+from utils import cytoscape_cluster
 import pickle
 import seaborn as sns
 import copy
-# import kmedoid
-
+import itertools
+import dash_cytoscape as cyto
+import plotly.graph_objects as go
+from scipy.cluster import hierarchy
 
 app = Dash(__name__)
 
@@ -22,58 +33,35 @@ app = Dash(__name__)
 # TODO: load necessary data.
 # --> pandas df with spec_id, x and y coord, and classification columns.
 # --> spectrum list with list index corresponding to spec_id (for now)
+global STRUCTURE_DICT
+global CLASS_DICT
+STRUCTURE_DICT, CLASS_DICT = load_utils.process_structure_class_table("data/classification_table.csv")
+global AVAILABLE_CLASSES
+AVAILABLE_CLASSES = list(CLASS_DICT.keys())
+#print(AVAILABLE_CLASSES)
 
-# TODO: load pairwise similarity matrices. (for now)
-# --> They should be passed on to any functions creating edge lists, as well as to the heatmap
-# TODO: "Load" pairwise similarity matrices using numpy on disk indexing (need to be saved accordingly)
+# TODO: [ ] "Load" pairwise similarity matrices using numpy on disk indexing (need to be saved accordingly)
+# TODO: [ ] Create more dynamic data structures to allow between 1 and 5 similarity scores. 
+#       [ ] implement corresponding layering in heatmap visual and hover inf.
+global SM_MS2DEEPSCORE
+global SM_MODIFIED_COSINE
+global SM_SPEC2VEC
+SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC = load_utils.load_pairwise_sim_matrices()
 
-# TODO: Add ego net construction function (simple, no expansion)
-# TODO: Add cluster net construction function (simple, no expansion)
+global TSNE_DF
+with open("data/tsne_df.pickle", 'rb') as handle:
+    TSNE_DF = pickle.load(handle)
 
-# TODO: Add style modifier for direct connections (edges)
+# Initializing color dict
+selected_class_data = CLASS_DICT[AVAILABLE_CLASSES[0]]
+# Create overall figure with color_dict mapping
+n_colors = len(set(selected_class_data)) # TODO: speed this up using n_clust argument that is pre-computed
+colors = visual_utils.construct_grey_palette(n_colors, white_buffer = 20)
+init_color_dict = visual_utils.create_color_dict(colors, selected_class_data)
 
-# TODO: Add grayscale cluster coloring. 
-# TODO: Add highlight cluster in neon-pink upon hover. (#FF10F0)
-
-# TODO: add toggle for different clustering styles. Allow for different chemical classes, or different k-medoid settings. 
-# Extract those settings from a pre-computed pandas df.
-
-
-# TODO: Add dropdown intermediate structure to contain intermediate spec_id list. Should be modifiable (additions and removals).
-# TODO: Add dropdown intermediate structure to contain focus spec_id list. Should be modifiable (additions and removals).
-
-
-
-# TODO: add t-sne load funciton & make actual t-sne plot
-df = px.data.iris() # iris is a pandas DataFrame
-df["id"] = df.index # + 1 for indexing start at one
-fig = px.scatter(df, x="sepal_width", y="sepal_length", custom_data=["id"], hover_data=["id"])
-fig.update_layout(clickmode='event+select', margin = {"autoexpand":True, "b" : 0, "l":0, "r":0, "t":0})
-fig.update_layout(yaxis_visible=False, yaxis_showticklabels=False, 
-  xaxis_visible=False, xaxis_showticklabels=False, title_text='T-SNE Overview', title_x=0.99, title_y=0.01)
-
-# TODO: Construct global static variable to contain all possible spectrum identifiers
 global ALL_SPEC_IDS
-ALL_SPEC_IDS = df.index # <-- add list(np.unique(spec_id_list of sorts))
+ALL_SPEC_IDS = TSNE_DF.index # <-- add list(np.unique(spec_id_list of sorts))
 
-# TODO: load pairwise similarity matrices. (for now)
-# --> They should be passed on to any functions creating edge lists, as well as to the heatmap
-# TODO: "Load" pairwise similarity matrices using numpy on disk indexing (need to be saved accordingly)
-
-# TODO: Add ego net construction function (simple, no expansion)
-# TODO: Add cluster net construction function (simple, no expansion)
-
-# TODO: Add style modifier for direct connections (edges)
-
-# TODO: Add grayscale cluster coloring. 
-# TODO: Add highlight cluster in neon-pink upon hover. (#FF10F0)
-
-# TODO: add toggle for different clustering styles. Allow for different chemical classes, or different k-medoid settings. 
-# Extract those settings from a pre-computed pandas df.
-
-
-# TODO: Add dropdown intermediate structure to contain intermediate spec_id list. Should be modifiable (additions and removals).
-# TODO: Add dropdown intermediate structure to contain focus spec_id list. Should be modifiable (additions and removals).
 
 app = dash.Dash(external_stylesheets=[dbc.themes.YETI]) # MORPH or YETI style.
 app.layout = \
@@ -96,10 +84,10 @@ html.Div\
     html.Br(),
     # Plots
     dbc.Row([
-        dbc.Col([dcc.Graph(id="tsne-overview-graph", figure=fig, style={"width":"100%","height":"60vh", "border":"1px grey solid"})], 
-            width=6),
+        dbc.Col([dcc.Graph(id = "tsne-overview-graph", figure={}, style={"width":"100%","height":"60vh", "border":"1px grey solid"})], 
+            width=7),
         dbc.Col([html.Div(id = "right-panel-view")], 
-            width=6),
+            width=5),
     ], style = {"margin-bottom": "-1em"}),
     html.Br(),
     # Additional controls, dropdown & 
@@ -117,45 +105,76 @@ html.Div\
     dbc.Row([
     dbc.Col([dbc.Button("Generate Fragmap",style={"width":"100%"})], width=2),
     dbc.Col([dbc.Button("Generate Spectrum Plot", style={"width": "100%"})],width=2),
-    dbc.Col([dbc.Button("Show Spectrum Data", style={"width": "100%"})],width=2)
+    dbc.Col([dbc.Button("Show Spectrum Data", style={"width": "100%"})],width=2),
+    dbc.Col([dcc.Dropdown(id='class-dropdown' , multi=False, clearable=False, options = AVAILABLE_CLASSES, value = AVAILABLE_CLASSES[0])], width = 4),
+    dbc.Col([dbc.Button("Push Class Selection", id = "push-class",style={"width":"100%"})],width=2)
     ]),
+    dcc.Store(id = "selected_class_level", data = AVAILABLE_CLASSES[0]),
+    dcc.Store(id = "selected_class_data",  data = CLASS_DICT[AVAILABLE_CLASSES[0]]),
+    dcc.Store(id = "color_dict",  data = init_color_dict),
     html.Br(),
     dbc.Row([
-        dbc.Col([html.Div(id = "focus-panel-view-1", style={"width":"100%","height":"60vh", "border":"1px grey solid"})], width=6),
-        dbc.Col([html.Div(id = "focus-panel-view-2", style={"width":"100%","height":"60vh", "border":"1px grey solid"})], width=3),
-        dbc.Col([html.Div(id = "focus-panel-view-3", style={"width":"100%","height":"60vh", "border":"1px grey solid"})], width=3),]
+        dbc.Col([html.Div(id = "focus-panel-view-1", style={"width":"100%", "border":"1px grey solid"})], width=6),
+        dbc.Col([html.Div(id = "focus-panel-view-2", style={"width":"100%", "border":"1px grey solid"})], width=6)]
     )
 ], style = {"width" : "100%"})
 
+# UPDATE GLOBAL OVERVIEW VIA CLASS SELECTION
+@app.callback(Output("tsne-overview-graph", "figure"), 
+              [Input("push-class", "n_clicks"),
+              Input("tsne-overview-graph", "clickData"),
+              Input("class-dropdown", "value"),
+              Input("selected_class_data", "data")])
+
+def update_tsne_overview(n_clicks, hoverData, selected_class_level, selected_class_data):
+    """ Modifies global overview plot """
+    
+    # Create overall figure with color_dict mapping
+    n_colors = len(set(selected_class_data)) # TODO: speed this up using n_clust argument that is pre-computed
+    colors = visual_utils.construct_grey_palette(n_colors, white_buffer = 20)
+    color_dict = visual_utils.create_color_dict(colors, selected_class_data)
+    
+    if hoverData:  
+        # Modify class color for the class of the hovered over point.
+        selected_point = hoverData["points"][0]["customdata"][0]
+        color_dict[selected_class_data[selected_point]] = "#FF10F0"
+    
+    return tsne_plotting.plot_tsne_overview(TSNE_DF, color_dict, 
+                                            selected_class_data, 
+                                            selected_class_level)
+
+# UPDATED CLASS SELECTION SAVE IN DCC STORE
+@app.callback(Output("selected_class_level", "data"), 
+              Output("selected_class_data", "data"),
+              Output("color_dict", "data"),   
+              Input("push-class", "n_clicks"),
+              State("class-dropdown", "value"))
+def update_class_selection(n_clicks, value):
+    selected_class_data = CLASS_DICT[value]
+    # Create overall figure with color_dict mapping
+    n_colors = len(set(selected_class_data)) # TODO: speed this up using n_clust argument that is pre-computed
+    colors = visual_utils.construct_grey_palette(n_colors, white_buffer = 20)
+    color_dict = visual_utils.create_color_dict(colors, selected_class_data)
+    return value, selected_class_data, color_dict
+
+# RIGHT PANEL BUTTON CLICK UPDATES
 @app.callback(Output('right-panel-view', 'children'),
               [Input('toggle-clust', 'n_clicks'),
               Input('toggle-ego', 'n_clicks'),
               Input('toggle-aug', 'n_clicks'),
               Input('toggle-set', 'n_clicks'),
               Input('toggle-data', 'n_clicks')],
-              State('clust-dropdown', 'value'))
-def update_output_clust(n_clicks_clust, n_clicks_ego, n_clicks_aug, n_clicks_set, n_clicks_data, clust_selection = None):
-    if "toggle-clust" == ctx.triggered_id:
-        print("Clust clicked.")
-        tmp = copy.deepcopy(df)
-        tmp = tmp.iloc[clust_selection]
-        subfig = px.scatter(tmp, x="sepal_width", y="sepal_length", custom_data=["id"], hover_data=["id"])
-        subfig.update_traces(marker=dict(size=25))
-        subfig.update_layout(clickmode='event+select', margin = {"autoexpand":True, "b" : 0, "l":0, "r":0, "t":0})
-        subfig.update_layout(yaxis_visible=False, yaxis_showticklabels=False, 
-            xaxis_visible=False, xaxis_showticklabels=False, title_text='T-SNE Overview', title_x=0.99, title_y=0.01)
-        subfig.update_layout(title_text = "A totally new clust view!")
-        out = [dcc.Graph(id="cluster-graph", figure=subfig, style={"width":"100%", "height":"60vh", "border":"1px grey solid"})]
-        return out
-    if "toggle-ego" == ctx.triggered_id:
-        print("Ego clicked.")
-        dummy = copy.deepcopy(fig) # fig is global defined
-        dummy.update_layout(title_text = "A totally new ego view!")
-        out = [dcc.Graph(id="ego-graph", figure=dummy, style={"width":"100%", "height":"60vh", "border":"1px grey solid"})]
-        return out
-    if "toggle-aug" == ctx.triggered_id:
-        out = [html.H6("Heatmap inclusion pending.")]
-        return out
+              State('clust-dropdown', 'value'), 
+              State("color_dict", "data"),
+              State("selected_class_data", "data"))
+def update_output_clust(n_clicks_clust, n_clicks_ego, n_clicks_aug, n_clicks_set, n_clicks_data, clust_selection, color_dict, selected_class_data):
+    if "toggle-clust" == ctx.triggered_id and clust_selection:
+        print("In Clust Selection")
+        return cytoscape_cluster.generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict)
+    if "toggle-ego" == ctx.triggered_id and clust_selection:
+        return egonet.generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF)
+    if "toggle-aug" == ctx.triggered_id and clust_selection:
+        return augmap.generate_augmap(clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC)
     if "toggle-set" == ctx.triggered_id:
         out = [html.H6("Settings panel inclusion pending.")]
         return out
@@ -167,6 +186,8 @@ def update_output_clust(n_clicks_clust, n_clicks_ego, n_clicks_aug, n_clicks_set
         out = [html.H6("empty-right-panel")]
         return out
 
+
+# PLOTLY GLOBAL OVERVIEW POINT SELECTION PUSH TO DROPDOWN
 @app.callback(
     [Output('clust-dropdown', 'options'),
      Output('clust-dropdown', 'value')],
