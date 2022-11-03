@@ -10,7 +10,6 @@ def generate_augmap(clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPE
     tmp_sm1 = SM_MS2DEEPSCORE[ids_int, :][:, ids_int]
     tmp_sm2 = SM_MODIFIED_COSINE[ids_int, :][:, ids_int]
     tmp_sm3 = SM_SPEC2VEC[ids_int, :][:, ids_int]
-    threshold = 0.7
 
     # Create optimal ordering for subset of nodes (index set)
     Z = hierarchy.ward(tmp_sm1) # hierarchical clustering
