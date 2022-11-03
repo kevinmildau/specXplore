@@ -4,7 +4,7 @@ import numpy as np
 import itertools
 import pandas as pd
 from dash import html, dcc
-def generate_augmap(clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC):
+def generate_augmap(clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, threshold):
     ids_int = [int(elem) for elem in clust_selection]
     # Extract relevant subset  of nodes from sm matrices
     tmp_sm1 = SM_MS2DEEPSCORE[ids_int, :][:, ids_int]

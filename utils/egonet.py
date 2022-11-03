@@ -6,8 +6,7 @@ import dash_cytoscape as cyto
 from dash import html
 
 
-def generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF):
-    threshold = 0.85
+def generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold):
     print("Cluster Selection:", clust_selection)
     if len(clust_selection) > 1:
         clust_selection = clust_selection[0]

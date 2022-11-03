@@ -6,8 +6,7 @@ import dash_cytoscape as cyto
 from dash import html
 import plotly.graph_objects as go
 from dash import dcc
-def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict):
-    threshold = 0.75
+def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict, threshold):
     print("Cluster Selection:", clust_selection)
     
     # Define Network Data
