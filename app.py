@@ -93,13 +93,25 @@ html.Div\
     # Additional controls, dropdown & 
     dbc.Row([
         dbc.Col([html.H6("Selected Points for Cluster View:")], width = 6),
-        dbc.Col([html.H6("Selected Points for Focus View:")],width=6)
+
+        # -->
+        dbc.Col([html.H6("Set Edge Threshold:")], width = 2),
+        dbc.Col([dcc.Input(
+            id="threshold_text_input",
+            type="number", debounce = True,
+            placeholder = "Threshold 0 < thr < 1, def. 0.9", style = {"width" : "100%"}
+        )], width = 4),
+
+        
     ]),
     dbc.Row([
-        dbc.Col([dcc.Dropdown(id='clust-dropdown' , multi=True)], width = 4),
-        dbc.Col([dbc.Button("Push Cluster Selection!",style={"width":"100%"})],width=2), 
+        dbc.Col([dcc.Dropdown(id='clust-dropdown' , multi=True, style={'width': '100%', 'font-size': "75%"})], 
+                              width = 6),
+
+        # -->
+        dbc.Col([html.H6("Selected Points for Focus View:")],width=2),
+
         dbc.Col([dcc.Dropdown(id='focus-dropdown' , multi=True)], width = 4),
-        dbc.Col([dbc.Button("Push Focus Selection!",style={"width":"100%"})],width=2), 
     ]),
     html.Br(),
     dbc.Row([
@@ -109,6 +121,7 @@ html.Div\
     dbc.Col([dcc.Dropdown(id='class-dropdown' , multi=False, clearable=False, options = AVAILABLE_CLASSES, value = AVAILABLE_CLASSES[0])], width = 4),
     dbc.Col([dbc.Button("Push Class Selection", id = "push-class",style={"width":"100%"})],width=2)
     ]),
+    dcc.Store(id = "edge_threshold", data = 0.9),
     dcc.Store(id = "selected_class_level", data = AVAILABLE_CLASSES[0]),
     dcc.Store(id = "selected_class_data",  data = CLASS_DICT[AVAILABLE_CLASSES[0]]),
     dcc.Store(id = "color_dict",  data = init_color_dict),
@@ -118,6 +131,26 @@ html.Div\
         dbc.Col([html.Div(id = "focus-panel-view-2", style={"width":"100%", "border":"1px grey solid"})], width=6)]
     )
 ], style = {"width" : "100%"})
+
+
+@app.callback([Output("edge_threshold", "data"),
+               Output("threshold_text_input", "placeholder")],
+              [Input('threshold_text_input', 'n_submit'),
+              Input("threshold_text_input", "value")])
+
+def update_threshold(n_submit, new_threshold):
+    print("Text Input Threshold triggered")
+    print(type(new_threshold), new_threshold)
+    default_threshold = 0.9
+    default_placeholder = "Threshold 0 < thr < 1, def. 0.9"
+    if new_threshold:
+        print("Passed ")
+        if new_threshold < 1 and new_threshold > 0:
+            print("That's a good threshold!")
+            placeholder = f'Threshold 0 < thr < 1, current: {new_threshold}'
+            return new_threshold,  placeholder
+    print("Bad threshold input. Restoring defaults.")
+    return default_threshold,  default_placeholder
 
 # UPDATE GLOBAL OVERVIEW VIA CLASS SELECTION
 @app.callback(Output("tsne-overview-graph", "figure"), 
