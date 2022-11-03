@@ -18,14 +18,24 @@ def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE
                         'target': str(elem[1])}} 
                         for elem in all_possible_edges if (adj_m[elem[0]][elem[1]] != 0)]
     
-    nodes = [{'data': {'id': str(elem)}, 'label': 'Node ' + str(elem),
+    nodes = [{'data': {'id': str(elem), 'label': 'Node ' + str(elem)},
         'position': {'x': TSNE_DF["x"].iloc[elem], 'y': -TSNE_DF["y"].iloc[elem]}, 
         'classes': selected_class_data[elem]} # <-- Added -y_coord for correct orientation in line with t-sne
         for elem in np.arange(0, n_nodes)]
 
     print(len(nodes))
     active_style_sheet = [{'selector' : 'edge', 'style' : {'opacity' : 0.4}}, 
-                            {'selector' : 'node', 'style' : {'height' : "100%", 'width' : '100%', 'opacity' : 0.60}}]
+                           {'selector' : 'node', 'style' : {'height' : "100%", 
+                                                        'width' : '100%', 
+                                                        'opacity' : 0.6,
+                                                        'content': 'data(label)',
+                                                        'text-halign':'center',
+                                                        'text-valign':'center',
+                                                        #'width':'label',
+                                                        #'height':'label',
+                                                        "shape" : "circle"}}]
+
+    
     clust_selection = [str(elem) for elem in clust_selection]
     print(clust_selection)
     my_set = set(clust_selection)
