@@ -199,15 +199,17 @@ def update_class_selection(n_clicks, value):
               Input('toggle-data', 'n_clicks')],
               State('clust-dropdown', 'value'), 
               State("color_dict", "data"),
-              State("selected_class_data", "data"))
-def update_output_clust(n_clicks_clust, n_clicks_ego, n_clicks_aug, n_clicks_set, n_clicks_data, clust_selection, color_dict, selected_class_data):
+              State("selected_class_data", "data"),
+              State("edge_threshold", "data"))
+def update_output_clust(n_clicks_clust, n_clicks_ego, n_clicks_aug, n_clicks_set, n_clicks_data, clust_selection, 
+                        color_dict, selected_class_data, threshold):
     if "toggle-clust" == ctx.triggered_id and clust_selection:
         print("In Clust Selection")
-        return cytoscape_cluster.generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict)
+        return cytoscape_cluster.generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict, threshold)
     if "toggle-ego" == ctx.triggered_id and clust_selection:
-        return egonet.generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF)
+        return egonet.generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold)
     if "toggle-aug" == ctx.triggered_id and clust_selection:
-        return augmap.generate_augmap(clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC)
+        return augmap.generate_augmap(clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, threshold)
     if "toggle-set" == ctx.triggered_id:
         out = [html.H6("Settings panel inclusion pending.")]
         return out
