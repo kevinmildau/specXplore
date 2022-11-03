@@ -65,44 +65,37 @@ ALL_SPEC_IDS = TSNE_DF.index # <-- add list(np.unique(spec_id_list of sorts))
 
 app = dash.Dash(external_stylesheets=[dbc.themes.YETI]) # MORPH or YETI style.
 app.layout = \
-html.Div\
-([
+html.Div([
     # Title
     dbc.Row([dbc.Col([html.H1([html.B("specXplore prototype")], style = {"margin-bottom": "-0.1em"})], width=6)]),
     # Subtitle & mid view selectors
     dbc.Row([
-        dbc.Col([ 
-            html.H6(html.H6("Authors: Kevin Mildau - Henry Ehlers"),)], 
-            width=7
-        ),
-        dbc.Col([dbc.Button("Cluster",   id = "toggle-clust", style={"width":"100%", "font-size" : 12}, size="sm")], width=1),
-        dbc.Col([dbc.Button("EgoNet",    id = "toggle-ego",   style={"width":"100%", "font-size" : 12}, size="sm")], width=1),
-        dbc.Col([dbc.Button("Augmap",    id = "toggle-aug",   style={"width":"100%", "font-size" : 12}, size="sm")], width=1),
-        dbc.Col([dbc.Button("Settings",  id = "toggle-set",   style={"width":"100%", "font-size" : 12}, size="sm")], width=1),
-        dbc.Col([dbc.Button("Data View", id = "toggle-data",  style={"width":"100%", "font-size" : 12}, size="sm")], width=1),
-    ], style = {"margin-bottom": "-1em"}),
+        dbc.Col([html.H6(html.H6("Authors: Kevin Mildau - Henry Ehlers"))], width=7),
+        dbc.Col(
+            dcc.Tabs(id="right-panel-tab-group", value='right-panel-tab', children=[
+            dcc.Tab(label='Cluster', value='tab-cluster'),
+            dcc.Tab(label='EgoNet', value='tab-egonet'),
+            dcc.Tab(label='Augmap', value='tab-augmap'),
+            dcc.Tab(label='Settings', value='tab-settings'),
+            dcc.Tab(label='Data View', value='tab-data')]), width = 5)
+    ]),
     html.Br(),
-    # Plots
+    # tsne overview and right panel plot components
     dbc.Row([
         dbc.Col([dcc.Graph(id = "tsne-overview-graph", figure={}, style={"width":"100%","height":"60vh", "border":"1px grey solid"})], 
             width=7),
-        dbc.Col([html.Div(id = "right-panel-view")], 
+        dbc.Col([html.Div(id='right-panel-tabs-content')], 
             width=5),
     ], style = {"margin-bottom": "-1em"}),
     html.Br(),
-    # Additional controls, dropdown & 
     dbc.Row([
         dbc.Col([html.H6("Selected Points for Cluster View:")], width = 6),
-
-        # -->
         dbc.Col([html.H6("Set Edge Threshold:")], width = 2),
         dbc.Col([dcc.Input(
             id="threshold_text_input",
             type="number", debounce = True,
             placeholder = "Threshold 0 < thr < 1, def. 0.9", style = {"width" : "100%"}
         )], width = 4),
-
-        
     ]),
     dbc.Row([
         dbc.Col([dcc.Dropdown(id='clust-dropdown' , multi=True, style={'width': '100%', 'font-size': "75%"})], 
@@ -114,6 +107,7 @@ html.Div\
         dbc.Col([dcc.Dropdown(id='focus-dropdown' , multi=True)], width = 4),
     ]),
     html.Br(),
+
     dbc.Row([
     dbc.Col([dbc.Button("Generate Fragmap",style={"width":"100%"})], width=2),
     dbc.Col([dbc.Button("Generate Spectrum Plot", style={"width": "100%"})],width=2),
@@ -191,35 +185,32 @@ def update_class_selection(n_clicks, value):
     return value, selected_class_data, color_dict
 
 # RIGHT PANEL BUTTON CLICK UPDATES
-@app.callback(Output('right-panel-view', 'children'),
-              [Input('toggle-clust', 'n_clicks'),
-              Input('toggle-ego', 'n_clicks'),
-              Input('toggle-aug', 'n_clicks'),
-              Input('toggle-set', 'n_clicks'),
-              Input('toggle-data', 'n_clicks')],
+@app.callback(Output('right-panel-tabs-content', 'children'),
+              [Input('right-panel-tab-group', 'value')],
               State('clust-dropdown', 'value'), 
               State("color_dict", "data"),
               State("selected_class_data", "data"),
               State("edge_threshold", "data"))
-def update_output_clust(n_clicks_clust, n_clicks_ego, n_clicks_aug, n_clicks_set, n_clicks_data, clust_selection, 
+def update_output_clust(tab, clust_selection, 
                         color_dict, selected_class_data, threshold):
-    if "toggle-clust" == ctx.triggered_id and clust_selection:
+    if tab == "tab-cluster" and clust_selection:
         print("In Clust Selection")
         return cytoscape_cluster.generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict, threshold)
-    if "toggle-ego" == ctx.triggered_id and clust_selection:
+    if tab == "tab-egonet"  and clust_selection:
         return egonet.generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold)
-    if "toggle-aug" == ctx.triggered_id and clust_selection:
+    if tab == "tab-augmap"  and clust_selection:
         return augmap.generate_augmap(clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, threshold)
-    if "toggle-set" == ctx.triggered_id:
+    if tab == "tab-settings":
         out = [html.H6("Settings panel inclusion pending.")]
         return out
-    if "toggle-data" == ctx.triggered_id:
+    if tab == "tab-data":
         out = [html.H6("Data panel inclusion pending.")]
         return out
     else:
         warning("Nothing selected for display in right panel yet.")
         out = [html.H6("empty-right-panel")]
         return out
+
 
 
 # PLOTLY GLOBAL OVERVIEW POINT SELECTION PUSH TO DROPDOWN
