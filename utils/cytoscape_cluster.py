@@ -27,12 +27,10 @@ def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE
     active_style_sheet = [{'selector' : 'edge', 'style' : {'opacity' : 0.4}}, 
                            {'selector' : 'node', 'style' : {'height' : "100%", 
                                                         'width' : '100%', 
-                                                        'opacity' : 0.6,
+                                                        'opacity' : 0.8,
                                                         'content': 'data(label)',
                                                         'text-halign':'center',
                                                         'text-valign':'center',
-                                                        #'width':'label',
-                                                        #'height':'label',
                                                         "shape" : "circle"}}]
 
     

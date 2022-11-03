@@ -36,7 +36,7 @@ def generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold):
     print(len(nodes))
     active_style_sheet = [{'selector' : 'node', 'style' : {'height' : "100%", 
                                                            'width' : '100%', 
-                                                           'opacity' : 0.6,
+                                                           'opacity' : 0.8,
                                                            'content': 'data(label)',
                                                            'text-halign':'center',
                                                            'text-valign':'center',
