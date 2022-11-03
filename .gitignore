@@ -1,2 +1,4 @@
 # Mac files to ignore.
 .DS_Store
+
+utils/__pycache__
