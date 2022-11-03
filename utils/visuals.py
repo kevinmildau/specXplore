@@ -3,11 +3,11 @@ import plotly.express as px
 import numpy as np
 import re
 
-def construct_grey_palette(n_colors, white_buffer = 20):
+def construct_grey_palette(n_colors, white_buffer = 20, black_buffer = 5):
     """Construct a grey scale color palette. Construct is such that the very 
     faint white colors are removed via white_buffer number. """
-    n_colors = n_colors + white_buffer
-    colors = px.colors.sample_colorscale("greys", [n/(n_colors -1) for n in range(n_colors)])[white_buffer-1:]
+    n_colors = n_colors + white_buffer + black_buffer
+    colors = px.colors.sample_colorscale("greys", [n/(n_colors -1) for n in range(n_colors)])[white_buffer-1:n_colors-black_buffer]
     return colors
 
 def extract_hex_from_rgb_string(rgb_string):
