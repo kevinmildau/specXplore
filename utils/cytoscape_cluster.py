@@ -31,7 +31,12 @@ def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE
                                                         'content': 'data(label)',
                                                         'text-halign':'center',
                                                         'text-valign':'center',
-                                                        "shape" : "circle"}}]
+                                                        "shape" : "circle"}},
+                            {'selector': 'label', 
+                             'style': {
+                                'content': 'data(label)',    # not to loose label content
+                                'color': ' 	#FF00FF'
+                                }}]
 
     
     clust_selection = [str(elem) for elem in clust_selection]
