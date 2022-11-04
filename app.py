@@ -220,12 +220,14 @@ def update_class_selection(n_clicks, value):
 
 # RIGHT PANEL BUTTON CLICK UPDATES
 @app.callback(Output('right-panel-tabs-content', 'children'),
-              [Input('right-panel-tab-group', 'value')],
+              [Input('right-panel-tab-group', 'value'),
+              Input('refresh-open-tab-button', 'n_clicks')], # adds refresh current tab capability
               State('clust-dropdown', 'value'), 
               State("color_dict", "data"),
               State("selected_class_data", "data"),
               State("edge_threshold", "data"),
               State("expand_level", "data"))
+def update_output_clust(tab, n_clicks, clust_selection, 
                         color_dict, selected_class_data, threshold, expand_level):
     if tab == "tab-cluster" and clust_selection:
         print("In Clust Selection")
