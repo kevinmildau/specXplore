@@ -22,7 +22,7 @@ def create_node_dict(node_list, edge_dict):
         node_dict[str(node)] = tmp
     return node_dict
 
-def creating_branching_dict(root_node, edge_dict, node_dict, n_levels):
+def creating_branching_dict(root_node, edge_dict, node_dict, n_levels, max_connections = 100):
     """Creates dictionary with branching connections from root.
     
     Root node is a string that uniquely identifies a node.
@@ -61,7 +61,11 @@ def creating_branching_dict(root_node, edge_dict, node_dict, n_levels):
         else:
             print("Stopping edge tracing at level: ", level, ". No new edges found.")
             break
-    
+        if len(all_nodes) >= max_connections:
+            print("WARNING: exceeded max connections in local environment. Number Nodes connected ", 
+              len(all_nodes), "exceed max connections ", 
+              max_connections, " Aborting edge tracing at level: ", level)
+            break
     return(level_dict)
 
 
