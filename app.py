@@ -106,8 +106,21 @@ html.Div([
 
         dbc.Col([dcc.Dropdown(id='focus-dropdown' , multi=True)], width = 4),
     ]),
+    dbc.Row([
+        dbc.Col([html.Div( style={'width': '100%'})], width = 6),
+        dbc.Col([html.H6("Reload open tab:")],width=4),
+        dbc.Col([dbc.Button('Submit Reload', id='refresh-open-tab-button', style={"width":"100%"})], width = 2),
+    ]),
+    dbc.Row([
+        dbc.Col([html.Div( style={'width': '100%'})], width = 6),
+        dbc.Col([html.H6("Set expand level:")], width=4),
+        dbc.Col([dcc.Input(
+            id="expand_level_input",
+            type="number", debounce = True,
+            placeholder = "Value between 1 < exp.lvl. < 5, def. 1", style = {"width" : "100%"}
+        )], width = 2),
+    ]),
     html.Br(),
-
     dbc.Row([
     dbc.Col([dbc.Button("Generate Fragmap",style={"width":"100%"})], width=2),
     dbc.Col([dbc.Button("Generate Spectrum Plot", style={"width": "100%"})],width=2),
@@ -116,6 +129,7 @@ html.Div([
     dbc.Col([dbc.Button("Push Class Selection", id = "push-class",style={"width":"100%"})],width=2)
     ]),
     dcc.Store(id = "edge_threshold", data = 0.9),
+    dcc.Store(id = "expand_level", data = int(1)),
     dcc.Store(id = "selected_class_level", data = AVAILABLE_CLASSES[0]),
     dcc.Store(id = "selected_class_data",  data = CLASS_DICT[AVAILABLE_CLASSES[0]]),
     dcc.Store(id = "color_dict",  data = init_color_dict),
@@ -145,6 +159,26 @@ def update_threshold(n_submit, new_threshold):
             return new_threshold,  placeholder
     print("Bad threshold input. Restoring defaults.")
     return default_threshold,  default_placeholder
+
+@app.callback([Output("expand_level", "data"),
+               Output("expand_level_input", "placeholder")],
+              [Input('expand_level_input', 'n_submit'),
+              Input("expand_level_input", "value")])
+
+def update_expand_level(n_submit, new_expand_level):
+    print("Expand Level triggered")
+    print(type(new_expand_level), new_expand_level)
+    default_expand_level = 1
+    default_placeholder = "Expand Level 1 =< thr <= 6, def. 1"
+    if new_expand_level:
+        print("Passed ")
+        if new_expand_level >= 1 and new_expand_level <= 6 and isinstance(new_expand_level, int):
+            print("That's a good expand level!")
+            placeholder = f'Expand Level 1 =< thr <= 6, current: {new_expand_level}'
+            return new_expand_level,  placeholder
+    print("Bad default_expand_level input. Restoring defaults.")
+    return default_expand_level,  default_placeholder
+
 
 # UPDATE GLOBAL OVERVIEW VIA CLASS SELECTION
 @app.callback(Output("tsne-overview-graph", "figure"), 
@@ -190,14 +224,14 @@ def update_class_selection(n_clicks, value):
               State('clust-dropdown', 'value'), 
               State("color_dict", "data"),
               State("selected_class_data", "data"),
-              State("edge_threshold", "data"))
-def update_output_clust(tab, clust_selection, 
-                        color_dict, selected_class_data, threshold):
+              State("edge_threshold", "data"),
+              State("expand_level", "data"))
+                        color_dict, selected_class_data, threshold, expand_level):
     if tab == "tab-cluster" and clust_selection:
         print("In Clust Selection")
         return cytoscape_cluster.generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict, threshold)
     if tab == "tab-egonet"  and clust_selection:
-        return egonet.generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold)
+        return egonet.generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold, expand_level)
     if tab == "tab-augmap"  and clust_selection:
         return augmap.generate_augmap(clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, threshold)
     if tab == "tab-settings":

@@ -10,7 +10,7 @@ import dash_cytoscape as cyto
 from dash import html
 
 
-def generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold):
+def generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold, expand_level):
     print("Cluster Selection:", clust_selection)
     if len(clust_selection) > 1:
         print("Warning: extracted first node for ego net construction: ", clust_selection[0])
@@ -47,7 +47,7 @@ def generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold):
     
     elements = nodes # initialize elements to just the nodes
     ego = str(clust_selection)
-    bdic = utils054.creating_branching_dict(ego, edge_dict, node_dict, n_levels = 3)
+    bdic = utils054.creating_branching_dict(ego, edge_dict, node_dict, n_levels = expand_level)
 
     tmp_edge_elems, tmp_edge_styles = utils054.generate_edge_elements_and_styles(bdic, edge_dict)
     elements = elements + tmp_edge_elems
