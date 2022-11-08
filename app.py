@@ -17,6 +17,7 @@ from utils import egonet
 from utils import augmap
 from utils import tsne_plotting
 from utils import cytoscape_cluster
+from utils import fragmap
 import pickle
 import seaborn as sns
 import copy
@@ -62,6 +63,10 @@ init_color_dict = visual_utils.create_color_dict(colors, selected_class_data)
 global ALL_SPEC_IDS
 ALL_SPEC_IDS = TSNE_DF.index # <-- add list(np.unique(spec_id_list of sorts))
 
+global SPEC_LIST
+file = open("data/cleaned_demo_data.pickle", 'rb')
+SPEC_LIST = pickle.load(file)
+file.close()
 
 app = dash.Dash(external_stylesheets=[dbc.themes.YETI]) # MORPH or YETI style.
 app.layout = \
@@ -98,13 +103,9 @@ html.Div([
         )], width = 4),
     ]),
     dbc.Row([
-        dbc.Col([dcc.Dropdown(id='clust-dropdown' , multi=True, style={'width': '100%', 'font-size': "75%"})], 
-                              width = 6),
-
-        # -->
-        dbc.Col([html.H6("Selected Points for Focus View:")],width=2),
-
-        dbc.Col([dcc.Dropdown(id='focus-dropdown' , multi=True)], width = 4),
+        dbc.Col([dcc.Dropdown(id='clust-dropdown' , multi=True, style={'width': '100%', 'font-size': "75%"}, options = ALL_SPEC_IDS)], width = 6),
+        dbc.Col([html.H6("Selected Points for Focus View:")], width=2),
+        dbc.Col([dcc.Dropdown(id='focus_dropdown' , multi=True, style={'width': '100%', 'font-size': "75%"}, options = ALL_SPEC_IDS)], width = 4),
     ]),
     dbc.Row([
         dbc.Col([html.Div( style={'width': '100%'})], width = 6),
@@ -122,7 +123,7 @@ html.Div([
     ]),
     html.Br(),
     dbc.Row([
-    dbc.Col([dbc.Button("Generate Fragmap",style={"width":"100%"})], width=2),
+    dbc.Col([dbc.Button("Generate Fragmap", id = "push_fragmap", style={"width":"100%"})], width=2),
     dbc.Col([dbc.Button("Generate Spectrum Plot", style={"width": "100%"})],width=2),
     dbc.Col([dbc.Button("Show Spectrum Data", style={"width": "100%"})],width=2),
     dbc.Col([dcc.Dropdown(id='class-dropdown' , multi=False, clearable=False, options = AVAILABLE_CLASSES, value = AVAILABLE_CLASSES[0])], width = 4),
@@ -135,8 +136,11 @@ html.Div([
     dcc.Store(id = "color_dict",  data = init_color_dict),
     html.Br(),
     dbc.Row([
-        dbc.Col([html.Div(id = "focus-panel-view-1", style={"width":"100%", "border":"1px grey solid"})], width=6),
-        dbc.Col([html.Div(id = "focus-panel-view-2", style={"width":"100%", "border":"1px grey solid"})], width=6)]
+        dbc.Col([html.Div(id = "fragmap_panel", style={"width":"100%", "border":"1px grey solid"})], width=12)]
+    ),
+    html.Br(),
+    dbc.Row([
+        dbc.Col([html.Div(id = "data-panel", style={"width":"100%", "border":"1px grey solid"})], width=12)]
     )
 ], style = {"width" : "100%"})
 
@@ -267,6 +271,23 @@ def extract_identifiers(plotly_selection_data):
     else:
         selected_ids = []
     return ALL_SPEC_IDS, selected_ids # all_spec_id is constant, global
+
+
+
+# PLOTLY GLOBAL OVERVIEW POINT SELECTION PUSH TO DROPDOWN
+@app.callback(
+    [Output('fragmap_panel', 'children')],
+    Input('push_fragmap', 'n_clicks'), # adds refresh current tab capability
+    State('focus_dropdown', 'value'))
+def fragmap_wrapper(n_clicks, selection_data):
+    """ Function extracts custom_data id's from a provided point selection dictionary."""
+    print("Triggered fragmap generator.")
+    if selection_data != None:
+        out = fragmap.generate_fragmap(selection_data, SPEC_LIST)
+    else:
+        out = [html.H6("Select focus data and press generate fragmap button for fragmap.")]
+    return out
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
