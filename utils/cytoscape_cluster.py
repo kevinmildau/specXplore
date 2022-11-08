@@ -6,24 +6,46 @@ import dash_cytoscape as cyto
 from dash import html
 import plotly.graph_objects as go
 from dash import dcc
+
+
+# full edge list
+# edge_id, node1_id, node2_id, x1, y1, x2, y2, edge strength (for threshold)
+
+# step0
+# use node list.
+# step1:
+# filter / subset full edge list as fast as possible.
+# step2:
+# Assess size of edge list and decide on plotting engine
+# step3:
+# construct plot data structure for edge list
+
+
 def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict, threshold):
-    print("Cluster Selection:", clust_selection)
+    # print("Cluster Selection:", clust_selection)
     
     # Define Network Data
-    n_nodes = SM_MS2DEEPSCORE.shape[0] # all nodes
-    adj_m = _myfun.compute_adjacency_matrix(SM_MS2DEEPSCORE, threshold) # <-------------------- EXPENSIVE TO RUN EVERYTIME, FOR FULL DATASET; REQUIRED FOR DYNAMIC THRESHOLD AND EXPAND
+    n_nodes = SM_MS2DEEPSCORE.shape[0] # number of all nodes
+    adj_m = _myfun.compute_adjacency_matrix(SM_MS2DEEPSCORE, threshold)         # <-- cache in dcc store after new threshold entered.
+    
+    # Edge list construction: 
+    # Construct list of all possible edges
+    # loop through list and corresponding numpy entries for edge keeping.
+    # Immediately constructs list of dict structure. 
     all_possible_edges = list(itertools.combinations(np.arange(0, n_nodes), 2))
     edges = [{'data' : {'id': str(elem[0]) + "-" + str(elem[1]), 
                         'source': str(elem[0]),
                         'target': str(elem[1])}} 
                         for elem in all_possible_edges if (adj_m[elem[0]][elem[1]] != 0)]
     
+    # Constructs full set of all nodes in list of dict structure
+    # no node filtering done at all
     nodes = [{'data': {'id': str(elem), 'label': 'Node ' + str(elem)},
         'position': {'x': TSNE_DF["x"].iloc[elem], 'y': -TSNE_DF["y"].iloc[elem]}, 
         'classes': selected_class_data[elem]} # <-- Added -y_coord for correct orientation in line with t-sne
-        for elem in np.arange(0, n_nodes)]
+        for elem in np.arange(0, n_nodes)] # <--  n_nodes is number of all nodes
 
-    print(len(nodes))
+    # construct style sheet
     active_style_sheet = [{'selector' : 'edge', 'style' : {'opacity' : 0.4}}, 
                            {'selector' : 'node', 'style' : {'height' : "100%", 
                                                         'width' : '100%', 
@@ -38,25 +60,25 @@ def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE
                                 'color': ' 	#FF00FF'
                                 }}]
 
-    
+    # Convert node identifiers of clust selection to string list, and set
     clust_selection = [str(elem) for elem in clust_selection]
-    print(clust_selection)
     my_set = set(clust_selection)
-    print(my_set)
+
+    # Initialize empty lists containers for adding nodes and edges to keep
     sel_edges = []
     sel_nodes = []
     sel_classes = set()
-    
-    
-    
-    
+    # Filter edges
     for elem in edges:
         if (elem["data"]["source"] in my_set) and (elem["data"]["target"] in my_set):
             sel_edges.append(elem)
+    # Filter nodes
     for elem in nodes:
         if elem["data"]["id"] in my_set:
             sel_nodes.append(elem)
             sel_classes.add(elem["classes"])
+    
+    # Adding color dict entries for each class.
     style_sheet = active_style_sheet + [{'selector': f".{clust}",
     'style': { 'background-color': f"{color_dict[clust]}"}} for clust in list(sel_classes)]
     print(sel_nodes)
@@ -80,6 +102,8 @@ def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE
 
         for edge in sel_edges:
             # node id's are integer locations
+
+            # Find tsne coordinates of all edge start and end points            # <-- Might be faster with dict lookups for full all possible edges list.
             x0 = TSNE_DF["x"].iloc[int(edge["data"]["source"])]
             y0 = TSNE_DF["y"].iloc[int(edge["data"]["source"])]
             x1 = TSNE_DF["x"].iloc[int(edge["data"]["target"])]
