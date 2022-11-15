@@ -18,6 +18,7 @@ from utils import augmap
 from utils import tsne_plotting
 from utils import cytoscape_cluster
 from utils import fragmap
+from utils import parsing
 import pickle
 import seaborn as sns
 import copy
@@ -255,23 +256,12 @@ def update_output_clust(tab, n_clicks, clust_selection,
 
 # PLOTLY GLOBAL OVERVIEW POINT SELECTION PUSH TO DROPDOWN
 @app.callback(
-    [Output('clust-dropdown', 'options'),
-     Output('clust-dropdown', 'value')],
+    [Output('clust-dropdown', 'value')],
     Input('tsne-overview-graph', 'selectedData'))
-def extract_identifiers(plotly_selection_data):
-    """ Function extracts custom_data id's from a provided point selection dictionary."""
-    # Edge Cases
-    # startup empty selection
-    # no selection data
-    # broken custom_data or re-arranged columns --> change to col identifier use
-    print("Triggered clust-dropdown input function.")
-    if plotly_selection_data != None:
-        selected_ids = [elem["customdata"][0] for elem in plotly_selection_data["points"]]
-        print("slected _ids:", selected_ids)
-    else:
-        selected_ids = []
+def plotly_selected_data_trigger(plotly_selection_data):
+    """ Wrapper Function for tsne point selection handling. """
+    selected_ids = parsing.extract_identifiers(plotly_selection_data)
     return ALL_SPEC_IDS, selected_ids # all_spec_id is constant, global
-
 
 
 # PLOTLY GLOBAL OVERVIEW POINT SELECTION PUSH TO DROPDOWN
