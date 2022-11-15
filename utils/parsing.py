@@ -1,3 +1,5 @@
+from utils import visuals as visual_utils
+
 def extract_identifiers(plotly_selection_data):
     """ Function extracts custom_data id's from a provided point selection 
         dictionary. """
