@@ -64,9 +64,9 @@ init_color_dict = visual_utils.create_color_dict(colors, selected_class_data)
 global ALL_SPEC_IDS
 ALL_SPEC_IDS = TSNE_DF.index # <-- add list(np.unique(spec_id_list of sorts))
 
-global SPEC_LIST
+global ALL_SPECTRA
 file = open("data/cleaned_demo_data.pickle", 'rb')
-SPEC_LIST = pickle.load(file)
+ALL_SPECTRA = pickle.load(file)
 file.close()
 
 app = dash.Dash(external_stylesheets=[dbc.themes.YETI]) # MORPH or YETI style.
@@ -209,75 +209,70 @@ def update_tsne_overview(n_clicks, hoverData, selected_class_level, selected_cla
                                             selected_class_data, 
                                             selected_class_level)
 
-# UPDATED CLASS SELECTION SAVE IN DCC STORE
-@app.callback(Output("selected_class_level", "data"), 
-              Output("selected_class_data", "data"),
-              Output("color_dict", "data"),   
-              Input("push-class", "n_clicks"),
-              State("class-dropdown", "value"))
-def update_class_selection(n_clicks, value):
-    selected_class_data = CLASS_DICT[value]
-    # Create overall figure with color_dict mapping
-    n_colors = len(set(selected_class_data)) # TODO: speed this up using n_clust argument that is pre-computed
-    colors = visual_utils.construct_grey_palette(n_colors, white_buffer = 20)
-    color_dict = visual_utils.create_color_dict(colors, selected_class_data)
-    return value, selected_class_data, color_dict
+# CLASS SELECTION UPDATE ------------------------------------------------------
+@app.callback(
+    Output("selected_class_level", "data"), 
+    Output("selected_class_data", "data"),
+    Output("color_dict", "data"),   
+    Input("push-class", "n_clicks"),
+    State("class-dropdown", "value"))
+def class_update_trigger_handler(n_clicks, selected_class):
+    """ Wrapper Function that construct class dcc.store data. """
+    selected_class_data, color_dict = parsing.update_class(selected_class, CLASS_DICT)
+    return selected_class, selected_class_data, color_dict
 
-# RIGHT PANEL BUTTON CLICK UPDATES
-@app.callback(Output('right-panel-tabs-content', 'children'),
-              [Input('right-panel-tab-group', 'value'),
-              Input('refresh-open-tab-button', 'n_clicks')], # adds refresh current tab capability
-              State('clust-dropdown', 'value'), 
-              State("color_dict", "data"),
-              State("selected_class_data", "data"),
-              State("edge_threshold", "data"),
-              State("expand_level", "data"))
-def update_output_clust(tab, n_clicks, clust_selection, 
-                        color_dict, selected_class_data, threshold, expand_level):
+# RIGHT PANEL BUTTON CLICK UPDATES --------------------------------------------
+@app.callback(
+    Output('right-panel-tabs-content', 'children'),
+    Input('right-panel-tab-group', 'value'),
+    Input('refresh-open-tab-button', 'n_clicks'), # trigger only
+    State('clust-dropdown', 'value'), 
+    State("color_dict", "data"),
+    State("selected_class_data", "data"),
+    State("edge_threshold", "data"),
+    State("expand_level", "data"))
+def right_panel_trigger_handler(
+    tab, n_clicks, clust_selection, color_dict, selected_class_data, threshold, 
+    expand_level):
     if tab == "tab-cluster" and clust_selection:
-        print("In Clust Selection")
-        return cytoscape_cluster.generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict, threshold)
+        panel = cytoscape_cluster.generate_cluster_node_link_diagram(
+            TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, 
+            color_dict, threshold)
     if tab == "tab-egonet"  and clust_selection:
-        return egonet.generate_egonet(clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold, expand_level)
+        panel = egonet.generate_egonet(
+            clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold, expand_level)
     if tab == "tab-augmap"  and clust_selection:
-        return augmap.generate_augmap(clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, threshold)
+        panel = augmap.generate_augmap(
+            clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
+            threshold)
     if tab == "tab-settings":
-        out = [html.H6("Settings panel inclusion pending.")]
-        return out
+        panel = [html.H6("Settings panel inclusion pending.")]
     if tab == "tab-data":
-        out = [html.H6("Data panel inclusion pending.")]
-        return out
+        panel = [html.H6("Data panel inclusion pending.")]
     else:
         warning("Nothing selected for display in right panel yet.")
-        out = [html.H6("empty-right-panel")]
-        return out
+        panel = [html.H6("empty-right-panel")]
+    return panel
 
-
-
-# PLOTLY GLOBAL OVERVIEW POINT SELECTION PUSH TO DROPDOWN
+# tsne-overview selection data trigger ----------------------------------------
 @app.callback(
-    [Output('clust-dropdown', 'value')],
+    Output('clust-dropdown', 'value'),
     Input('tsne-overview-graph', 'selectedData'))
 def plotly_selected_data_trigger(plotly_selection_data):
     """ Wrapper Function for tsne point selection handling. """
     selected_ids = parsing.extract_identifiers(plotly_selection_data)
-    return ALL_SPEC_IDS, selected_ids # all_spec_id is constant, global
+    return selected_ids
 
-
-# PLOTLY GLOBAL OVERVIEW POINT SELECTION PUSH TO DROPDOWN
+# Fragmap trigger -------------------------------------------------------------
 @app.callback(
-    [Output('fragmap_panel', 'children')],
-    Input('push_fragmap', 'n_clicks'), # adds refresh current tab capability
+    Output('fragmap_panel', 'children'),
+    Input('push_fragmap', 'n_clicks'), # trigger only
     State('focus_dropdown', 'value'))
-def fragmap_wrapper(n_clicks, selection_data):
-    """ Function extracts custom_data id's from a provided point selection dictionary."""
-    print("Triggered fragmap generator.")
-    if selection_data != None:
-        out = fragmap.generate_fragmap(selection_data, SPEC_LIST)
-    else:
-        out = [html.H6("Select focus data and press generate fragmap button for fragmap.")]
-    return out
-
+def fragmap_trigger(n_clicks, selection_data):
+    """ Wrapper function that calls fragmap generation modules. """
+    # Uses: global variable ALL_SPECTRA
+    fragmap_panel = fragmap.generate_fragmap(selection_data, ALL_SPECTRA)
+    return fragmap_panel
 
 if __name__ == '__main__':
     app.run_server(debug=True)
