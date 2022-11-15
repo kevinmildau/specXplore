@@ -37,7 +37,8 @@ app = Dash(__name__)
 # --> spectrum list with list index corresponding to spec_id (for now)
 global STRUCTURE_DICT
 global CLASS_DICT
-STRUCTURE_DICT, CLASS_DICT = load_utils.process_structure_class_table("data/classification_table.csv")
+STRUCTURE_DICT, CLASS_DICT = load_utils.process_structure_class_table(
+    "data/classification_table.csv")
 global AVAILABLE_CLASSES
 AVAILABLE_CLASSES = list(CLASS_DICT.keys())
 #print(AVAILABLE_CLASSES)
@@ -199,63 +200,41 @@ html.Div([
               [Input('threshold_text_input', 'n_submit'),
               Input("threshold_text_input", "value")])
 
-def update_threshold(n_submit, new_threshold):
-    print("Text Input Threshold triggered")
-    print(type(new_threshold), new_threshold)
-    default_threshold = 0.9
-    default_placeholder = "Threshold 0 < thr < 1, def. 0.9"
-    if new_threshold:
-        print("Passed ")
-        if new_threshold < 1 and new_threshold > 0:
-            print("That's a good threshold!")
-            placeholder = f'Threshold 0 < thr < 1, current: {new_threshold}'
-            return new_threshold,  placeholder
-    print("Bad threshold input. Restoring defaults.")
-    return default_threshold,  default_placeholder
+def update_threshold_trigger_handler(n_submit, new_threshold):
+    new_threshold, new_placeholder = parsing.update_threshold(new_threshold)
+    return new_threshold, new_placeholder
 
-@app.callback([Output("expand_level", "data"),
-               Output("expand_level_input", "placeholder")],
-              [Input('expand_level_input', 'n_submit'),
-              Input("expand_level_input", "value")])
+@app.callback(
+    Output("expand_level", "data"),
+    Output("expand_level_input", "placeholder"),
+    Input('expand_level_input', 'n_submit'),
+    Input("expand_level_input", "value"))
 
-def update_expand_level(n_submit, new_expand_level):
-    print("Expand Level triggered")
-    print(type(new_expand_level), new_expand_level)
-    default_expand_level = 1
-    default_placeholder = "Expand Level 1 =< thr <= 6, def. 1"
-    if new_expand_level:
-        print("Passed ")
-        if new_expand_level >= 1 and new_expand_level <= 6 and isinstance(new_expand_level, int):
-            print("That's a good expand level!")
-            placeholder = f'Expand Level 1 =< thr <= 6, current: {new_expand_level}'
-            return new_expand_level,  placeholder
-    print("Bad default_expand_level input. Restoring defaults.")
-    return default_expand_level,  default_placeholder
+def expand_trigger_handler(n_submit, new_expand_level):
+    new_expand_level, new_placeholder = parsing.update_expand_level(
+        new_expand_level)
+    return new_expand_level, new_placeholder
 
+# GLOBAL OVERVIEW UPDATE TRIGGER
+@app.callback(
+    Output("tsne-overview-graph", "figure"), 
+    Input("push-class", "n_clicks"),
+    Input("tsne-overview-graph", "clickData"), # or "hoverData"
+    Input("selected_class_level", "data"),
+    Input("selected_class_data", "data"),
+    State("color_dict", "data"))
 
-# UPDATE GLOBAL OVERVIEW VIA CLASS SELECTION
-@app.callback(Output("tsne-overview-graph", "figure"), 
-              [Input("push-class", "n_clicks"),
-              Input("tsne-overview-graph", "clickData"), # or "hoverData"
-              Input("class-dropdown", "value"),
-              Input("selected_class_data", "data")])
-
-def update_tsne_overview(n_clicks, hoverData, selected_class_level, selected_class_data):
-    """ Modifies global overview plot """
-    
-    # Create overall figure with color_dict mapping
-    n_colors = len(set(selected_class_data)) # TODO: speed this up using n_clust argument that is pre-computed
-    colors = visual_utils.construct_grey_palette(n_colors, white_buffer = 20)
-    color_dict = visual_utils.create_color_dict(colors, selected_class_data)
-    
-    if hoverData:  
-        # Modify class color for the class of the hovered over point.
-        selected_point = hoverData["points"][0]["customdata"][0]
-        color_dict[selected_class_data[selected_point]] = "#FF10F0"
-    
-    return tsne_plotting.plot_tsne_overview(TSNE_DF, color_dict, 
-                                            selected_class_data, 
-                                            selected_class_level)
+def left_panel_trigger_handler(
+    n_clicks, 
+    point_selection, 
+    selected_class_level, 
+    selected_class_data, 
+    color_dict):
+    """ Modifies global overview plot in left panel """
+    tsne_fig = tsne_plotting.plot_tsne_overview(
+        point_selection, selected_class_level, selected_class_data, TSNE_DF, 
+        color_dict)
+    return tsne_fig
 
 # CLASS SELECTION UPDATE ------------------------------------------------------
 @app.callback(
@@ -266,7 +245,8 @@ def update_tsne_overview(n_clicks, hoverData, selected_class_level, selected_cla
     State("class-dropdown", "value"))
 def class_update_trigger_handler(n_clicks, selected_class):
     """ Wrapper Function that construct class dcc.store data. """
-    selected_class_data, color_dict = parsing.update_class(selected_class, CLASS_DICT)
+    selected_class_data, color_dict = parsing.update_class(selected_class, 
+        CLASS_DICT)
     return selected_class, selected_class_data, color_dict
 
 # RIGHT PANEL BUTTON CLICK UPDATES --------------------------------------------
@@ -282,7 +262,6 @@ def class_update_trigger_handler(n_clicks, selected_class):
 def right_panel_trigger_handler(
     tab, n_clicks, clust_selection, color_dict, selected_class_data, threshold, 
     expand_level):
-    print("Tab Value:"), tab
     if tab == "tab-cluster" and clust_selection:
         panel = cytoscape_cluster.generate_cluster_node_link_diagram(
             TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, 
@@ -310,7 +289,6 @@ def right_panel_trigger_handler(
 def plotly_selected_data_trigger(plotly_selection_data):
     """ Wrapper Function for tsne point selection handling. """
     selected_ids = parsing.extract_identifiers(plotly_selection_data)
-    print("Selected_ids:", selected_ids)
     return selected_ids
 
 # Fragmap trigger -------------------------------------------------------------
