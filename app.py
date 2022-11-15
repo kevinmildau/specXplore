@@ -72,79 +72,127 @@ file.close()
 app = dash.Dash(external_stylesheets=[dbc.themes.YETI]) # MORPH or YETI style.
 app.layout = \
 html.Div([
-    # Title
-    dbc.Row([dbc.Col([html.H1([html.B("specXplore prototype")], style = {"margin-bottom": "-0.1em"})], width=6)]),
-    # Subtitle & mid view selectors
     dbc.Row([
-        dbc.Col([html.H6(html.H6("Authors: Kevin Mildau - Henry Ehlers"))], width=7),
+        dbc.Col([
+            html.H1([
+                html.B("specXplore prototype")], 
+                    style={"margin-bottom": "-0.1em"})], 
+                    width=6)]),
+    dbc.Row([
+        dbc.Col([
+            html.H6(
+                html.H6("Authors: Kevin Mildau - Henry Ehlers"))], 
+                width=7),
         dbc.Col(
-            dcc.Tabs(id="right-panel-tab-group", value='right-panel-tab', children=[
-            dcc.Tab(label='Cluster', value='tab-cluster'),
-            dcc.Tab(label='EgoNet', value='tab-egonet'),
-            dcc.Tab(label='Augmap', value='tab-augmap'),
-            dcc.Tab(label='Settings', value='tab-settings'),
-            dcc.Tab(label='Data View', value='tab-data')]), width = 5)
+            dcc.Tabs(id="right-panel-tab-group", value='right-panel-tab', 
+                children=[
+                    dcc.Tab(label='Cluster', value='tab-cluster'),
+                    dcc.Tab(label='EgoNet', value='tab-egonet'),
+                    dcc.Tab(label='Augmap', value='tab-augmap'),
+                    dcc.Tab(label='Settings', value='tab-settings'),
+                    dcc.Tab(label='Data View', value='tab-data')]), 
+                width = 5)
     ]),
     html.Br(),
-    # tsne overview and right panel plot components
     dbc.Row([
-        dbc.Col([dcc.Graph(id = "tsne-overview-graph", figure={}, style={"width":"100%","height":"60vh", "border":"1px grey solid"})], 
+        dbc.Col([
+            dcc.Graph(id = "tsne-overview-graph", 
+                figure={}, 
+                style={"width":"100%","height":"60vh", 
+                    "border":"1px grey solid"})], 
             width=7),
         dbc.Col([html.Div(id='right-panel-tabs-content')], 
             width=5),
     ], style = {"margin-bottom": "-1em"}),
     html.Br(),
     dbc.Row([
-        dbc.Col([html.H6("Selected Points for Cluster View:")], width = 6),
-        dbc.Col([html.H6("Set Edge Threshold:")], width = 2),
-        dbc.Col([dcc.Input(
-            id="threshold_text_input",
-            type="number", debounce = True,
-            placeholder = "Threshold 0 < thr < 1, def. 0.9", style = {"width" : "100%"}
-        )], width = 4),
+        dbc.Col([
+            html.H6("Selected Points for Cluster View:")], width = 6),
+        dbc.Col([
+            html.H6("Set Edge Threshold:")], width = 2),
+        dbc.Col([
+            dcc.Input(
+                id="threshold_text_input", type="number", debounce = True,
+                placeholder = "Threshold 0 < thr < 1, def. 0.9", 
+                style = {"width" : "100%"})], 
+            width = 4),
     ]),
     dbc.Row([
-        dbc.Col([dcc.Dropdown(id='clust-dropdown' , multi=True, style={'width': '100%', 'font-size': "75%"}, options = ALL_SPEC_IDS)], width = 6),
+        dbc.Col([
+            dcc.Dropdown(id='clust-dropdown' , 
+                multi=True, style={'width': '100%', 'font-size': "75%"}, 
+                options = ALL_SPEC_IDS)], 
+            width = 6),
         dbc.Col([html.H6("Selected Points for Focus View:")], width=2),
-        dbc.Col([dcc.Dropdown(id='focus_dropdown' , multi=True, style={'width': '100%', 'font-size': "75%"}, options = ALL_SPEC_IDS)], width = 4),
+        dbc.Col([
+            dcc.Dropdown(id='focus_dropdown' , 
+                multi=True, style={'width': '100%', 'font-size': "75%"}, 
+                options = ALL_SPEC_IDS)], 
+            width = 4),
     ]),
     dbc.Row([
         dbc.Col([html.Div( style={'width': '100%'})], width = 6),
         dbc.Col([html.H6("Reload open tab:")],width=4),
-        dbc.Col([dbc.Button('Submit Reload', id='refresh-open-tab-button', style={"width":"100%"})], width = 2),
+        dbc.Col([
+            dbc.Button('Submit Reload', 
+                id='refresh-open-tab-button', 
+                style={"width":"100%"})], 
+            width = 2),
     ]),
     dbc.Row([
         dbc.Col([html.Div( style={'width': '100%'})], width = 6),
         dbc.Col([html.H6("Set expand level:")], width=4),
-        dbc.Col([dcc.Input(
-            id="expand_level_input",
-            type="number", debounce = True,
-            placeholder = "Value between 1 < exp.lvl. < 5, def. 1", style = {"width" : "100%"}
-        )], width = 2),
+        dbc.Col([
+            dcc.Input(
+                id="expand_level_input", type="number", debounce = True,
+                placeholder = "Value between 1 < exp.lvl. < 5, def. 1", 
+                style = {"width" : "100%"})], 
+            width = 2),
     ]),
     html.Br(),
     dbc.Row([
-    dbc.Col([dbc.Button("Generate Fragmap", id = "push_fragmap", style={"width":"100%"})], width=2),
-    dbc.Col([dbc.Button("Generate Spectrum Plot", style={"width": "100%"})],width=2),
-    dbc.Col([dbc.Button("Show Spectrum Data", style={"width": "100%"})],width=2),
-    dbc.Col([dcc.Dropdown(id='class-dropdown' , multi=False, clearable=False, options = AVAILABLE_CLASSES, value = AVAILABLE_CLASSES[0])], width = 4),
-    dbc.Col([dbc.Button("Push Class Selection", id = "push-class",style={"width":"100%"})],width=2)
+    dbc.Col([
+        dbc.Button(
+            "Generate Fragmap", id = "push_fragmap", style={"width":"100%"})], 
+        width=2),
+    dbc.Col([
+        dbc.Button("Generate Spectrum Plot", style={"width": "100%"})],
+        width=2),
+    dbc.Col([
+        dbc.Button("Show Spectrum Data", style={"width": "100%"})],
+        width=2),
+    dbc.Col([
+        dcc.Dropdown(
+            id='class-dropdown' , multi=False, clearable=False, 
+            options = AVAILABLE_CLASSES, value = AVAILABLE_CLASSES[0])], 
+        width = 4),
+    dbc.Col([
+        dbc.Button(
+            "Push Class Selection", id = "push-class", 
+            style={"width":"100%"})],
+        width=2)
     ]),
     dcc.Store(id = "edge_threshold", data = 0.9),
     dcc.Store(id = "expand_level", data = int(1)),
     dcc.Store(id = "selected_class_level", data = AVAILABLE_CLASSES[0]),
-    dcc.Store(id = "selected_class_data",  data = CLASS_DICT[AVAILABLE_CLASSES[0]]),
+    dcc.Store(id = "selected_class_data", 
+        data = CLASS_DICT[AVAILABLE_CLASSES[0]]),
     dcc.Store(id = "color_dict",  data = init_color_dict),
     html.Br(),
     dbc.Row([
-        dbc.Col([html.Div(id = "fragmap_panel", style={"width":"100%", "border":"1px grey solid"})], width=12)]
+        dbc.Col([
+            html.Div(id = "fragmap_panel", 
+                style={"width":"100%", "border":"1px grey solid"})], 
+            width=12)]
     ),
     html.Br(),
     dbc.Row([
-        dbc.Col([html.Div(id = "data-panel", style={"width":"100%", "border":"1px grey solid"})], width=12)]
+        dbc.Col([
+            html.Div(id = "data-panel", 
+                style={"width":"100%", "border":"1px grey solid"})], 
+            width=12)]
     )
 ], style = {"width" : "100%"})
-
 
 @app.callback([Output("edge_threshold", "data"),
                Output("threshold_text_input", "placeholder")],
@@ -188,7 +236,7 @@ def update_expand_level(n_submit, new_expand_level):
 # UPDATE GLOBAL OVERVIEW VIA CLASS SELECTION
 @app.callback(Output("tsne-overview-graph", "figure"), 
               [Input("push-class", "n_clicks"),
-              Input("tsne-overview-graph", "clickData"),
+              Input("tsne-overview-graph", "clickData"), # or "hoverData"
               Input("class-dropdown", "value"),
               Input("selected_class_data", "data")])
 
@@ -262,6 +310,7 @@ def right_panel_trigger_handler(
 def plotly_selected_data_trigger(plotly_selection_data):
     """ Wrapper Function for tsne point selection handling. """
     selected_ids = parsing.extract_identifiers(plotly_selection_data)
+    print("Selected_ids:", selected_ids)
     return selected_ids
 
 # Fragmap trigger -------------------------------------------------------------
