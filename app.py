@@ -234,20 +234,21 @@ def class_update_trigger_handler(n_clicks, selected_class):
 def right_panel_trigger_handler(
     tab, n_clicks, clust_selection, color_dict, selected_class_data, threshold, 
     expand_level):
+    print("Tab Value:"), tab
     if tab == "tab-cluster" and clust_selection:
         panel = cytoscape_cluster.generate_cluster_node_link_diagram(
             TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, 
             color_dict, threshold)
-    if tab == "tab-egonet"  and clust_selection:
+    elif tab == "tab-egonet"  and clust_selection:
         panel = egonet.generate_egonet(
             clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold, expand_level)
-    if tab == "tab-augmap"  and clust_selection:
+    elif tab == "tab-augmap"  and clust_selection:
         panel = augmap.generate_augmap(
             clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
             threshold)
-    if tab == "tab-settings":
+    elif tab == "tab-settings":
         panel = [html.H6("Settings panel inclusion pending.")]
-    if tab == "tab-data":
+    elif tab == "tab-data":
         panel = [html.H6("Data panel inclusion pending.")]
     else:
         warning("Nothing selected for display in right panel yet.")
