@@ -2,3 +2,6 @@
 .DS_Store
 
 utils/__pycache__
+
+./model-files
+model-files
