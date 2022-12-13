@@ -25,6 +25,11 @@ pip install plotly-express
 pip install kmedoids
 pip install sklearn
 pip install cython
+pip install matchms-extras
+pip install matchmsextras
+pip install pubchempy 
 ```
 
+Matchmsextras and matchms-extras seem to be the same thing at different versions...
+pip install pubchempy since it is used in matchmsextras, but not installed by default.
 Current version: ms2deepscore==0.2.3

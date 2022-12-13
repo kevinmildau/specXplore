@@ -1,15 +1,27 @@
 # code adapted from ms2query clean_and_filter_spectra.py and ms2query utils.py
-
 from typing import List, Tuple
-import matchms.filtering as msfilters
 from tqdm import tqdm
+import os
+import sys
+import json
+import numpy as np
+import pandas as pd
+
+import matchms.filtering as msfilters
 from matchms import Spectrum
-from matchms.utils import is_valid_inchi, is_valid_inchikey, is_valid_smiles
+from matchms.metadata_utils import is_valid_inchi, is_valid_inchikey, is_valid_smiles
 from matchms.typing import SpectrumType
 from matchms.logging_functions import set_matchms_logger_level
 from matchmsextras.pubchem_lookup import pubchem_metadata_lookup
-from spec2vec import SpectrumDocument
+from matchms import importing
 
+from spec2vec import SpectrumDocument
+from spec2vec.Spec2Vec import Spectrum
+
+if sys.version_info < (3, 8):
+    import pickle5 as pickle
+else:
+    import pickle
 
 def clean_metadata(spectrum: Spectrum) -> Spectrum:
     spectrum = msfilters.default_filters(spectrum)
@@ -163,20 +175,9 @@ def clean_normalize_and_split_annotated_spectra(spectra: List[Spectrum],
     return annotated_spectra, unannotated_spectra
 
 
-    import os
-import sys
-import json
-from typing import List, Union
-import numpy as np
-import pandas as pd
-from matchms import importing
-from spec2vec.Spec2Vec import Spectrum
 
 
-if sys.version_info < (3, 8):
-    import pickle5 as pickle
-else:
-    import pickle
+
 
 
 def load_ms2query_model(ms2query_model_file_name):
