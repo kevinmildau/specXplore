@@ -1,6 +1,5 @@
 # Utility functions for prototype dashboards.
 import numpy as np
-import re
 
 # matchms data processing #####################################################
 def extract_similarity_scores(sm):

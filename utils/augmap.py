@@ -5,6 +5,27 @@ import itertools
 import pandas as pd
 from dash import html, dcc
 
+# generate augmap currently requires both an edge list creation
+# and a sm matrix
+
+# --> the sm matrix is used primarily for optimal leaf odering. once leaf
+#     ordering is achieved, matrices are reshuffled using the indexes and
+#     the code progresses to construct various long format dfs.
+
+# for the sizes considered, augmap is also always fast. 
+
+# Last priority to fix this. keep required structures in place for now. 
+# Consider: streamline code, numpy_load from disk the submatrices, improve 
+# long format edge list construction via cythonize.
+
+# TODO: [ ] "Load" pairwise similarity matrices using numpy on disk indexing 
+#           (need to be saved accordingly)
+# TODO: [ ] Create more dynamic data structures to allow between 1 and 5 
+#           similarity scores. 
+#       [ ] implement corresponding layering in heatmap visual and hover inf.
+
+
+
 def generate_augmap(
     clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
     threshold):

@@ -1,5 +1,4 @@
 import numpy as np
-from utils import utils054
 from utils import process_matchms as _myfun
 import itertools
 import dash_cytoscape as cyto
@@ -8,56 +7,72 @@ import plotly.graph_objects as go
 from dash import dcc
 
 
-# full edge list
-# edge_id, node1_id, node2_id, x1, y1, x2, y2, edge strength (for threshold)
+# use extract_selection to get selected_ids and thresholding done at once
+# assess dataset size
+# --> if suitable: construct cytoscape elements
+# --> if very large: construct plotly graph object
 
-# step0
-# use node list.
-# step1:
-# filter / subset full edge list as fast as possible.
-# step2:
-# Assess size of edge list and decide on plotting engine
-# step3:
-# construct plot data structure for edge list
+def generate_cluster_node_link_diagram(
+    TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict, 
+    threshold):
+
+    # Inputs:
+    # spec indexes --> for node selection
+    # x y coordinate array. --> for tsne layout
+    # class array --> array with selected class data, needs to be filtered to selection
+    # pairwise similarity data structure --> long format, node 1, node 2, sim
+    # single threshold value
+    # color_dict corresponding to class vector strings
 
 
-def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, color_dict, threshold):
-    # print("Cluster Selection:", clust_selection)
-    
+    # Before constructing plot data structures make a pure node and edge list
+    # of only ids. Assess size. Depending on size, construct cytoscape or
+    # ploltly compatible structures. Either way, a full sweep through the
+    # adjacency space is required. 
+
+
+    # if len(sel_edges) + len(sel_nodes) <= 10000:
+
+    # 
+
     # Define Network Data
     n_nodes = SM_MS2DEEPSCORE.shape[0] # number of all nodes
     adj_m = _myfun.compute_adjacency_matrix(SM_MS2DEEPSCORE, threshold)         # <-- cache in dcc store after new threshold entered.
     
-    # Edge list construction: 
+    # Edge list construction:
     # Construct list of all possible edges
     # loop through list and corresponding numpy entries for edge keeping.
     # Immediately constructs list of dict structure. 
+    
+    # Reduce to selected set of nodes.
+    # Construct node list (always comparatively small set <= 10,000)
+    # Construct edge list at threshold (possibly large set, between 0 and hundreds of thousands to millions)
+
+    # REQUIRES:
+    # def construct_edge_list()
+    # def construct_node_list()
     all_possible_edges = list(itertools.combinations(np.arange(0, n_nodes), 2))
-    edges = [{'data' : {'id': str(elem[0]) + "-" + str(elem[1]), 
-                        'source': str(elem[0]),
-                        'target': str(elem[1])}} 
+    edges = [{'data':{'id':str(elem[0]) + "-" + str(elem[1]), 
+                        'source':str(elem[0]),
+                        'target':str(elem[1])}} 
                         for elem in all_possible_edges if (adj_m[elem[0]][elem[1]] != 0)]
     
     # Constructs full set of all nodes in list of dict structure
     # no node filtering done at all
-    nodes = [{'data': {'id': str(elem), 'label': 'Node ' + str(elem)},
-        'position': {'x': TSNE_DF["x"].iloc[elem], 'y': -TSNE_DF["y"].iloc[elem]}, 
-        'classes': selected_class_data[elem]} # <-- Added -y_coord for correct orientation in line with t-sne
+    nodes = [{'data':{'id':str(elem), 'label':'Node ' + str(elem)},
+        'position':{'x':TSNE_DF["x"].iloc[elem], 'y':-TSNE_DF["y"].iloc[elem]}, 
+        'classes':selected_class_data[elem]} # <-- Added -y_coord for correct orientation in line with t-sne
         for elem in np.arange(0, n_nodes)] # <--  n_nodes is number of all nodes
 
     # construct style sheet
-    active_style_sheet = [{'selector' : 'edge', 'style' : {'opacity' : 0.4}}, 
-                           {'selector' : 'node', 'style' : {'height' : "100%", 
-                                                        'width' : '100%', 
-                                                        'opacity' : 0.8,
-                                                        'content': 'data(label)',
-                                                        'text-halign':'center',
-                                                        'text-valign':'center',
-                                                        "shape" : "circle"}},
-                            {'selector': 'label', 
-                             'style': {
-                                'content': 'data(label)',    # not to loose label content
-                                'color': ' 	#FF00FF'
+    active_style_sheet = [
+        {'selector':'edge', 'style':{'opacity':0.4}}, 
+        {'selector':'node', 'style':{'height':"100%", 
+            'width':'100%', 'opacity':0.8, 'content':'data(label)',
+            'text-halign':'center', 'text-valign':'center', 
+            "shape":"circle"}},
+        {'selector':'label', 'style':{'content':'data(label)',
+        'color':'#FF00FF'
                                 }}]
 
     # Convert node identifiers of clust selection to string list, and set
@@ -79,19 +94,19 @@ def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE
             sel_classes.add(elem["classes"])
     
     # Adding color dict entries for each class.
-    style_sheet = active_style_sheet + [{'selector': f".{clust}",
-    'style': { 'background-color': f"{color_dict[clust]}"}} for clust in list(sel_classes)]
+    style_sheet = active_style_sheet + [{'selector':f".{clust}",
+    'style':{ 'background-color':f"{color_dict[clust]}"}} for clust in list(sel_classes)]
     print(sel_nodes)
     
     if len(sel_edges) + len(sel_nodes) <= 10000:
         out = html.Div([
             cyto.Cytoscape(
                 id='cytoscape-tsne-subnet',
-                layout={'name': 'preset'},
+                layout={'name':'preset'},
                 elements= sel_edges + sel_nodes,
                 stylesheet=style_sheet,
                 boxSelectionEnabled=True,
-                style={'width': '100%', 'height': '60vh', "border":"1px grey solid", "bg" : "#feeff4"},
+                style={'width':'100%', 'height':'60vh', "border":"1px grey solid", "bg":"#feeff4"},
             ),
         ])
         return out
@@ -145,10 +160,10 @@ def generate_cluster_node_link_diagram(TSNE_DF, clust_selection, SM_MS2DEEPSCORE
                     yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)),
                     )
         fig.update_layout(clickmode='event+select', 
-                    margin = {"autoexpand":True, "b" : 0, "l":0, 
+                    margin = {"autoexpand":True, "b":0, "l":0, 
                             "r":0, "t":0})
         out = html.Div([dcc.Graph(id = "cluster_express", figure=fig, 
             style={"width":"100%","height":"60vh", "border":"1px grey solid"}, 
-            config={'staticPlot': True}
+            config={'staticPlot':True}
             )])
         return out
