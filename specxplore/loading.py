@@ -26,3 +26,20 @@ def process_structure_class_table(file_location):
     #print(class_dict.keys())
     #print(class_dict["cf_class"])
     return structure_dict, class_dict
+
+def extract_classes_from_ms2query_results(file_location):
+    """Helper function to parse class table."""
+    tmp = pd.read_csv(file_location, index_col=False)
+    print(tmp, tmp.columns)
+    tmp.fillna("Unknown", inplace=True)
+    #print(structure_dict.keys())
+    tmp = tmp.drop([
+        'query_spectrum_nr', 'ms2query_model_prediction',
+        'precursor_mz_difference', 'precursor_mz_query_spectrum',
+        'precursor_mz_analog', 'inchikey', 'spectrum_ids',
+        'analog_compound_name', 'retention_time', 'retention_index', 'smiles'], 
+        axis = 1)
+    class_dict = {elem : list(tmp[elem]) for elem in tmp.columns}
+    #print(class_dict.keys())
+    #print(class_dict["cf_class"])
+    return class_dict
