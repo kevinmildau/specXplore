@@ -8,19 +8,19 @@ import plotly.express as px
 import plotly
 import pandas as pd
 import numpy as np
-from utils import dashboard_components as _dc
-from utils import loading as load_utils
-from utils import visuals as visual_utils
-from utils import process_matchms as _myfun
-from utils import egonet
-from utils import augmap
-from utils import tsne_plotting
-from utils import cytoscape_cluster
-from utils import fragmap
-from utils import parsing
+from specxplore import dashboard_components as _dc
+from specxplore import loading as load_utils
+from specxplore import visuals as visual_utils
+from specxplore import process_matchms as _myfun
+from specxplore import egonet
+from specxplore import augmap
+from specxplore import tsne_plotting
+from specxplore import cytoscape_cluster
+from specxplore import fragmap
+from specxplore import parsing
 import cython_utils
 import pickle
-import seaborn as sns
+#import seaborn as sns
 import copy
 import itertools
 import dash_cytoscape as cyto
@@ -37,8 +37,10 @@ app=Dash(__name__)
 # --> spectrum list with list index corresponding to spec_id (for now)
 global STRUCTURE_DICT
 global CLASS_DICT
-STRUCTURE_DICT, CLASS_DICT=load_utils.process_structure_class_table(
-    "data/classification_table.csv")
+#STRUCTURE_DICT, CLASS_DICT=load_utils.process_structure_class_table(
+#    "data/classification_table.csv")
+CLASS_DICT=load_utils.extract_classes_from_ms2query_results(
+    "data-input/results/GNPS-NIH-NATURALPRODUCTSLIBRARY.csv")
 global AVAILABLE_CLASSES
 AVAILABLE_CLASSES=list(CLASS_DICT.keys())
 #print(AVAILABLE_CLASSES)
