@@ -1,5 +1,5 @@
 import numpy as np
-from utils import process_matchms as _myfun
+from specxplore import process_matchms as _myfun
 import itertools
 import dash_cytoscape as cyto
 from dash import html
