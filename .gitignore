@@ -1,7 +1,7 @@
 # Mac files to ignore.
 .DS_Store
 
-utils/__pycache__
+specxplore/__pycache__
 
 ./model-files
 model-files
@@ -10,3 +10,20 @@ model-files
 data-input
 ./data-output
 data-output
+
+archive
+./archive
+
+example-00-dummy-ms2query
+example-00-dummy-ms2query-negative
+example-00-dummy-ms2query-positive
+ms2query-lib-positive
+
+example00-step1-negative.py
+example00-step1-positive.py
+example00-step2-negative.py
+example00-step2-positive.py
+
+example01-step1-positive.py
+example01-step2-positive.py
+
