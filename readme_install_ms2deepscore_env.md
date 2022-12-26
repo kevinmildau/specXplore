@@ -7,7 +7,7 @@ conda activate specxplore38
 pip install lxml 
 conda install grpcio
 pip install numba
-pip install pandas
+pip install numba
 pip install ipykernel
 
 pip install tensorflow-macos
@@ -28,6 +28,11 @@ pip install cython
 pip install matchms-extras
 pip install matchmsextras
 pip install pubchempy 
+```
+
+Additional installs for ms2query:
+```{bash}
+pip install pkgconfig
 ```
 
 Matchmsextras and matchms-extras seem to be the same thing at different versions...
