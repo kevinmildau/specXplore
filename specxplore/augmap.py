@@ -4,7 +4,7 @@ import numpy as np
 import itertools
 import pandas as pd
 from dash import html, dcc
-
+import plotly.express as px
 # generate augmap currently requires both an edge list creation
 # and a sm matrix
 
@@ -31,67 +31,88 @@ def generate_augmap(
     threshold):
 
     ids_int = [int(elem) for elem in clust_selection]
-    # Extract relevant subset  of nodes from sm matrices
+    
+    # Extract relevant subset of spec_ids from sm matrices
     tmp_sm1 = SM_MS2DEEPSCORE[ids_int, :][:, ids_int]
     tmp_sm2 = SM_MODIFIED_COSINE[ids_int, :][:, ids_int]
     tmp_sm3 = SM_SPEC2VEC[ids_int, :][:, ids_int]
 
+
+
+    # ADD: 
+    #   function: generate_optimal_leaf_ordering_index()
+    #   
     # Create optimal ordering for heatmap based on tmp_sm1
     Z = hierarchy.ward(tmp_sm1) # hierarchical clustering
     index = hierarchy.leaves_list(hierarchy.optimal_leaf_ordering(Z, tmp_sm1))
     
+
+    # Add:
+    #   function: reorder_matrices.
+    #   function test cases for reorder matrices
+
     # Reorder all data in line with optimal ordering
     tmp_sm1 = tmp_sm1[index,:][:,index]
     tmp_sm2 = tmp_sm2[index,:][:,index]
     tmp_sm3 = tmp_sm3[index,:][:,index]
 
-    # Reorder ids as new index 
+    # Reorder ids as new index, construct string id list
     ids_int = np.array(ids_int)
     ids_int = ids_int[index]
     ids  = [str(e) for e in ids_int]
 
+
+    # Add:
+    #   function: recast_long()
     # Create long dfs
     all_possible_edges = list(
         itertools.combinations(np.arange(0, tmp_sm1.shape[1]), 2))
     edges =  [
-        {'x' : elem[0], 'y' : elem[1], 'sim' : tmp_sm1[elem[0]][elem[1]]} 
+        {'x' : ids[elem[0]], 'y' : ids[elem[1]], 'sim' : tmp_sm1[elem[0]][elem[1]]} 
         for elem in all_possible_edges]
     edges2 = [
-        {'x' : elem[0], 'y' : elem[1], 'sim' : 1} 
-        for elem in all_possible_edges 
-        if tmp_sm2[elem[0]][elem[1]] > threshold]
+        {'x' : ids[elem[0]], 'y' : ids[elem[1]], 'sim' : tmp_sm2[elem[0]][elem[1]]} 
+        for elem in all_possible_edges ]
+        #if tmp_sm2[elem[0]][elem[1]] > threshold]
     edges3 = [
-        {'x' : elem[0], 'y' : elem[1], 'sim' : 1} 
-        for elem in all_possible_edges 
-        if tmp_sm3[elem[0]][elem[1]] > threshold]
+        {'x' : ids[elem[0]], 'y' : ids[elem[1]], 'sim' : tmp_sm3[elem[0]][elem[1]]} 
+        for elem in all_possible_edges ]
+        #if tmp_sm3[elem[0]][elem[1]] > threshold]
     
     longdf = pd.DataFrame(edges)
     long_level2 = pd.DataFrame(edges2)
     long_level3 = pd.DataFrame(edges3)
-
+   
+    longdf["sim2"] = long_level2["sim"]
+    longdf["sim3"] = long_level2["sim"]
+    print(longdf)
     # Main heatmap trace
-    trace = go.Heatmap(x=ids, y=ids, z = tmp_sm1,  type = 'heatmap', 
-        colorscale = 'Viridis', zmin = 0, zmax = 1, xgap=1, ygap=1) # <-- might be mistake
+    trace = go.Heatmap(
+        x=longdf["x"], y=longdf["y"], z = longdf["sim"], type = 'heatmap', 
+        customdata= [longdf["sim2"].to_list, longdf["sim3"].to_list()],
+        hovertemplate=
+            'X: %{x}<br>Y: %{y}<br>MS2DeepScore: %{z}<br>Mod.Cosine: %{customdata[0]}<br>Spec2Vec: %{customdata[1]}<extra></extra>',
+            colorscale = 'Viridis', zmin = 0, zmax = 1, xgap=1, ygap=1) # <-- might be mistake
     data = [trace]
     fig_ah = go.Figure(data = data)
-
-    # Add augmentation layers
-    r = 0.1
-    xy = [[elem["x"], elem["y"]] for index, elem in long_level2.iterrows()]
-    xy2 = [[elem["x"], elem["y"]] for index, elem in long_level3.iterrows()]
-    kwargs = {'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': 'white'}
-    points = [
-        go.layout.Shape(x0=x-r, y0=y-r, x1=x+r, y1=y+r, **kwargs) 
-        for x, y in xy]
-    kwargs = {
-        'type': 'rect', 'xref': 'x', 'yref': 'y', 
-        'line_color': 'red', 'line_width' : 1}
-    r = 0.2
-    more_points = [
-        go.layout.Shape(x0=x-r, y0=y-r, x1=x+r, y1=y+r, **kwargs) 
-        for x, y in xy2]
+    if False:
+        # Add augmentation layers
+        r = 0.1
+        xy = [[elem["x"], elem["y"]] for index, elem in long_level2.iterrows()]
+        xy2 = [[elem["x"], elem["y"]] for index, elem in long_level3.iterrows()]
+        kwargs = {'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': 'white'}
+        points = [
+            go.layout.Shape(x0=x-r, y0=y-r, x1=x+r, y1=y+r, **kwargs) 
+            for x, y in xy]
+        kwargs = {
+            'type': 'rect', 'xref': 'x', 'yref': 'y', 
+            'line_color': 'red', 'line_width' : 1}
+        r = 0.2
+        more_points = [
+            go.layout.Shape(x0=x-r, y0=y-r, x1=x+r, y1=y+r, **kwargs) 
+            for x, y in xy2]
     
-    fig_ah.update_layout(shapes=points + more_points,            
+    fig_ah.update_layout(#shapes=points + more_points,            
         yaxis_nticks=tmp_sm1.shape[1],
         xaxis_nticks=tmp_sm1.shape[1],
         margin = {"autoexpand":True, "b" : 100, "l":0, "r":50, "t":0},
