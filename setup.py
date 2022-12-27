@@ -6,5 +6,5 @@ from Cython.Build import cythonize
 
 setup(
     name="specXplore Cython Utils",
-    ext_modules=cythonize("utils/cython_utils.pyx")
+    ext_modules=cythonize("specxplore/cython_utils.pyx")
 )
