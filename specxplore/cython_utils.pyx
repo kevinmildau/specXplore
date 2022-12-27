@@ -76,6 +76,31 @@ def extract_above_threshold(
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
+def extract_cluster_above_threshold(
+    long[:] selection, long[:] source, long[:] target, double[:] value, 
+    double threshold):
+    """ Cython function loops through similarity list and filters down to
+    threshold and within selection set requirement. """
+    #assert source.shape == target.shape == value.shape
+    cdef int nmax = int(source.shape[0])
+    cdef int i
+    cdef int k = 0
+    cdef selection_set = set(selection)
+    cdef double[::1] out_value = np.zeros(nmax, dtype=np.double)
+    cdef long[::1] out_source = np.zeros(nmax, dtype=np.int_)
+    cdef long[::1] out_target = np.zeros(nmax, dtype=np.int_)
+    for i in range(0, nmax):
+        if value[i] > threshold and (
+            source[i] in selection_set or target[i] in selection_set):
+            out_value[k] = value[i]
+            out_source[k] = source[i]
+            out_target[k] = target[i]
+            k += 1
+    return np.array(out_value[0:k]), np.array(out_source[0:k]), np.array(out_target[0:k])
+
+
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
 def creating_branching_dict_new(long[:] source, long[:] target, long root, long n_levels):
     """Function creates edge branching edge lists."""
     # PSEUDOCODE
