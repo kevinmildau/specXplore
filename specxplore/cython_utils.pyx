@@ -251,3 +251,23 @@ def generate_edge_elements_and_styles(
             nodes[node]['classes'] = str(key)
     #print("FROM CYTHON", styles)
     return (edge_elems, styles)
+
+
+def create_cluster_edge_list(long[:] s, long[:] t, long[:] cluster_selection):
+    assert s.size == t.size
+    edges = [{}] * s.size
+    cdef set cluster_set = set(cluster_selection)
+    cdef string edge_class
+    for i in range(0, s.size):
+        source = s[i]
+        target = t[i]
+        if (source in cluster_set and target in cluster_set):
+            edge_class = str("edge_within_set")
+        else:
+            edge_class = str("edge_out_of_set")
+        edges[i] = {
+            'data':{'id':str(source) + "-" + str(target), 
+            'source':str(source),
+            'target':str(target)},
+            'classes':edge_class}
+    return(edges)
