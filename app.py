@@ -143,7 +143,7 @@ app.layout=html.Div([
             width=2),
         dbc.Col([dcc.Dropdown(id='class-dropdown' , multi=False, 
             clearable=False, options=AVAILABLE_CLASSES, 
-            value=AVAILABLE_CLASSES[0])], width=4),
+            value=AVAILABLE_CLASSES[5])], width=4),
     dbc.Col([dbc.Button("Push Class Selection", id="push-class", 
         style={"width":"100%"})], width=2)]),
     dcc.Store(id="edge_threshold", data=0.9),
@@ -227,9 +227,12 @@ def right_panel_trigger_handler(
     tab, n_clicks, clust_selection, color_dict, selected_class_data, threshold, 
     expand_level):
     if tab == "tab-cluster" and clust_selection:
-        panel=cytoscape_cluster.generate_cluster_node_link_diagram(
-            TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, 
-            color_dict, threshold)
+        panel = cytoscape_cluster.generate_cluster_node_link_diagram_cythonized(
+            TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data,
+            color_dict, threshold, SOURCE, TARGET, VALUE, MZ)
+        #panel=cytoscape_cluster.generate_cluster_node_link_diagram(
+        #    TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, 
+        #    color_dict, threshold)
     elif tab == "tab-egonet"  and clust_selection:
         panel = egonet.generate_egonet_cythonized(clust_selection, SOURCE, TARGET, VALUE, TSNE_DF, MZ, threshold, expand_level)
         #panel=egonet.generate_egonet(
