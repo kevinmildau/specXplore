@@ -11,7 +11,11 @@
 # expand level limiters should be modifiable settings.
 
 
+# remove the white space fixing in the color dict creation and put it instead 
+# into the data pre-processing pipeline
+
 from specxplore import visuals as visual_utils
+import re
 
 def extract_identifiers(plotly_selection_data):
     """ Function extracts custom_data id's from a provided point selection 
@@ -62,6 +66,8 @@ def update_class(selected_class, class_dict):
     """
     white_buffer = 20 # --> see visual_utils.construct_grey_palette() 
     selected_class_data = class_dict[selected_class]
+    selected_class_data = [
+        re.sub('[^A-Za-z0-9]+', '_', elem) for elem in selected_class_data]
     n_colors = len(set(selected_class_data))
     colors = visual_utils.construct_grey_palette(n_colors, white_buffer)
     color_dict = visual_utils.create_color_dict(colors, selected_class_data)
