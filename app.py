@@ -20,14 +20,14 @@ from specxplore import fragmap
 from specxplore import parsing
 import cython_utils
 import pickle
-#import seaborn as sns
 import copy
 import itertools
 import dash_cytoscape as cyto
 import plotly.graph_objects as go
 from scipy.cluster import hierarchy
 
-app=Dash(__name__)
+#app=Dash(__name__)
+app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # TODO: load necessary data.
 # --> pandas df with spec_id, x and y coord, and classification columns.
@@ -254,7 +254,7 @@ def right_panel_trigger_handler(
         #panel=egonet.generate_egonet(
         #    clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold, expand_level)
     elif tab == "tab-augmap"  and clust_selection:
-        panel=augmap.generate_augmap(
+        panel=augmap.generate_augmap_panel(
             clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
             threshold)
     elif tab == "tab-settings":
