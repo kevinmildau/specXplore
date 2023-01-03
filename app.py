@@ -72,10 +72,8 @@ file.close()
 
 # PROTOTYPING CYTHON DATA STRUCTURES
 SOURCE, TARGET, VALUE = cython_utils.construct_long_format_sim_table(SM_MS2DEEPSCORE)
-print(TSNE_DF)
-NODE_ID = np.array(TSNE_DF["id"], dtype=np.int32)
-NODE_X = np.array(TSNE_DF["x"], dtype=np.double)
-NODE_Y = np.array(TSNE_DF["y"], dtype=np.double)
+
+
 
 file = open("data/extracted_precursor_mz_values.pickle", 'rb')
 MZ = pickle.load(file) 
