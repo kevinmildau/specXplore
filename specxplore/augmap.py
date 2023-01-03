@@ -1,3 +1,9 @@
+# Developer Notes
+# Add a toggle for viridis or the diverging colors augmap into the settings and here
+# Viridis has the advantage of being constant to the threshold changes, while
+# the diverging implementation works great in concert with high thresholds through
+# clutter reduction.
+
 import plotly.graph_objects as go
 from scipy.cluster import hierarchy
 import numpy as np
@@ -5,122 +11,122 @@ import itertools
 import pandas as pd
 from dash import html, dcc
 import plotly.express as px
-# generate augmap currently requires both an edge list creation
-# and a sm matrix
 
-# --> the sm matrix is used primarily for optimal leaf odering. once leaf
-#     ordering is achieved, matrices are reshuffled using the indexes and
-#     the code progresses to construct various long format dfs.
+def _extract_sub_matrices(idx, sm1, sm2, sm3):
+    # Extract relevant subset of spec_ids from sm matrices
+    out_sm1 = sm1[idx, :][:, idx]
+    out_sm2 = sm2[idx, :][:, idx]
+    out_sm3 = sm3[idx, :][:, idx]
+    return out_sm1, out_sm2, out_sm3
 
-# for the sizes considered, augmap is also always fast. 
+def _generate_optimal_leaf_ordering_index(sm):
+    Z = hierarchy.ward(sm) # hierarchical clustering, ward linkage
+    index = hierarchy.leaves_list(hierarchy.optimal_leaf_ordering(Z, sm))
+    return index
 
-# Last priority to fix this. keep required structures in place for now. 
-# Consider: streamline code, numpy_load from disk the submatrices, improve 
-# long format edge list construction via cythonize.
+def _reoder_matrices(ordered_index, sm1, sm2, sm3):
+    out_sm1 = sm1[ordered_index,:][:,ordered_index]
+    out_sm2 = sm2[ordered_index,:][:,ordered_index]
+    out_sm3 = sm3[ordered_index,:][:,ordered_index]
+    return out_sm1, out_sm2, out_sm3
 
-# TODO: [ ] "Load" pairwise similarity matrices using numpy on disk indexing 
-#           (need to be saved accordingly)
-# TODO: [ ] Create more dynamic data structures to allow between 1 and 5 
-#           similarity scores. 
-#       [ ] implement corresponding layering in heatmap visual and hover inf.
+def _generate_edge_shapes(idx, sm1, sm2, threshold):
+    kwargs1 = {
+        'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': 'white'}
+    r1 = 0.1
+    kwargs2 = {
+        'type': 'rect', 'xref': 'x', 'yref': 'y', 
+        'line_color': 'red', 'line_width' : 1}
+    r2 = 0.2
 
+    all_possible_edges = list(
+        itertools.combinations(np.arange(0, sm1.shape[1]), 2))
+    edges1 = [
+        [ idx[elem[0]], idx[elem[1]] ]
+        for elem in all_possible_edges
+        if sm1[elem[0]][elem[1]] >= threshold]
+    edges2 = [
+        [ idx[elem[0]], idx[elem[1]] ]
+        for elem in all_possible_edges
+        if sm2[elem[0]][elem[1]] >= threshold]
+    shapes1 = [
+        go.layout.Shape(x0=x-r1, y0=y-r1, x1=x+r1, y1=y+r1, **kwargs1) 
+        for x, y in edges1]
+    shapes2 = [
+        go.layout.Shape(x0=x-r2, y0=y-r2, x1=x+r2, y1=y+r2, **kwargs2) 
+        for x, y in edges2]
+    return shapes1, shapes2
 
+def _construct_redblue_diverging_coloscale(threshold):
+    """Function creates a non-symmetric red-blue divergin color scale 
+    in range 0 to 1, with breakpoint at the provided threshold."""
+    color_range = list(np.arange(0,1,0.01))
+    closest_breakpoint = min(color_range, key=lambda x: abs(x - threshold))
+    n_blues = int(closest_breakpoint * 100 - 1)
+    n_reds = int(100 - (closest_breakpoint * 100) + 1)
+    print(n_blues, n_reds, type(n_blues))
+
+    blues = px.colors.sample_colorscale(
+        "Blues_r", [n/(n_blues -1) for n in range(n_blues)])
+    reds = px.colors.sample_colorscale(
+        "Reds", [n/(n_reds -1) for n in range(n_reds)])
+    redblue_diverging = blues + reds
+    return(redblue_diverging)
 
 def generate_augmap(
     clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
     threshold):
+    """ Function constructs augmap figure object from provided data and 
+    threshold settings. """
 
-    ids_int = [int(elem) for elem in clust_selection]
-    
-    # Extract relevant subset of spec_ids from sm matrices
-    tmp_sm1 = SM_MS2DEEPSCORE[ids_int, :][:, ids_int]
-    tmp_sm2 = SM_MODIFIED_COSINE[ids_int, :][:, ids_int]
-    tmp_sm3 = SM_SPEC2VEC[ids_int, :][:, ids_int]
-
-
-
-    # ADD: 
-    #   function: generate_optimal_leaf_ordering_index()
-    #   
-    # Create optimal ordering for heatmap based on tmp_sm1
-    Z = hierarchy.ward(tmp_sm1) # hierarchical clustering
-    index = hierarchy.leaves_list(hierarchy.optimal_leaf_ordering(Z, tmp_sm1))
-    
-
-    # Add:
-    #   function: reorder_matrices.
-    #   function test cases for reorder matrices
-
-    # Reorder all data in line with optimal ordering
-    tmp_sm1 = tmp_sm1[index,:][:,index]
-    tmp_sm2 = tmp_sm2[index,:][:,index]
-    tmp_sm3 = tmp_sm3[index,:][:,index]
+    idx = [int(elem) for elem in clust_selection]
+    sm1, sm2, sm3 = _extract_sub_matrices(
+        idx, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC)
+    ordered_index = _generate_optimal_leaf_ordering_index(sm1)
+    sm1, sm2, sm3 = _reoder_matrices(ordered_index, sm1, sm2, sm3)
 
     # Reorder ids as new index, construct string id list
-    ids_int = np.array(ids_int)
-    ids_int = ids_int[index]
-    ids  = [str(e) for e in ids_int]
+    idx = np.array(idx)
+    idx = idx[ordered_index]
+    ids  = [str(e) for e in idx]
 
+    redblue_diverging = _construct_redblue_diverging_coloscale(threshold)
 
-    # Add:
-    #   function: recast_long()
-    # Create long dfs
-    all_possible_edges = list(
-        itertools.combinations(np.arange(0, tmp_sm1.shape[1]), 2))
-    edges =  [
-        {'x' : ids[elem[0]], 'y' : ids[elem[1]], 'sim' : tmp_sm1[elem[0]][elem[1]]} 
-        for elem in all_possible_edges]
-    edges2 = [
-        {'x' : ids[elem[0]], 'y' : ids[elem[1]], 'sim' : tmp_sm2[elem[0]][elem[1]]} 
-        for elem in all_possible_edges ]
-        #if tmp_sm2[elem[0]][elem[1]] > threshold]
-    edges3 = [
-        {'x' : ids[elem[0]], 'y' : ids[elem[1]], 'sim' : tmp_sm3[elem[0]][elem[1]]} 
-        for elem in all_possible_edges ]
-        #if tmp_sm3[elem[0]][elem[1]] > threshold]
-    
-    longdf = pd.DataFrame(edges)
-    long_level2 = pd.DataFrame(edges2)
-    long_level3 = pd.DataFrame(edges3)
-   
-    longdf["sim2"] = long_level2["sim"]
-    longdf["sim3"] = long_level2["sim"]
-    print(longdf)
     # Main heatmap trace
     trace = go.Heatmap(
-        x=longdf["x"], y=longdf["y"], z = longdf["sim"], type = 'heatmap', 
-        customdata= [longdf["sim2"].to_list, longdf["sim3"].to_list()],
-        hovertemplate=
-            'X: %{x}<br>Y: %{y}<br>MS2DeepScore: %{z}<br>Mod.Cosine: %{customdata[0]}<br>Spec2Vec: %{customdata[1]}<extra></extra>',
-            colorscale = 'Viridis', zmin = 0, zmax = 1, xgap=1, ygap=1) # <-- might be mistake
+        x=ids, y=ids, z = sm1, type = 'heatmap', 
+        customdata= np.dstack((sm2, sm3)),
+        hovertemplate=(
+            'X: %{x}<br>Y: %{y}<br>MS2DeepScore: %{z:.4f}<br>'
+            'Mod.Cosine:%{customdata[0]:.4f}<br>'
+            'Spec2Vec: %{customdata[1]:.4f}<extra></extra>'),
+        #colorscale = 'Viridis',
+        colorscale=redblue_diverging,
+        zmin = 0, zmax = 1, xgap=1, ygap=1)
     data = [trace]
     fig_ah = go.Figure(data = data)
-    if False:
-        # Add augmentation layers
-        r = 0.1
-        xy = [[elem["x"], elem["y"]] for index, elem in long_level2.iterrows()]
-        xy2 = [[elem["x"], elem["y"]] for index, elem in long_level3.iterrows()]
-        kwargs = {'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': 'white'}
-        points = [
-            go.layout.Shape(x0=x-r, y0=y-r, x1=x+r, y1=y+r, **kwargs) 
-            for x, y in xy]
-        kwargs = {
-            'type': 'rect', 'xref': 'x', 'yref': 'y', 
-            'line_color': 'red', 'line_width' : 1}
-        r = 0.2
-        more_points = [
-            go.layout.Shape(x0=x-r, y0=y-r, x1=x+r, y1=y+r, **kwargs) 
-            for x, y in xy2]
     
-    fig_ah.update_layout(#shapes=points + more_points,            
-        yaxis_nticks=tmp_sm1.shape[1],
-        xaxis_nticks=tmp_sm1.shape[1],
-        margin = {"autoexpand":True, "b" : 100, "l":0, "r":50, "t":0},
-        title_text=
-            'Augmap ms2deepscore scores with mcs (o) and spec2vec ([]).', 
-        title_x=0.01, title_y=0.01,)
+    shapes1, shapes2 = _generate_edge_shapes(
+        np.arange(0, sm1.shape[0]), sm2, sm3, threshold)
 
+    fig_ah.update_layout(
+        shapes=shapes1+shapes2,            
+        yaxis_nticks=sm1.shape[1],
+        xaxis_nticks=sm1.shape[1],
+        margin = {"autoexpand":True, "b" : 100, "l":0, "r":50, "t":0},
+        title_text= 
+            'Augmap ms2deepscore scores with mcs (o) and spec2vec ([]).', 
+       title_x=0.01, title_y=0.01,)
+    return fig_ah
+
+def generate_augmap_panel(
+    clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
+    threshold):
+    """ Wrapper function to place augmap figure into dash compatible 
+    container."""
+    fig_ah = generate_augmap(
+        clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
+        threshold)
     panel = html.Div([
-        dcc.Graph(id="augmented_heatmap", figure=fig_ah)
-    ])
+        dcc.Graph(id="augmented_heatmap", figure=fig_ah)])
     return panel
