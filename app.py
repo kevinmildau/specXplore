@@ -79,6 +79,19 @@ file = open("data/extracted_precursor_mz_values.pickle", 'rb')
 MZ = pickle.load(file) 
 file.close()
 
+settings_panel = dbc.Offcanvas([
+    html.P("SpecXplore defaults and limits can be modified here."),
+    html.P("Setting 1: \n A parameter. Defaults to 1."),
+    dcc.Input(
+        id="setting_1", type="number", 
+        debounce=True, 
+        placeholder="Value between 1 < exp.lvl. < 5, def. 1", 
+        style={"width" : "100%"})],
+    id="offcanvas-settings",
+    title="Settings Panel",
+    is_open=False,)
+
+
 app=dash.Dash(external_stylesheets=[dbc.themes.YETI]) # MORPH or YETI style.
 app.layout=html.Div([
     dbc.Row([
@@ -104,6 +117,11 @@ app.layout=html.Div([
             "border":"1px grey solid"})], width=7),
         dbc.Col([html.Div(id='right-panel-tabs-content')], width=5),
     ], style={"margin-bottom": "-1em"}),
+    html.Br(),
+        dbc.Button(
+            "Open Settings", id="btn-open-settings", n_clicks=0
+        ),
+        settings_panel,
     html.Br(),
     dbc.Row([
         dbc.Col([html.H6("Selected Points for Cluster View:")], width=6),
@@ -267,6 +285,17 @@ def fragmap_trigger(n_clicks, selection_data):
     # Uses: global variable ALL_SPECTRA
     fragmap_panel=fragmap.generate_fragmap_panel(selection_data, ALL_SPECTRA)
     return fragmap_panel
+
+
+@app.callback(
+    Output("offcanvas-settings", "is_open"),
+    Input("btn-open-settings", "n_clicks"),
+    [State("offcanvas-settings", "is_open")],
+)
+def toggle_offcanvas(n1, is_open):
+    if n1:
+        return not is_open
+    return is_open
 
 if __name__ == '__main__':
     app.run_server(debug=True)
