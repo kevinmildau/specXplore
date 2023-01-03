@@ -1,3 +1,11 @@
+# Developer Notes
+# TODO: add max_spec = 50
+#   Add a limiter to fragmap that prevents generation of a plot with more than 
+#   50 spectra. At 50 spectra the y-axis becomes barely legible, and spectral 
+#   differences crowd the plot so much that the x-axis requires very heavy zoom 
+#   in, defeating the point of the visualization.
+#   --> filter spectra to set of 50 most similar to root OR to 50 first indexed
+
 from dash import html
 from dash import dcc
 import plotly.graph_objects as go

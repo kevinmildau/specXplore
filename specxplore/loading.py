@@ -30,7 +30,7 @@ def process_structure_class_table(file_location):
 def extract_classes_from_ms2query_results(file_location):
     """Helper function to parse class table."""
     tmp = pd.read_csv(file_location, index_col=False)
-    print(tmp, tmp.columns)
+    #print(tmp, tmp.columns)
     tmp.fillna("Unknown", inplace=True)
     #print(structure_dict.keys())
     tmp = tmp.drop([

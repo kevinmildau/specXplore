@@ -1,6 +1,4 @@
 # Developer Notes:
-# elem["customdata"][0] is a strong input assumption that coulb be made
-# clearer.
 
 # white buffer should be a provided setting: white_buffer = 20
 # black buffer should be an input, and a provided setting.
@@ -26,7 +24,7 @@ def extract_identifiers(plotly_selection_data):
     plotly_selection_data:
         Selection data as returned by plotly (json format). spec_ids are 
         assumed too be stored inside the 'customdata' component of the 
-        selection data.
+        selection data at index 0.
 
     Returns
     ------
