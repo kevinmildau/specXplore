@@ -307,20 +307,26 @@ def right_panel_trigger_handler(
         panel=[html.H6("empty-right-panel")]
     return panel
 
+
+
 # tsne-overview selection data trigger ----------------------------------------
 @app.callback(
-    Output('clust-dropdown', 'value'),
-    Input('tsne-overview-graph', 'selectedData'))
+    Output('specid-selection-dropdown', 'value'),
+    Input('tsne-overview-graph', 'selectedData')
+)
 def plotly_selected_data_trigger(plotly_selection_data):
     """ Wrapper Function for tsne point selection handling. """
+    if ctx.triggered_id == "tsne-overview-graph":
     selected_ids=parsing.extract_identifiers(plotly_selection_data)
+    else:
+        selected_ids = []
     return selected_ids
 
 # Fragmap trigger -------------------------------------------------------------
 @app.callback(
     Output('fragmap_panel', 'children'),
     Input('push_fragmap', 'n_clicks'), # trigger only
-    State('clust-dropdown', 'value'))
+    State('specid-selection-dropdown', 'value'))
 def fragmap_trigger(n_clicks, selection_data):
     """ Wrapper function that calls fragmap generation modules. """
     # Uses: global variable ALL_SPECTRA
