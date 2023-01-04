@@ -39,6 +39,7 @@ def extract_classes_from_ms2query_results(file_location):
         'precursor_mz_analog', 'inchikey', 'spectrum_ids',
         'analog_compound_name', 'retention_time', 'retention_index', 'smiles'], 
         axis = 1)
+    tmp.replace(' ', '_', regex=True)
     class_dict = {elem : list(tmp[elem]) for elem in tmp.columns}
     #print(class_dict.keys())
     #print(class_dict["cf_class"])
