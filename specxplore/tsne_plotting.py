@@ -8,7 +8,7 @@
 import plotly.express as px
 def plot_tsne_overview(
     point_selection, selected_class_level, selected_class_data, tsne_df, 
-    color_dict):
+    class_filter_set, color_dict):
     """Constructs the t-SNE overview graph plotly figure object.
     
     Args / Parameters
@@ -27,7 +27,9 @@ def plot_tsne_overview(
     color_dict:
         A color dictionary where each unique cluster is a string key with the
         corresponding value being a hex code color: {clust_key : color_string}.
-    
+    class_filter_set:
+        Set of classes with which the dataset is to be filtered prior to
+        visualization. Assists in showing meaningful subsets of the data only.
     Returns
     ------
     fig:
@@ -41,6 +43,11 @@ def plot_tsne_overview(
     # Extend df to contain selected class data (always given)
     tsne_df_tmp=tsne_df
     tsne_df_tmp["clust"]=selected_class_data
+    
+    if class_filter_set:
+        print("Problem", class_filter_set)
+        tsne_df_tmp = tsne_df_tmp[tsne_df_tmp["clust"].isin(class_filter_set)]
+
     fig=px.scatter(
         tsne_df_tmp, 
         x="x", y="y", color="clust", 
@@ -59,5 +66,11 @@ def plot_tsne_overview(
         paper_bgcolor='#feeff4', # black or white interfere with grayscale
         plot_bgcolor='#feeff4', # black or white interfere with grayscale
         uirevision=False, # prevent zoom level changes upon plot update
-        legend=dict(title_font_family='Ubuntu',font=dict(size=6)))
+        legend=dict(title_font_family='Ubuntu',font=dict(size=6)),
+        showlegend=False)
+    fig.update_traces(
+        marker={
+            'size': 8,
+            'line':dict(width=0.8,color='DarkSlateGrey'),
+            'opacity': 0.7 })
     return fig
