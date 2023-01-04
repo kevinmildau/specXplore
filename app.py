@@ -25,6 +25,7 @@ import itertools
 import dash_cytoscape as cyto
 import plotly.graph_objects as go
 from scipy.cluster import hierarchy
+import json 
 
 #app=Dash(__name__)
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -128,8 +129,8 @@ app.layout=html.Div([
     dbc.Row([
         dbc.Col([dcc.Graph(id="tsne-overview-graph", figure={}, 
             style={"width":"100%","height":"60vh", 
-            "border":"1px grey solid"})], width=7),
-        dbc.Col([html.Div(id='right-panel-tabs-content')], width=5),
+            "border":"1px grey solid"})], width=6),
+        dbc.Col([html.Div(id='right-panel-tabs-content')], width=6),
     ], style={"margin-bottom": "-1em"}),
     html.Br(),
         dbc.Button(
@@ -148,9 +149,7 @@ app.layout=html.Div([
             debounce=True, placeholder="Threshold 0 < thr < 1, def. 0.9", 
             style={"width" : "100%"})], width=4)]),
     dbc.Row([
-        dbc.Col([dcc.Dropdown(id='clust-dropdown', multi=True, 
-            style={'width': '100%', 'font-size': "75%"}, 
-            options=ALL_SPEC_IDS)], width=6),
+        dbc.Col([html.P("replaced...")], width=6),
         dbc.Col([html.H6("Selected Points for Focus View:")], width=2),
         dbc.Col([dcc.Dropdown(id='focus_dropdown', multi=True, 
             style={'width': '100%', 'font-size': "75%"}, 
@@ -178,8 +177,8 @@ app.layout=html.Div([
         dbc.Col([dcc.Dropdown(id='class-dropdown' , multi=False, 
             clearable=False, options=AVAILABLE_CLASSES, 
             value=AVAILABLE_CLASSES[5])], width=4),
-    dbc.Col([dbc.Button("Push Class Selection", id="push-class", 
-        style={"width":"100%"})], width=2)]),
+        dbc.Col([dbc.Button("Push Class Selection", id="push-class", 
+            style={"width":"100%"})], width=2)]),
     html.Br(),
     dbc.Row([
         dbc.Col([], width = 6),
@@ -196,13 +195,19 @@ app.layout=html.Div([
     dcc.Store(id="selected_class_level", data=AVAILABLE_CLASSES[0]),
     dcc.Store(id="selected_class_data", data=CLASS_DICT[AVAILABLE_CLASSES[0]]),
     dcc.Store(id="color_dict",  data=init_color_dict),
+    #dcc.Store(id="selected_spectrum_ids_clust_level", data = []),
+    html.Br(),
+    html.P('Node Data JSON:'),
+        html.Pre(
+            id='selected-node-data-json-output',
+        ),
     html.Br(),
     dbc.Row([dbc.Col([html.Div(id="fragmap_panel", 
         style={"width":"100%", "border":"1px grey solid"})], width=12)]),
     html.Br(),
     dbc.Row([dbc.Col([html.Div(id="data-panel", 
         style={"width":"100%", "border":"1px grey solid"})], width=12)])], 
-        style={"width" : "100%"})
+        style={"width" : "100%"},)
 
 @app.callback([Output("edge_threshold", "data"),
                Output("threshold_text_input", "placeholder")],
@@ -258,7 +263,7 @@ def left_panel_trigger_handler(
 @app.callback(
     Output("selected_class_level", "data"), 
     Output("selected_class_data", "data"),
-    Output("color_dict", "data"),   
+    Output("color_dict", "data"), 
     Output('class-filter-dropdown', 'options'), 
     Output('class-filter-dropdown', 'value'),  
     Input("push-class", "n_clicks"),
@@ -275,7 +280,7 @@ def class_update_trigger_handler(n_clicks, selected_class):
     Output('right-panel-tabs-content', 'children'),
     Input('right-panel-tab-group', 'value'),
     Input('refresh-open-tab-button', 'n_clicks'), # trigger only
-    State('clust-dropdown', 'value'), 
+    State('specid-selection-dropdown', 'value'), 
     State("color_dict", "data"),
     State("selected_class_data", "data"),
     State("edge_threshold", "data"),
@@ -317,7 +322,7 @@ def right_panel_trigger_handler(
 def plotly_selected_data_trigger(plotly_selection_data):
     """ Wrapper Function for tsne point selection handling. """
     if ctx.triggered_id == "tsne-overview-graph":
-    selected_ids=parsing.extract_identifiers(plotly_selection_data)
+        selected_ids=parsing.extract_identifiers(plotly_selection_data)
     else:
         selected_ids = []
     return selected_ids
