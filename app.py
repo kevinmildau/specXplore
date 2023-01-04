@@ -91,6 +91,20 @@ settings_panel = dbc.Offcanvas([
     title="Settings Panel",
     is_open=False,)
 
+selection_panel = dbc.Offcanvas(
+    [
+        html.P((
+            "All selected spectrums ids from the overview graph:"
+            "\n Selection can be modified here.")),
+        dcc.Dropdown(id='specid-selection-dropdown', multi=True, 
+                style={'width': '90%', 'font-size': "75%"}, 
+                options=ALL_SPEC_IDS)],
+    id="offcanvas-selection",
+    placement="bottom",
+    title="Selection Panel",
+    is_open=False)
+
+
 
 app=dash.Dash(external_stylesheets=[dbc.themes.YETI]) # MORPH or YETI style.
 app.layout=html.Div([
@@ -121,7 +135,11 @@ app.layout=html.Div([
         dbc.Button(
             "Open Settings", id="btn-open-settings", n_clicks=0
         ),
+        dbc.Button(
+            "Open Selection", id="btn-open-selection", n_clicks=0
+        ),
         settings_panel,
+        selection_panel,
     html.Br(),
     dbc.Row([
         dbc.Col([html.H6("Selected Points for Cluster View:")], width=6),
@@ -296,6 +314,31 @@ def toggle_offcanvas(n1, is_open):
     if n1:
         return not is_open
     return is_open
+
+@app.callback(
+    Output("offcanvas-selection", "is_open"),
+    Input("btn-open-selection", "n_clicks"),
+    [State("offcanvas-selection", "is_open")],
+)
+def toggle_offcanvas(n1, is_open):
+    if n1:
+        return not is_open
+    return is_open
+
+
+@app.callback(Output('selected-node-data-json-output', 'children'),
+              [Input('cytoscape-tsne-subnet', 'selectedNodeData')])
+def displaySelectedNodeData(data):
+    if data:
+        return json.dumps(data, indent=2)
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
