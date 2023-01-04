@@ -47,7 +47,8 @@ def generate_egonet_cythonized(
             'style':{
                 'height':"100%", 'width':'100%', 'opacity':0.2, 
                 'content':'data(label)', 'text-halign':'center',
-                'text-valign':'center', "shape":"circle"}}]
+                'text-valign':'center', "shape":"circle",
+                "border-color":"black", "border-width":2}}]
     ego_style = [{
         "selector":'node[id= "{}"]'.format(ego_id), 
         "style":{

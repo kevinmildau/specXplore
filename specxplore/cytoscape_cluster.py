@@ -37,7 +37,8 @@ general_styles = [{
     'style': {
         'content':'data(label)','text-halign':'center', 
         'text-valign':'center', "shape":"circle",
-        'height':"100%", 'width':'100%'}}, {
+        'height':"100%", 'width':'100%',
+        "border-color":"black", "border-width":2}}, {
     'selector':'label', 
     'style':{
         'content':'data(label)','color':'magenta', 
