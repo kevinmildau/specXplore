@@ -180,8 +180,19 @@ app.layout=html.Div([
             value=AVAILABLE_CLASSES[5])], width=4),
     dbc.Col([dbc.Button("Push Class Selection", id="push-class", 
         style={"width":"100%"})], width=2)]),
+    html.Br(),
+    dbc.Row([
+        dbc.Col([], width = 6),
+        dbc.Col([
+            dcc.Dropdown(id='class-filter-dropdown' , multi=True, 
+            clearable=False, options=[],
+            value=[])], width=4),
+        dbc.Col([
+            dbc.Button("Filter to Class Selection", id="push-class-selection", 
+            style={"width":"100%"})], width=2)]), 
     dcc.Store(id="edge_threshold", data=0.9),
     dcc.Store(id="expand_level", data=int(1)),
+    dcc.Store(id="selected-filter-classes", data = []),
     dcc.Store(id="selected_class_level", data=AVAILABLE_CLASSES[0]),
     dcc.Store(id="selected_class_data", data=CLASS_DICT[AVAILABLE_CLASSES[0]]),
     dcc.Store(id="color_dict",  data=init_color_dict),
@@ -213,6 +224,13 @@ def expand_trigger_handler(n_submit, new_expand_level):
         new_expand_level)
     return new_expand_level, new_placeholder
 
+@app.callback( ##################################################################################
+    Output('selected-filter-classes', 'data'),
+    Input('class-filter-dropdown', 'value')
+)
+def update_selected_filter_classes(values):
+    return values
+
 # GLOBAL OVERVIEW UPDATE TRIGGER
 @app.callback(
     Output("tsne-overview-graph", "figure"), 
@@ -220,6 +238,7 @@ def expand_trigger_handler(n_submit, new_expand_level):
     Input("tsne-overview-graph", "clickData"), # or "hoverData"
     Input("selected_class_level", "data"),
     Input("selected_class_data", "data"),
+    Input('selected-filter-classes', 'data'), 
     State("color_dict", "data"))
 
 def left_panel_trigger_handler(
@@ -227,11 +246,12 @@ def left_panel_trigger_handler(
     point_selection, 
     selected_class_level, 
     selected_class_data, 
-    color_dict):
+    class_filter_set,
+    color_dict,):
     """ Modifies global overview plot in left panel """
     tsne_fig=tsne_plotting.plot_tsne_overview(
         point_selection, selected_class_level, selected_class_data, TSNE_DF, 
-        color_dict)
+        class_filter_set, color_dict)
     return tsne_fig
 
 # CLASS SELECTION UPDATE ------------------------------------------------------
@@ -239,13 +259,16 @@ def left_panel_trigger_handler(
     Output("selected_class_level", "data"), 
     Output("selected_class_data", "data"),
     Output("color_dict", "data"),   
+    Output('class-filter-dropdown', 'options'), 
+    Output('class-filter-dropdown', 'value'),  
     Input("push-class", "n_clicks"),
     State("class-dropdown", "value"))
 def class_update_trigger_handler(n_clicks, selected_class):
     """ Wrapper Function that construct class dcc.store data. """
     selected_class_data, color_dict=parsing.update_class(selected_class, 
         CLASS_DICT)
-    return selected_class, selected_class_data, color_dict
+    print("Checkpoint - new selected class data constructed.")
+    return selected_class, selected_class_data, color_dict, list(set(selected_class_data)), []
 
 # RIGHT PANEL BUTTON CLICK UPDATES --------------------------------------------
 @app.callback(
