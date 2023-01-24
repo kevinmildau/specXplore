@@ -3,7 +3,9 @@
 # Viridis has the advantage of being constant to the threshold changes, while
 # the diverging implementation works great in concert with high thresholds through
 # clutter reduction.
-
+#
+# ENABLE COLORBLIND MODE UPON SETTING RECEIVAL.
+#
 import plotly.graph_objects as go
 from scipy.cluster import hierarchy
 import numpy as np
@@ -30,13 +32,19 @@ def _reoder_matrices(ordered_index, sm1, sm2, sm3):
     out_sm3 = sm3[ordered_index,:][:,ordered_index]
     return out_sm1, out_sm2, out_sm3
 
-def _generate_edge_shapes(idx, sm1, sm2, threshold):
+def _generate_edge_shapes(idx, sm1, sm2, threshold, colorblind = False):
+    
+    if colorblind:
+        color = "black"
+    else:
+        color = '#39FF14'
+    
     kwargs1 = {
-        'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': 'white'}
+        'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': color}
     r1 = 0.1
     kwargs2 = {
         'type': 'rect', 'xref': 'x', 'yref': 'y', 
-        'line_color': 'red', 'line_width' : 1}
+        'line_color': color, 'line_width' : 2}
     r2 = 0.2
 
     all_possible_edges = list(
@@ -75,10 +83,9 @@ def _construct_redblue_diverging_coloscale(threshold):
 
 def generate_augmap(
     clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
-    threshold):
+    threshold, colorblind = False):
     """ Function constructs augmap figure object from provided data and 
     threshold settings. """
-
     idx = [int(elem) for elem in clust_selection]
     sm1, sm2, sm3 = _extract_sub_matrices(
         idx, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC)
@@ -89,8 +96,12 @@ def generate_augmap(
     idx = np.array(idx)
     idx = idx[ordered_index]
     ids  = [str(e) for e in idx]
-
-    redblue_diverging = _construct_redblue_diverging_coloscale(threshold)
+    colorblind = True
+    if colorblind:
+        colorscale = px.colors.sample_colorscale(
+            "greys_r", [n/(100 -1) for n in range(100)])
+    else:
+        colorscale = _construct_redblue_diverging_coloscale(threshold)
 
     # Main heatmap trace
     trace = go.Heatmap(
@@ -101,21 +112,21 @@ def generate_augmap(
             'Mod.Cosine:%{customdata[0]:.4f}<br>'
             'Spec2Vec: %{customdata[1]:.4f}<extra></extra>'),
         #colorscale = 'Viridis',
-        colorscale=redblue_diverging,
+        colorscale=colorscale,
         zmin = 0, zmax = 1, xgap=1, ygap=1)
     data = [trace]
     fig_ah = go.Figure(data = data)
     
     shapes1, shapes2 = _generate_edge_shapes(
-        np.arange(0, sm1.shape[0]), sm2, sm3, threshold)
+        np.arange(0, sm1.shape[0]), sm2, sm3, threshold, colorblind)
 
     fig_ah.update_layout(
         shapes=shapes1+shapes2,            
         yaxis_nticks=sm1.shape[1],
         xaxis_nticks=sm1.shape[1],
-        margin = {"autoexpand":True, "b" : 100, "l":0, "r":50, "t":0},
-        title_text= 
-            'Augmap ms2deepscore scores with mcs (o) and spec2vec ([]).', 
+        margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":10},
+        #title_text= 
+        #    'Augmap ms2deepscore scores with mcs (o) and spec2vec ([]).', 
        title_x=0.01, title_y=0.01,)
     return fig_ah
 
@@ -124,9 +135,15 @@ def generate_augmap_panel(
     threshold):
     """ Wrapper function to place augmap figure into dash compatible 
     container."""
+    
+    if not clust_selection or len(clust_selection) == 1:
+        return [html.H6("Provide at least 2 spec_ids for AugMap.")]
+    
     fig_ah = generate_augmap(
         clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
         threshold)
     panel = html.Div([
-        dcc.Graph(id="augmented_heatmap", figure=fig_ah)])
+        dcc.Graph(id="augmented_heatmap", figure=fig_ah, 
+            style={"width":"100%","height":"80vh", 
+                "border":"1px grey solid"})])
     return panel
