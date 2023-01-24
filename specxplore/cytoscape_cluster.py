@@ -58,7 +58,11 @@ def generate_cluster_node_link_diagram_cythonized(
     # Get source and target identifier arrays
     v,s,t = cython_utils.extract_cluster_above_threshold(
         selected_nodes_np, SOURCE, TARGET, VALUE, threshold)
-    max_edges = 1000
+    
+    connected_nodes = set(list(np.unique(np.concatenate([s, t]))))             # <---------- for filtering
+    connected_nodes.update(set(selected_nodes_np))                             # <---------- for filtering
+
+    max_edges = 2500
     if v.size >= max_edges: # limit size to max_edges
         indices = np.argsort(v)
         s = s[indices[len(indices)-max_edges:len(indices)]]
@@ -76,10 +80,12 @@ def generate_cluster_node_link_diagram_cythonized(
         else:
             node_class = "node_out_of_set"
         nodes[i] = {
-            'data':{'id':str(i), 
-            'label': str(str(i) + ': ' + str(MZ[i]))},
-            'position':{'x':TSNE_DF["x"].iloc[i], 'y':-TSNE_DF["y"].iloc[i]}, 
-            'classes': node_class}
+                'data':{'id':str(i), 
+                'label': str(str(i) + ': ' + str(MZ[i]))},
+                'position':{'x':TSNE_DF["x"].iloc[i], 'y':-TSNE_DF["y"].iloc[i]}, 
+                'classes': node_class}
+
+    nodes = [nodes[i] for i in connected_nodes]                                # <---------- for filtering
 
     all_classes = list(np.unique(selected_class_data))
     style_sheet_classes = [{
@@ -94,7 +100,7 @@ def generate_cluster_node_link_diagram_cythonized(
         id='cytoscape-tsne-subnet', layout={'name':'preset'},
         elements=nodes+edges, stylesheet=all_styles,
         boxSelectionEnabled=True,
-        style={'width':'100%', 'height':'60vh', 
+        style={'width':'100%', 'height':'80vh', 
             "border":"1px grey solid", "bg":"#feeff4"},)])
     return out
 
