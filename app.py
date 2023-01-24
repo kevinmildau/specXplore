@@ -1,7 +1,7 @@
 # Main specXplore prototype
 from logging import warning
 import dash
-from dash import Dash, dcc, html, ctx
+from dash import Dash, dcc, html, ctx, dash_table
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -56,6 +56,10 @@ global TSNE_DF
 with open("data/tsne_df.pickle", 'rb') as handle:
     TSNE_DF=pickle.load(handle)
 
+# tmp TSNE_DF modification to trial standard highlighting
+TSNE_DF["is_standard"] = False
+TSNE_DF.iloc[2:40, TSNE_DF.columns.get_loc('is_standard')] = True
+
 # Initializing color dict
 selected_class_data=CLASS_DICT[AVAILABLE_CLASSES[0]]
 # Create overall figure with color_dict mapping
@@ -82,132 +86,126 @@ file.close()
 
 settings_panel = dbc.Offcanvas([
     html.P("SpecXplore defaults and limits can be modified here."),
-    html.P("Setting 1: \n A parameter. Defaults to 1."),
+    html.B("Set Edge Threshold:"),
+    html.P("A value between 0 and 1 (excluded)"),
     dcc.Input(
-        id="setting_1", type="number", 
+        id="threshold_text_input", type="number", 
+        debounce=True, placeholder="Threshold 0 < thr < 1, def. 0.9", 
+        style={"width" : "100%"}),
+    html.B("Set expand level:"),
+    html.P("A value between 1 and 5. Controls connection branching in EgoNet."),
+    dcc.Input( id="expand_level_input", type="number", 
         debounce=True, 
         placeholder="Value between 1 < exp.lvl. < 5, def. 1", 
-        style={"width" : "100%"})],
+        style={"width" : "100%"}),
+    html.B("Select Class Level:"),
+    dcc.Dropdown(
+        id='class-dropdown' , multi=False, 
+        clearable=False, options=AVAILABLE_CLASSES, 
+        value=AVAILABLE_CLASSES[5]),
+    html.B("Filter by Class(es):"),
+    dcc.Dropdown(
+        id='class-filter-dropdown' , multi=True, clearable=False, options=[],
+        value=[]),
+    ],
     id="offcanvas-settings",
     title="Settings Panel",
     is_open=False,)
 
-selection_panel = dbc.Offcanvas(
-    [
-        html.P((
-            "All selected spectrums ids from the overview graph:"
-            "\n Selection can be modified here.")),
-        dcc.Dropdown(id='specid-selection-dropdown', multi=True, 
-                style={'width': '90%', 'font-size': "75%"}, 
-                options=ALL_SPEC_IDS)],
+selection_panel = dbc.Offcanvas([
+    html.P((
+        "All selected spectrums ids from the overview graph:"
+        "\n Selection can be modified here.")),
+    dcc.Dropdown(id='specid-selection-dropdown', multi=True, 
+            style={'width': '90%', 'font-size': "75%"}, 
+            options=ALL_SPEC_IDS)],
     id="offcanvas-selection",
     placement="bottom",
     title="Selection Panel",
     is_open=False)
 
+selection_focus_panel = dbc.Offcanvas([
+    html.P((
+        "All spectrum ids selected for focused analysis in network views."
+        "\n Selection can be modified here.")),
+    dcc.Dropdown(id='specid-focus-dropdown', multi=True, 
+            style={'width': '90%', 'font-size': "100%"}, 
+            options=ALL_SPEC_IDS),
+    html.B("Enter spec_id for spectrum plot:"),
+    dcc.Dropdown(id='specid-specplot-dropdown', multi=False, 
+        options=ALL_SPEC_IDS, style={'width' : '50%'}),
+    html.B("Enter spec_id1 (top) and spec_id2 (bottom) for mirrorplot:"),
+    dcc.Dropdown(id='specid-mirror-1-dropdown', multi=False, 
+        options=ALL_SPEC_IDS,
+        style={'width' : '50%'}),
+    dcc.Dropdown(id='specid-mirror-2-dropdown', multi=False, 
+        options=ALL_SPEC_IDS,
+        style={'width' : '50%'})],
+    id="offcanvas-focus",
+    placement="end",
+    title="Focus Selection Panel",
+    is_open=False)
 
 
 app=dash.Dash(external_stylesheets=[dbc.themes.YETI]) # MORPH or YETI style.
 app.layout=html.Div([
     dbc.Row([
         dbc.Col([html.H1([html.B("specXplore prototype")], 
-            style={"margin-bottom": "-0.1em"})], width=6)]),
-    dbc.Row([
+            style={"margin-bottom": "-0.1em"})], width=4),
         dbc.Col(
-            [html.H6("Authors: Kevin Mildau - Henry Ehlers")], width=7),
-        dbc.Col(
-            dcc.Tabs(id="right-panel-tab-group", value='right-panel-tab', 
-                children=[
-                    dcc.Tab(label='Cluster', value='tab-cluster'),
-                    dcc.Tab(label='EgoNet', value='tab-egonet'),
-                    dcc.Tab(label='Augmap', value='tab-augmap'),
-                    dcc.Tab(label='Settings', value='tab-settings'),
-                    dcc.Tab(label='Data View', value='tab-data')]), 
-                width=5)
-    ]),
+            [html.P("Authors: Kevin Mildau - Henry Ehlers")], width=8)]),
     html.Br(),
     dbc.Row([
-        dbc.Col([dcc.Graph(id="tsne-overview-graph", figure={}, 
-            style={"width":"100%","height":"60vh", 
-            "border":"1px grey solid"})], width=6),
-        dbc.Col([html.Div(id='right-panel-tabs-content')], width=6),
+        dbc.Col(
+            [dcc.Graph(
+                id="tsne-overview-graph", figure={}, 
+                style={"width":"100%","height":"80vh", 
+                "border":"1px grey solid"})], 
+            width=6),
+        dbc.Col([
+            html.Div(
+                [cyto.Cytoscape(id='cytoscape-tsne-subnet')], # <- empty cyto for id presence in layout before generation.
+                id='right-panel-tabs-content')], # <------ currently the only one.
+            #html.Div(id='right-panel-tabs-content-2', style= {'display': 'none'}),
+            #html.Div(id='right-panel-tabs-content-3', style= {'display': 'none'})], 
+            width=6),
     ], style={"margin-bottom": "-1em"}),
     html.Br(),
-        dbc.Button(
-            "Open Settings", id="btn-open-settings", n_clicks=0
-        ),
-        dbc.Button(
-            "Open Selection", id="btn-open-selection", n_clicks=0
-        ),
+        dbc.Button("Open Settings", id="btn-open-settings", n_clicks=0),
+        dbc.Button("Open Selection", id="btn-open-selection", n_clicks=0),
+        dbc.Button("Run EgoNet", id="btn-run-egonet", n_clicks=0),
+        dbc.Button("Run ClustNet", id="btn-run-clustnet", n_clicks=0),
+        dbc.Button("Run AugMap", id="btn-run-augmap", n_clicks=0),
+        dbc.Button("Open Focus", id="btn-open-focus", n_clicks=0),
+        dbc.Button("Generate Fragmap", id="btn_push_fragmap"),
+        dbc.Button("Show Metadata", id="btn_push_meta"),
         settings_panel,
         selection_panel,
-    html.Br(),
-    dbc.Row([
-        dbc.Col([html.H6("Selected Points for Cluster View:")], width=6),
-        dbc.Col([html.H6("Set Edge Threshold:")], width=2),
-        dbc.Col([dcc.Input( id="threshold_text_input", type="number", 
-            debounce=True, placeholder="Threshold 0 < thr < 1, def. 0.9", 
-            style={"width" : "100%"})], width=4)]),
-    dbc.Row([
-        dbc.Col([html.P("replaced...")], width=6),
-        dbc.Col([html.H6("Selected Points for Focus View:")], width=2),
-        dbc.Col([dcc.Dropdown(id='focus_dropdown', multi=True, 
-            style={'width': '100%', 'font-size': "75%"}, 
-            options=ALL_SPEC_IDS)], width=4)]),
-    dbc.Row([
-        dbc.Col([html.Div( style={'width': '100%'})], width=6),
-        dbc.Col([html.H6("Reload open tab:")],width=4),
-        dbc.Col([dbc.Button('Submit Reload', id='refresh-open-tab-button', 
-            style={"width":"100%"})], width=2),]),
-    dbc.Row([
-        dbc.Col([html.Div( style={'width': '100%'})], width=6),
-        dbc.Col([html.H6("Set expand level:")], width=4),
-        dbc.Col([dcc.Input( id="expand_level_input", type="number", 
-            debounce=True, 
-            placeholder="Value between 1 < exp.lvl. < 5, def. 1", 
-            style={"width" : "100%"})], width=2)]),
-    html.Br(),
-    dbc.Row([
-        dbc.Col([dbc.Button("Generate Fragmap", id="push_fragmap", 
-            style={"width":"100%"})], width=2),
-        dbc.Col([dbc.Button("Generate Spectrum Plot", 
-            style={"width": "100%"})], width=2),
-        dbc.Col([dbc.Button("Show Spectrum Data", style={"width": "100%"})],
-            width=2),
-        dbc.Col([dcc.Dropdown(id='class-dropdown' , multi=False, 
-            clearable=False, options=AVAILABLE_CLASSES, 
-            value=AVAILABLE_CLASSES[5])], width=4),
-        dbc.Col([dbc.Button("Push Class Selection", id="push-class", 
-            style={"width":"100%"})], width=2)]),
-    html.Br(),
-    dbc.Row([
-        dbc.Col([], width = 6),
-        dbc.Col([
-            dcc.Dropdown(id='class-filter-dropdown' , multi=True, 
-            clearable=False, options=[],
-            value=[])], width=4),
-        dbc.Col([
-            dbc.Button("Filter to Class Selection", id="push-class-selection", 
-            style={"width":"100%"})], width=2)]), 
+        selection_focus_panel,
     dcc.Store(id="edge_threshold", data=0.9),
     dcc.Store(id="expand_level", data=int(1)),
     dcc.Store(id="selected-filter-classes", data = []),
     dcc.Store(id="selected_class_level", data=AVAILABLE_CLASSES[0]),
     dcc.Store(id="selected_class_data", data=CLASS_DICT[AVAILABLE_CLASSES[0]]),
     dcc.Store(id="color_dict",  data=init_color_dict),
-    #dcc.Store(id="selected_spectrum_ids_clust_level", data = []),
-    html.Br(),
-    html.P('Node Data JSON:'),
-        html.Pre(
-            id='selected-node-data-json-output',
-        ),
     html.Br(),
     dbc.Row([dbc.Col([html.Div(id="fragmap_panel", 
         style={"width":"100%", "border":"1px grey solid"})], width=12)]),
     html.Br(),
-    dbc.Row([dbc.Col([html.Div(id="data-panel", 
-        style={"width":"100%", "border":"1px grey solid"})], width=12)])], 
-        style={"width" : "100%"},)
+    dbc.Row([dbc.Col([html.Div(id="metadata_panel", 
+        style={"width":"100%", "border":"1px grey solid"})], width=12)]),
+    html.Br(),
+    dbc.Row([
+        dbc.Col([html.Div(id="specplot_panel", 
+            style={"width":"100%", "border":"1px grey solid"})], width=6),
+        dbc.Col([html.Div(id="mirrorplot_panel", 
+            style={"width":"100%", "border":"1px grey solid"})], width=6)]),
+    ], 
+    style={"width" : "100%"},
+    )
+
+# specplot_panel
+
 
 @app.callback([Output("edge_threshold", "data"),
                Output("threshold_text_input", "placeholder")],
@@ -239,24 +237,69 @@ def update_selected_filter_classes(values):
 # GLOBAL OVERVIEW UPDATE TRIGGER
 @app.callback(
     Output("tsne-overview-graph", "figure"), 
-    Input("push-class", "n_clicks"),
     Input("tsne-overview-graph", "clickData"), # or "hoverData"
     Input("selected_class_level", "data"),
     Input("selected_class_data", "data"),
     Input('selected-filter-classes', 'data'), 
-    State("color_dict", "data"))
+    Input('specid-focus-dropdown', 'value'),
+    State("color_dict", "data"),
+    State("tsne-overview-graph", "figure"))
 
 def left_panel_trigger_handler(
-    n_clicks, 
     point_selection, 
     selected_class_level, 
     selected_class_data, 
     class_filter_set,
-    color_dict,):
+    focus_selection,
+    color_dict,
+    figure_old):
     """ Modifies global overview plot in left panel """
+    #global tsne_fig
+    #print(type(figure_old))
+    
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    if (triggered_id == 'tsne-overview-graph' and point_selection):
+        print(f'Trigger element: {triggered_id}')
+        #selected_point=point_selection["points"][0]["customdata"][0]
+        #color_dict[selected_class_data[selected_point]]="#FF10F0"
+        #selected_class = selected_class_data[selected_point]
+        #for key in color_dict.keys():
+        #    current_class = key
+        #    if current_class == selected_class:
+        #        tsne_fig.update_traces(
+        #            marker=dict(color='#FF10F0'), 
+        #            selector={'name': selected_class})
+        #    else:
+        #        tsne_fig.update_traces(
+        #            marker=dict(color=color_dict[current_class]), 
+        #            selector={'name': current_class})
+        #return tsne_fig
+    elif triggered_id == 'selected_class_level':
+        print(f'Trigger element: {triggered_id}')
+    elif triggered_id == 'selected_class_data':
+        print(f'Trigger element: {triggered_id}')
+    elif triggered_id == 'selected-filter-classes':
+        print(f'Trigger element: {triggered_id}')
+    elif triggered_id == 'specid-focus-dropdown' and focus_selection:
+        print(f'Trigger element: {triggered_id}')
+        tsne_fig=tsne_plotting.plot_tsne_overview(
+            point_selection, selected_class_level, selected_class_data, TSNE_DF, 
+            class_filter_set, color_dict, focus_selection)
+        print(tsne_fig.data[0].marker.color)
+        #tsne_fig.data[0].marker.color = ['red', 'blue', 'green']
+        
+
+    else:
+        print("Something else triggered the callback.")
+    
+    #if figure_old.keys():
+    #    print(figure_old["layout"].keys())
+    #    print(len(figure_old["data"]))
+    #    print(figure_old['data'][0].keys())
+    
     tsne_fig=tsne_plotting.plot_tsne_overview(
         point_selection, selected_class_level, selected_class_data, TSNE_DF, 
-        class_filter_set, color_dict)
+        class_filter_set, color_dict, focus_selection)
     return tsne_fig
 
 # CLASS SELECTION UPDATE ------------------------------------------------------
@@ -265,10 +308,9 @@ def left_panel_trigger_handler(
     Output("selected_class_data", "data"),
     Output("color_dict", "data"), 
     Output('class-filter-dropdown', 'options'), 
-    Output('class-filter-dropdown', 'value'),  
-    Input("push-class", "n_clicks"),
-    State("class-dropdown", "value"))
-def class_update_trigger_handler(n_clicks, selected_class):
+    Output('class-filter-dropdown', 'value'),
+    Input("class-dropdown", "value"))
+def class_update_trigger_handler(selected_class):
     """ Wrapper Function that construct class dcc.store data. """
     selected_class_data, color_dict=parsing.update_class(selected_class, 
         CLASS_DICT)
@@ -278,35 +320,35 @@ def class_update_trigger_handler(n_clicks, selected_class):
 # RIGHT PANEL BUTTON CLICK UPDATES --------------------------------------------
 @app.callback(
     Output('right-panel-tabs-content', 'children'),
-    Input('right-panel-tab-group', 'value'),
-    Input('refresh-open-tab-button', 'n_clicks'), # trigger only
+    Input('btn-run-egonet', 'n_clicks'),
+    Input('btn-run-augmap', 'n_clicks'),
+    Input('btn-run-clustnet', 'n_clicks'),
     State('specid-selection-dropdown', 'value'), 
     State("color_dict", "data"),
     State("selected_class_data", "data"),
     State("edge_threshold", "data"),
     State("expand_level", "data"))
 def right_panel_trigger_handler(
-    tab, n_clicks, clust_selection, color_dict, selected_class_data, threshold, 
-    expand_level):
-    if tab == "tab-cluster" and clust_selection:
+    n_clicks1, n_clicks2, n_clicks3, spec_id_selection, color_dict, 
+    selected_class_data, threshold, expand_level):
+    btn = ctx.triggered_id
+    if btn == "btn-run-clustnet" and spec_id_selection:
         panel = cytoscape_cluster.generate_cluster_node_link_diagram_cythonized(
-            TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data,
+            TSNE_DF, spec_id_selection, SM_MS2DEEPSCORE, selected_class_data,
             color_dict, threshold, SOURCE, TARGET, VALUE, MZ)
         #panel=cytoscape_cluster.generate_cluster_node_link_diagram(
-        #    TSNE_DF, clust_selection, SM_MS2DEEPSCORE, selected_class_data, 
+        #    TSNE_DF, spec_id_selection, SM_MS2DEEPSCORE, selected_class_data, 
         #    color_dict, threshold)
-    elif tab == "tab-egonet"  and clust_selection:
-        panel = egonet.generate_egonet_cythonized(clust_selection, SOURCE, TARGET, VALUE, TSNE_DF, MZ, threshold, expand_level)
+    elif btn == "btn-run-egonet"  and spec_id_selection:
+        panel = egonet.generate_egonet_cythonized(
+            spec_id_selection, SOURCE, TARGET, VALUE, TSNE_DF, MZ, 
+            threshold, expand_level)
         #panel=egonet.generate_egonet(
-        #    clust_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold, expand_level)
-    elif tab == "tab-augmap"  and clust_selection:
+        #    spec_id_selection, SM_MS2DEEPSCORE, TSNE_DF, threshold, expand_level)
+    elif btn == "btn-run-augmap"  and spec_id_selection:
         panel=augmap.generate_augmap_panel(
-            clust_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
+            spec_id_selection, SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC, 
             threshold)
-    elif tab == "tab-settings":
-        panel=[html.H6("Settings panel inclusion pending.")]
-    elif tab == "tab-data":
-        panel=[html.H6("Data panel inclusion pending.")]
     else:
         warning("Nothing selected for display in right panel yet.")
         panel=[html.H6("empty-right-panel")]
@@ -330,8 +372,8 @@ def plotly_selected_data_trigger(plotly_selection_data):
 # Fragmap trigger -------------------------------------------------------------
 @app.callback(
     Output('fragmap_panel', 'children'),
-    Input('push_fragmap', 'n_clicks'), # trigger only
-    State('specid-selection-dropdown', 'value'))
+    Input('btn_push_fragmap', 'n_clicks'), # trigger only
+    State('specid-focus-dropdown', 'value'))
 def fragmap_trigger(n_clicks, selection_data):
     """ Wrapper function that calls fragmap generation modules. """
     # Uses: global variable ALL_SPECTRA
@@ -359,20 +401,96 @@ def toggle_offcanvas(n1, is_open):
         return not is_open
     return is_open
 
+@app.callback(
+    Output("offcanvas-focus", "is_open"),
+    Input("btn-open-focus", "n_clicks"),
+    [State("offcanvas-focus", "is_open")],
+)
+def toggle_offcanvas(n1, is_open):
+    if n1:
+        return not is_open
+    return is_open
 
-@app.callback(Output('selected-node-data-json-output', 'children'),
-              [Input('cytoscape-tsne-subnet', 'selectedNodeData')])
+@app.callback(
+    Output('specid-focus-dropdown', 'value'),
+    [Input('cytoscape-tsne-subnet', 'selectedNodeData')])
 def displaySelectedNodeData(data):
     if data:
-        return json.dumps(data, indent=2)
+        focus_ids = []
+        for elem in data:
+            print(elem)
+            focus_ids.append(int(elem["id"]))
+        return focus_ids
 
 
 
 
+# Metadata trigger ------------------------------------------------------------
+@app.callback(
+    Output('metadata_panel', 'children'),
+    Input('btn_push_meta', 'n_clicks'), # trigger only
+    State('specid-focus-dropdown', 'value'))
+def metadata_trigger(n_clicks, selection_data):
+    """ Wrapper function that calls fragmap generation modules. """
+    # Uses: global variable ALL_SPECTRA
+    if selection_data:
+        tmpdf = TSNE_DF.iloc[selection_data]
+        panel = dash_table.DataTable(
+            id="table",
+            columns=[{"name": i, "id": i} for i in tmpdf.columns],
+            data=tmpdf.to_dict("records"),
+            style_cell=dict(textAlign="left"),
+            style_header=dict(backgroundColor="magenta"),
+            style_data=dict(backgroundColor="white"),
+            sort_action="native",
+            page_size=10,
+            style_table={"overflowX": "auto"},)
+        return panel
+    else:
+        panel = [html.H6((
+            "Select focus data and press " 
+            "'Show Metdata' button for data table."))]
+        return panel
 
 
+
+@app.callback(
+    Output('specplot_panel', 'children'),
+    Input('specid-specplot-dropdown', 'value')) # trigger only
+def generate_specplot(id):
+    if id:
+        fig = go.Figure(data=[go.Bar(
+            x=[1, 2, 3, 5.5, 10],
+            y=[10, 8, 6, 4, 2],
+            width=[0.8, 0.8, 0.8, 3.5, 4] # customize width here
+        )])
+        fig.update_layout(title="Placeholder Graph specplot")
+        panel = dcc.Graph(id = "specplot", figure= fig)
+        return panel
+    else: 
+        return html.P("Select spectrum id for plotting.")
+
+@app.callback(
+    Output('mirrorplot_panel', 'children'),
+    Input('specid-mirror-1-dropdown', 'value'),
+    Input('specid-mirror-2-dropdown', 'value')) # trigger only
+def generate_specplot(id1, id2):
+    if id1 and id2:
+        fig = go.Figure(data=[go.Bar(
+            x=[1, 2, 3, 5.5, 10],
+            y=[10, 8, 6, 4, 2],
+            width=[0.8, 0.8, 0.8, 3.5, 4] # customize width here
+        )])
+        fig.update_layout(title="Placeholder Graph mirrorplot")
+        panel = dcc.Graph(id = "specplot", figure= fig)
+        return panel
+    else: 
+        return html.P("Select spectrum ids for plotting.")
 
 
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+
+
+
