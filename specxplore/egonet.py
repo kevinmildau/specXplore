@@ -25,7 +25,8 @@ def generate_egonet_cythonized(
     _,s,t = cython_utils.extract_above_threshold(
         SOURCE, TARGET, VALUE, threshold)
 
-    # Not yet cythonized.
+    # Not yet cythonized.    
+    # Note: all nodes needed for current implementation of generate_edge_elements_and_styles()
     nodes = [{
         'data': {
             'id': str(elem), 
@@ -35,11 +36,17 @@ def generate_egonet_cythonized(
             'y':-TSNE_DF["y"].iloc[elem]},
         'classes':'None'} 
         for elem in range(0, TSNE_DF.shape[0])]
-
     bdict = cython_utils.creating_branching_dict_new(
         s, t, ego_id, int(expand_level))
     edge_elems, edge_styles = cython_utils.generate_edge_elements_and_styles(
         bdict, s, t, nodes)
+
+    # Extract only nodes in connected node set
+    node_ids = set()
+    for key in bdict.keys():
+        print(bdict[key]["nodes"])
+        node_ids.update(set(bdict[key]["nodes"]))
+    nodes = [nodes[i] for i in node_ids] # filter down nodes to connected
 
     elements = nodes + edge_elems
     base_node_style_sheet = [{
@@ -60,12 +67,12 @@ def generate_egonet_cythonized(
         out = html.Div([
             cyto.Cytoscape(
                 id='cytoscape-tsne-subnet',
-                layout={'name':'preset'},
+                layout={'name':'preset'}, #layout={'name':'preset'},
                 elements=elements,
                 stylesheet= base_node_style_sheet + edge_styles + ego_style,
                 boxSelectionEnabled=True,
                 style={
-                    'width':'100%', 'height':'60vh', "border":"1px grey solid",
+                    'width':'100%', 'height':'80vh', "border":"1px grey solid",
                     "bg":"#feeff4"},
             ),
         ])
@@ -83,7 +90,7 @@ def generate_egonet_cythonized(
                 #panningEnabled=False, 
                 userZoomingEnabled=False,
                 style={
-                    'width':'100%', 'height':'60vh', "border":"1px grey solid",
+                    'width':'100%', 'height':'80vh', "border":"1px grey solid",
                     "bg":"#feeff4"},
             ),
         ])
