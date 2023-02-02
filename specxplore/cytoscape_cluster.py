@@ -48,6 +48,16 @@ general_styles = [{
         "text-wrap": "wrap",
         "text-max-width": 100,}}]
 
+selected_style = [
+        {
+        'selector': ':selected',
+        'style': {
+            'background-color': '#30D5C8',
+            'label': 'data(label)'
+        }
+    }
+    ]
+
 def generate_cluster_node_link_diagram_cythonized(
     TSNE_DF, selected_nodes, SM_MS2DEEPSCORE, selected_class_data, color_dict, 
     threshold, SOURCE, TARGET, VALUE, MZ):
@@ -56,7 +66,7 @@ def generate_cluster_node_link_diagram_cythonized(
     selected_nodes_np = np.array(selected_nodes)
     
     # Get source and target identifier arrays
-    v,s,t = cython_utils.extract_cluster_above_threshold(
+    v,s,t = cython_utils.extract_selected_above_threshold(
         selected_nodes_np, SOURCE, TARGET, VALUE, threshold)
     
     connected_nodes = set(list(np.unique(np.concatenate([s, t]))))             # <---------- for filtering
@@ -98,7 +108,7 @@ def generate_cluster_node_link_diagram_cythonized(
 
     out = html.Div([cyto.Cytoscape(
         id='cytoscape-tsne-subnet', layout={'name':'preset'},
-        elements=nodes+edges, stylesheet=all_styles,
+        elements=nodes+edges, stylesheet=all_styles + selected_style,
         boxSelectionEnabled=True,
         style={'width':'100%', 'height':'80vh', 
             "border":"1px grey solid", "bg":"#feeff4"},)])
