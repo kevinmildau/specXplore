@@ -30,66 +30,108 @@ import json
 #app=Dash(__name__)
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# TODO: load necessary data.
-# --> pandas df with spec_id, x and y coord, and classification columns.
-# --> spectrum list with list index corresponding to spec_id (for now)
-# TODO: load necessary data.
-# --> pandas df with spec_id, x and y coord, and classification columns.
-# --> spectrum list with list index corresponding to spec_id (for now)
+
+class specXplore_data_container:
+  def __init__(
+    self, ms2deepscore_sim, spec2vec_sim, cosine_sim, 
+    tsne_df, class_table, clust_table, is_standard, spectra, mz, specxplore_id
+    ):
+    self.ms2deepscore_sim = ms2deepscore_sim
+    self.spec2vec_sim = spec2vec_sim
+    self.cosine_sim = cosine_sim
+    self.tsne_df = tsne_df
+    #tmp_class_table = class_table.merge(
+    #  clust_table, 
+    #  how = 'inner', 
+    #  on='specxplore_id').drop(["specxplore_id"], axis = 1)
+    #tmp_class_table.replace(np.nan, 'Unknown')
+    #self.class_table = tmp_class_table
+    self.class_table = class_table
+    self.is_standard = is_standard
+    self.spectra = spectra
+    self.mz = mz # precursor mz values for each spectrum
+    self.specxplore_id = specxplore_id
+
+with open("testing/results/phophe_specxplore.pickle", 'rb') as handle:
+    specxplore_data = pickle.load(handle) 
+
+
 global STRUCTURE_DICT
 global CLASS_DICT
 #STRUCTURE_DICT, CLASS_DICT=load_utils.process_structure_class_table(
 #    "data/classification_table.csv")
-CLASS_DICT=load_utils.extract_classes_from_ms2query_results(
-    "data-input/results/GNPS-NIH-NATURALPRODUCTSLIBRARY.csv")
-global AVAILABLE_CLASSES
-AVAILABLE_CLASSES=list(CLASS_DICT.keys())
-#print(AVAILABLE_CLASSES)
 
+#CLASS_DICT=load_utils.extract_classes_from_ms2query_results(
+#    "data-input/results/GNPS-NIH-NATURALPRODUCTSLIBRARY.csv")
+#print(list(CLASS_DICT.keys())[0])
+#print(CLASS_DICT[list(CLASS_DICT.keys())[4]])
+tmp = specxplore_data.class_table
+CLASS_DICT = {elem : list(tmp[elem]) for elem in tmp.columns}
+
+#print(CLASS_DICT)
+global AVAILABLE_CLASSES
+#AVAILABLE_CLASSES=list(CLASS_DICT.keys())
+#print(AVAILABLE_CLASSES)
+AVAILABLE_CLASSES = list(CLASS_DICT.keys())
+print(AVAILABLE_CLASSES)
 
 global SM_MS2DEEPSCORE
 global SM_MODIFIED_COSINE
 global SM_SPEC2VEC
-SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC=load_utils.load_pairwise_sim_matrices()
+#SM_MS2DEEPSCORE, SM_MODIFIED_COSINE, SM_SPEC2VEC=load_utils.load_pairwise_sim_matrices()
+SM_MS2DEEPSCORE = specxplore_data.ms2deepscore_sim
+SM_MODIFIED_COSINE = specxplore_data.cosine_sim 
+SM_SPEC2VEC = specxplore_data.spec2vec_sim
 
 global TSNE_DF
-with open("data/tsne_df.pickle", 'rb') as handle:
-    TSNE_DF=pickle.load(handle)
+#with open("data/tsne_df.pickle", 'rb') as handle:
+#    TSNE_DF=pickle.load(handle)
+#    print(TSNE_DF)
+TSNE_DF = specxplore_data.tsne_df
 
+TSNE_DF["is_standard"] = specxplore_data.is_standard
+TSNE_DF["id"] = specxplore_data.specxplore_id
+#print(TSNE_DF)
 # tmp TSNE_DF modification to trial standard highlighting
-TSNE_DF["is_standard"] = False
-TSNE_DF.iloc[2:40, TSNE_DF.columns.get_loc('is_standard')] = True
+#TSNE_DF["is_standard"] = False
+#TSNE_DF.iloc[2:40, TSNE_DF.columns.get_loc('is_standard')] = True
 
 # Initializing color dict
 selected_class_data=CLASS_DICT[AVAILABLE_CLASSES[0]]
+print(selected_class_data)
 # Create overall figure with color_dict mapping
 n_colors=len(set(selected_class_data)) # TODO: speed this up using n_clust argument that is pre-computed
 colors=visual_utils.construct_grey_palette(n_colors, white_buffer=20)
 init_color_dict=visual_utils.create_color_dict(colors, selected_class_data)
 
 global ALL_SPEC_IDS
-ALL_SPEC_IDS=TSNE_DF.index # <-- add list(np.unique(spec_id_list of sorts))
+#ALL_SPEC_IDS=TSNE_DF.index # <-- add list(np.unique(spec_id_list of sorts))
+ALL_SPEC_IDS = specxplore_data.specxplore_id
+print(ALL_SPEC_IDS[0:3])
 
 global ALL_SPECTRA
-file=open("data/cleaned_demo_data.pickle", 'rb')
-ALL_SPECTRA=pickle.load(file)
-file.close()
+#file=open("data/cleaned_demo_data.pickle", 'rb')
+#ALL_SPECTRA=pickle.load(file)
+#file.close()
+ALL_SPECTRA = specxplore_data.spectra
 
 # PROTOTYPING CYTHON DATA STRUCTURES
-SOURCE, TARGET, VALUE = cython_utils.construct_long_format_sim_table(SM_MS2DEEPSCORE)
+SOURCE, TARGET, VALUE = cython_utils.construct_long_format_sim_arrays(SM_MS2DEEPSCORE)
 
+print(SOURCE[0:3], VALUE[0:3])
 
-
-file = open("data/extracted_precursor_mz_values.pickle", 'rb')
-MZ = pickle.load(file) 
-file.close()
+#file = open("data/extracted_precursor_mz_values.pickle", 'rb')
+#MZ = pickle.load(file) 
+#file.close()
+MZ = specxplore_data.mz
+print(MZ[0:3])
 
 settings_panel = dbc.Offcanvas([
     html.P("SpecXplore defaults and limits can be modified here."),
     html.B("Set Edge Threshold:"),
     html.P("A value between 0 and 1 (excluded)"),
     dcc.Input(
-        id="threshold_text_input", type="number", 
+        id="edge_threshold_input_id", type="number", 
         debounce=True, placeholder="Threshold 0 < thr < 1, def. 0.9", 
         style={"width" : "100%"}),
     html.B("Set expand level:"),
@@ -132,7 +174,7 @@ selection_focus_panel = dbc.Offcanvas([
             style={'width': '90%', 'font-size': "100%"}, 
             options=ALL_SPEC_IDS),
     html.B("Enter spec_id for spectrum plot:"),
-    dcc.Dropdown(id='specid-specplot-dropdown', multi=False, 
+    dcc.Dropdown(id='specid-spectrum_plot-dropdown', multi=False, 
         options=ALL_SPEC_IDS, style={'width' : '50%'}),
     html.B("Enter spec_id1 (top) and spec_id2 (bottom) for mirrorplot:"),
     dcc.Dropdown(id='specid-mirror-1-dropdown', multi=False, 
@@ -151,9 +193,7 @@ app=dash.Dash(external_stylesheets=[dbc.themes.YETI]) # MORPH or YETI style.
 app.layout=html.Div([
     dbc.Row([
         dbc.Col([html.H1([html.B("specXplore prototype")], 
-            style={"margin-bottom": "-0.1em"})], width=4),
-        dbc.Col(
-            [html.P("Authors: Kevin Mildau - Henry Ehlers")], width=8)]),
+            style={"margin-bottom": "-0.1em"})], width=4)]),
     html.Br(),
     dbc.Row([
         dbc.Col(
@@ -196,7 +236,7 @@ app.layout=html.Div([
         style={"width":"100%", "border":"1px grey solid"})], width=12)]),
     html.Br(),
     dbc.Row([
-        dbc.Col([html.Div(id="specplot_panel", 
+        dbc.Col([html.Div(id="spectrum_plot_panel", 
             style={"width":"100%", "border":"1px grey solid"})], width=6),
         dbc.Col([html.Div(id="mirrorplot_panel", 
             style={"width":"100%", "border":"1px grey solid"})], width=6)]),
@@ -204,13 +244,13 @@ app.layout=html.Div([
     style={"width" : "100%"},
     )
 
-# specplot_panel
+# spectrum_plot_panel
 
 
 @app.callback([Output("edge_threshold", "data"),
-               Output("threshold_text_input", "placeholder")],
-              [Input('threshold_text_input', 'n_submit'),
-              Input("threshold_text_input", "value")])
+               Output("edge_threshold_input_id", "placeholder")],
+              [Input('edge_threshold_input_id', 'n_submit'),
+              Input("edge_threshold_input_id", "value")])
 
 def update_threshold_trigger_handler(n_submit, new_threshold):
     new_threshold, new_placeholder=parsing.update_threshold(new_threshold)
@@ -455,42 +495,42 @@ def metadata_trigger(n_clicks, selection_data):
 
 
 @app.callback(
-    Output('specplot_panel', 'children'),
-    Input('specid-specplot-dropdown', 'value')) # trigger only
-def generate_specplot(id):
+    Output('spectrum_plot_panel', 'children'),
+    Input('specid-spectrum_plot-dropdown', 'value')) # trigger only
+def generate_spectrum_plot(id):
     if id:
         fig = go.Figure(data=[go.Bar(
             x=[1, 2, 3, 5.5, 10],
             y=[10, 8, 6, 4, 2],
-            width=[0.8, 0.8, 0.8, 3.5, 4] # customize width here
+            width=[0.8, 0.8, 0.8, 3.5, 4] 
         )])
-        fig.update_layout(title="Placeholder Graph specplot")
-        panel = dcc.Graph(id = "specplot", figure= fig)
+        fig.update_layout(title="Placeholder Graph spectrum_plot")
+        panel = dcc.Graph(id = "spectrum_plot", figure= fig)
         return panel
     else: 
         return html.P("Select spectrum id for plotting.")
+
 
 @app.callback(
     Output('mirrorplot_panel', 'children'),
     Input('specid-mirror-1-dropdown', 'value'),
     Input('specid-mirror-2-dropdown', 'value')) # trigger only
-def generate_specplot(id1, id2):
-    if id1 and id2:
-        fig = go.Figure(data=[go.Bar(
-            x=[1, 2, 3, 5.5, 10],
-            y=[10, 8, 6, 4, 2],
-            width=[0.8, 0.8, 0.8, 3.5, 4] # customize width here
-        )])
+def generate_mirror_plot(spectrum_id_1, spectrum_id_2):
+    if spectrum_id_1 and spectrum_id_2:
+        fig = go.Figure(data=[
+            go.Bar(
+                x=[1, 2, 3, 5.5, 10],
+                y=[10, 8, 6, 4, 2],
+                width=[0.8, 0.8, 0.8, 3.5, 4] 
+            )])
         fig.update_layout(title="Placeholder Graph mirrorplot")
-        panel = dcc.Graph(id = "specplot", figure= fig)
+        panel = dcc.Graph(id = "mirror_plot", figure= fig)
         return panel
     else: 
         return html.P("Select spectrum ids for plotting.")
-
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
 
 
-
+                                                                               
