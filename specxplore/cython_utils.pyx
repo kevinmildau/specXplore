@@ -10,94 +10,79 @@ import plotly.express as px
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-def construct_long_format_sim_table(double[:,::1] sm):
-    """ Cython function which constructs index pair and value arrays for
-    pairwise similarity matrix such that each unique pair and value
-    combinaiton is available. """
-    assert sm.shape[0] == sm.shape[1]
-    cdef int n_nodes = int(sm.shape[0])
-    cdef int i
-    cdef long[:, ::1] index_array = np.ascontiguousarray(
-        np.vstack(np.triu_indices(n_nodes, k=1)).T)
-    cdef int n = index_array.shape[0]
-    cdef double[::1] value_array = np.zeros(n, dtype=np.double)
-    cdef long[::1] source_array = np.zeros(n, dtype=np.int_)
-    cdef long[::1] target_array = np.zeros(n, dtype=np.int_)
-    for i in range(0, n):
-        value_array[i] = sm[index_array[i][0]][index_array[i][1]]
-        source_array[i] = index_array[i][0]
-        target_array[i] = index_array[i][1]
+def construct_unique_pairwise_indices_array(n_nodes):
+    cdef long[:, ::1] index_array 
+    index_array = np.ascontiguousarray(np.vstack(np.triu_indices(n_nodes, k=1)).T)
+    return index_array
+
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+def construct_long_format_sim_arrays(double[:,::1] similarity_matrix):
+    """ Constructs unqique index pair and value arrays for pairwise similarity matrix 
+    
+    Returns:
+        np.array, np.array, np.array
+    """
+    assert similarity_matrix.shape[0] == similarity_matrix.shape[1], "Similarity Matrix provided must be square."
+    cdef int n_nodes = int(similarity_matrix.shape[0])
+    cdef long[:, ::1] index_array = construct_unique_pairwise_indices_array(n_nodes)
+    cdef int n_edges = index_array.shape[0]
+    cdef double[::1] value_array = np.zeros(n_edges, dtype=np.double)
+    cdef long[::1] source_array = np.zeros(n_edges, dtype=np.int_)
+    cdef long[::1] target_array = np.zeros(n_edges, dtype=np.int_)
+    cdef int index
+    for index in range(0, n_edges):
+        value_array[index] = similarity_matrix[index_array[index][0]][index_array[index][1]]
+        source_array[index] = index_array[index][0]
+        target_array[index] = index_array[index][1]
     return np.array(source_array), np.array(target_array), np.array(value_array)
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-def extract_selection(
+def extract_selected_above_threshold(
     long[:] source, long[:] target, double[:] value, long[:] selected_indexes, double threshold):
-    """ Cython function loops through similarity list and filters down to
-    selection set. """
-    #assert source.shape == target.shape == value.shape
-    cdef int nmax = int(source.shape[0])
-    cdef int i
-    cdef int k = 0
+    """ Loops through similarity arrays and filters down to edges for which both nodes are in the selected indexes array 
+    and are above threshold. """
+    assert source.shape == target.shape == value.shape, "Input arrays must be of equal shape."
+    cdef int max_number_edges = int(source.shape[0])
+
     cdef set selected_set = set(selected_indexes)
 
-    cdef double[::1] out_value = np.zeros(nmax, dtype=np.double)
-    cdef long[::1] out_source = np.zeros(nmax, dtype=np.int_)
-    cdef long[::1] out_target = np.zeros(nmax, dtype=np.int_)
+    cdef double[::1] out_value = np.zeros(max_number_edges, dtype=np.double)
+    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int_)
+    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int_)
 
-    for i in range(0, nmax):
-        if source[i] in selected_set and target[i] in selected_set and value[i] > threshold:
-            out_value[k] = value[i]
-            out_source[k] = source[i]
-            out_target[k] = target[i]
-            k += 1
-    return np.array(out_value[0:k]), np.array(out_source[0:k]), np.array(out_target[0:k])
+    cdef int index
+    cdef int counter = 0
+    for index in range(0, max_number_edges):
+        if source[index] in selected_set and target[index] in selected_set and value[index] > threshold:
+            out_value[counter] = value[index]
+            out_source[counter] = source[index]
+            out_target[counter] = target[index]
+            counter += 1
+    return np.array(out_value[0:counter]), np.array(out_source[0:counter]), np.array(out_target[0:counter])
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-def extract_above_threshold(
+def extract_edges_above_threshold(
     long[:] source, long[:] target, double[:] value, double threshold):
     """ Cython function loops through similarity list and filters down to
     selection set. """
     #assert source.shape == target.shape == value.shape
-    cdef int nmax = int(source.shape[0])
-    cdef int i
-    cdef int k = 0
-    cdef double[::1] out_value = np.zeros(nmax, dtype=np.double)
-    cdef long[::1] out_source = np.zeros(nmax, dtype=np.int_)
-    cdef long[::1] out_target = np.zeros(nmax, dtype=np.int_)
-    for i in range(0, nmax):
-        if value[i] > threshold:
-            out_value[k] = value[i]
-            out_source[k] = source[i]
-            out_target[k] = target[i]
-            k += 1
-    return np.array(out_value[0:k]), np.array(out_source[0:k]), np.array(out_target[0:k])
+    cdef int max_number_edges = int(source.shape[0])
+    cdef double[::1] out_value = np.zeros(max_number_edges, dtype=np.double)
+    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int_)
+    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int_)
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False)
-def extract_cluster_above_threshold(
-    long[:] selection, long[:] source, long[:] target, double[:] value, 
-    double threshold):
-    """ Cython function loops through similarity list and filters down to
-    threshold and within selection set requirement. """
-    #assert source.shape == target.shape == value.shape
-    cdef int nmax = int(source.shape[0])
-    cdef int i
-    cdef int k = 0
-    cdef selection_set = set(selection)
-    cdef double[::1] out_value = np.zeros(nmax, dtype=np.double)
-    cdef long[::1] out_source = np.zeros(nmax, dtype=np.int_)
-    cdef long[::1] out_target = np.zeros(nmax, dtype=np.int_)
-    for i in range(0, nmax):
-        if value[i] > threshold and (
-            source[i] in selection_set or target[i] in selection_set):
-            out_value[k] = value[i]
-            out_source[k] = source[i]
-            out_target[k] = target[i]
-            k += 1
-    return np.array(out_value[0:k]), np.array(out_source[0:k]), np.array(out_target[0:k])
-
+    cdef int index
+    cdef int counter = 0
+    for index in range(0, max_number_edges):
+        if value[index] > threshold:
+            out_value[counter] = value[index]
+            out_source[counter] = source[index]
+            out_target[counter] = target[index]
+            counter += 1
+    return np.array(out_value[0:counter]), np.array(out_source[0:counter]), np.array(out_target[0:counter])
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
@@ -109,7 +94,7 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
     #   For root, find all edges that source or target it and add to edges_set.
     #   In addition, make a set of all nodes that are connected to root. 
     #   This will constitute level 1 of the branching network.
-    #   Before going into levels loop, check whether anything beyond root was
+    #   Before going into levels loop, checcounter whether anything beyond root was
     #   added.
     # For lvl in n_levels:
     #   Take note of the current edge and node set.
@@ -130,7 +115,7 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
     #    source.astype(np.str_), np.repeat(np.str_("-"), len(source)))
     #edge_ids = np.core.defchararray.add(edge_ids, target.astype(np.str_))
     cdef vector[int] edge_ids = np.arange(0, source.shape[0], dtype = np.integer)
-    cdef int i
+    cdef int index
     cdef int j
     cdef set all_nodes = set()
     cdef set all_edges = set()
@@ -157,7 +142,7 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
     all_nodes = all_nodes.union(tmp_nodes)
 
     # Populate Levels
-    for i in range(1, n_levels):
+    for index in range(1, n_levels):
         if len(tmp_nodes) == zero:
             print((f"Stopping edge tracing at level:{i}."
                 "No new nodes to expand from"))
@@ -178,15 +163,15 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
         if len(tmp_edges) != zero:
             all_edges = all_edges.union(tmp_edges)
             all_nodes = all_nodes.union(tmp_nodes)
-            branching_dict[i] = {
+            branching_dict[index] = {
                 "nodes": list(current_level_nodes), "edges": list(tmp_edges)}
         else:
-            branching_dict[i] = {
+            branching_dict[index] = {
                 "nodes": list(current_level_nodes), "edges": list()}
             print(f"Stopping edge tracing at level:{i}. No new edges found.")
             break
 
-        branching_dict[i] = {
+        branching_dict[index] = {
             "nodes": list(current_level_nodes), "edges": list(tmp_edges)}
         all_edges = all_edges.union(tmp_edges)
         all_nodes = all_nodes.union(tmp_nodes)
@@ -211,7 +196,7 @@ def generate_edge_elements_and_styles(
     cdef long node_counter = 0
     cdef long edge_count = 0
     cdef long edge_counter = 0
-    cdef long max_edges = 400
+    cdef long max_edges = 2500
     cdef long limit_count = 0
     for idx, key in enumerate(branching_dict):
         edge_count += len(branching_dict[key]['edges'])
@@ -222,7 +207,7 @@ def generate_edge_elements_and_styles(
     
     limit = False
     if edge_count > max_edges:
-        print("Branching tree involves more than 200 edges.", 
+        print("Branching tree involves more than", str(max_edges), "edges.", 
             "Edges only shown for first level to avoid dash-cytoscape overload.")
         limit = True
         
@@ -253,19 +238,20 @@ def generate_edge_elements_and_styles(
     return (edge_elems, styles)
 
 
-def create_cluster_edge_list(long[:] s, long[:] t, long[:] cluster_selection):
-    assert s.size == t.size
-    edges = [{}] * s.size
+def create_cluster_edge_list(long[:] sources, long[:] targets, long[:] cluster_selection):
+    assert sources.size == targets.size
+    edges = [{}] * sources.size
     cdef set cluster_set = set(cluster_selection)
     cdef string edge_class
-    for i in range(0, s.size):
-        source = s[i]
-        target = t[i]
+    cdef int index
+    for index in range(0, sources.size):
+        source = sources[index]
+        target = targets[index]
         if (source in cluster_set and target in cluster_set):
             edge_class = str("edge_within_set")
         else:
             edge_class = str("edge_out_of_set")
-        edges[i] = {
+        edges[index] = {
             'data':{'id':str(source) + "-" + str(target), 
             'source':str(source),
             'target':str(target)},
