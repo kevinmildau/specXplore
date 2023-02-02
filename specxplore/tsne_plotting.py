@@ -1,14 +1,16 @@
 # Developer Notes
 # for more complex plot specifications, use go.Scattergl() rather than px
 
-# Settings
-# {tsne_overview : 
-# {highlight_color : "#FF10F0",  paper_bgcolor :'#feeff4', plot_bgcolor='#feeff4'}}
+# Note that the current implementation favors the focus selection color over the
+# cluster selection; a point already in focus selection cannot be clicked for
+# clust recoloring, nor will it be recolored if part of a cluster with that color.
 
 import plotly.express as px
+import plotly.graph_objects as go
+import copy
 def plot_tsne_overview(
     point_selection, selected_class_level, selected_class_data, tsne_df, 
-    color_dict):
+    class_filter_set, color_dict, focus_selection):
     """Constructs the t-SNE overview graph plotly figure object.
     
     Args / Parameters
@@ -27,7 +29,9 @@ def plot_tsne_overview(
     color_dict:
         A color dictionary where each unique cluster is a string key with the
         corresponding value being a hex code color: {clust_key : color_string}.
-    
+    class_filter_set:
+        Set of classes with which the dataset is to be filtered prior to
+        visualization. Assists in showing meaningful subsets of the data only.
     Returns
     ------
     fig:
@@ -38,26 +42,77 @@ def plot_tsne_overview(
     if point_selection:  
         selected_point=point_selection["points"][0]["customdata"][0]
         color_dict[selected_class_data[selected_point]]="#FF10F0"
+    
+        
     # Extend df to contain selected class data (always given)
-    tsne_df_tmp=tsne_df
-    tsne_df_tmp["clust"]=selected_class_data
-    fig=px.scatter(
-        tsne_df_tmp, 
-        x="x", y="y", color="clust", 
-        custom_data=["id"], 
+    tmpdf = copy.deepcopy(tsne_df)
+    tmpdf["clust"]=selected_class_data
+    tmpdf["color"]=selected_class_data
+    
+    if focus_selection:
+        color_iloc =  tmpdf.columns.get_loc('color')
+        tmpdf.iloc[focus_selection, color_iloc] = "focus_selection"
+        color_dict["focus_selection"] = "#30D5C8"
+    
+    if class_filter_set:
+        class_filter_mask = tmpdf['clust'].isin(class_filter_set)
+        tmpdf = tmpdf.loc[class_filter_mask]
+
+    standards_filter_mask = tmpdf['is_standard'] == True
+    tmpdf_standards = tmpdf.loc[standards_filter_mask]
+    
+    spectra_filter_mask = tmpdf['is_standard'] == False
+    tmpdf_spectra = tmpdf.loc[spectra_filter_mask]
+
+    fig1=px.scatter(
+        tmpdf_spectra, 
+        x="x", y="y", color="color", 
+        custom_data=["id", "clust"], 
         color_discrete_map=color_dict, 
         render_mode='webgl')
-    fig.update_layout(
-        clickmode='event+select', 
-        margin={"autoexpand":True, "b" : 0, "l":0, "r":50, "t":0})
+    fig1.update_traces(
+        marker={
+            'size': 8,
+            'line':dict(width=0.8,color='DarkSlateGrey'),
+            'opacity': 0.7 },
+        hovertemplate='Spec ID: %{customdata[0]}<br>Cluster/Class: %{customdata[1]}<extra></extra>'
+        )
+    fig2=px.scatter(
+        tmpdf_standards, 
+        x="x", y="y", color="color", 
+        custom_data=["id", "clust"], 
+        color_discrete_map=color_dict, 
+        render_mode='webgl')
+    fig2.update_traces(
+        marker={
+            'symbol':220,
+            'size': 8,
+            'line':dict(width=1,color='black'),
+            'opacity': 0.8 },
+        hovertemplate='Spec ID: %{customdata[0]}<br>Cluster/Class: %{customdata[1]}<extra></extra>'
+        )
+    fig = go.Figure()
+    fig.add_traces(fig1.data)
+    fig.add_traces(fig2.data)
+    
+    
     fig.update_layout(
         yaxis_visible=False, yaxis_showticklabels=False, 
         xaxis_visible=False, xaxis_showticklabels=False, 
         title_text='T-SNE Spectral Data Overview', 
         title_x=0.01, title_y=0.01,
         legend_title_text=selected_class_level,
-        paper_bgcolor='#feeff4', # black or white interfere with grayscale
-        plot_bgcolor='#feeff4', # black or white interfere with grayscale
-        uirevision=False, # prevent zoom level changes upon plot update
-        legend=dict(title_font_family='Ubuntu',font=dict(size=6)))
+        paper_bgcolor='white', # black or white interfere with grayscale
+        plot_bgcolor='white', # black or white interfere with grayscale
+        uirevision="Never", # prevent zoom level changes upon plot update
+        legend=dict(title_font_family='Ubuntu',font=dict(size=6)),
+        showlegend=False,
+        clickmode='event', 
+        hovermode="closest",
+        margin={"autoexpand":True, "b" : 0, "l":0, "r":50, "t":0},
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=12,
+            font_family="Ubuntu"))
+
     return fig

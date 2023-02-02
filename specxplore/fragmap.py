@@ -1,3 +1,11 @@
+# Developer Notes
+# TODO: add max_spec = 50
+#   Add a limiter to fragmap that prevents generation of a plot with more than 
+#   50 spectra. At 50 spectra the y-axis becomes barely legible, and spectral 
+#   differences crowd the plot so much that the x-axis requires very heavy zoom 
+#   in, defeating the point of the visualization.
+#   --> filter spectra to set of 50 most similar to root OR to 50 first indexed
+
 from dash import html
 from dash import dcc
 import plotly.graph_objects as go
@@ -24,7 +32,7 @@ def generate_fragmap_panel(spec_ids, all_spectra):
         return(out)
     else:
         out = [html.H6((
-            "Select focus data and press" 
+            "Select focus data and press " 
             "generate fragmap button for fragmap."))]
         return(out)
 
@@ -45,8 +53,11 @@ def spectrum_list_to_pandas(id_list: [int],
     for identifier in id_list:
         spec_data.append(pd.DataFrame({
             "spectrum": identifier, 
-            "m/z": spec_list[identifier].mz,
-            "intensity": spec_list[identifier].intensities}))
+            "m/z": spec_list[identifier].peaks.mz, # OLD MATCHMS SYNTAX
+            #"m/z": spec_list[identifier].mz, # NEW MATCHMS SYNTAX
+            #"intensity": spec_list[identifier].intensities # NEW MATCHMS SYNTAX
+            "intensity": spec_list[identifier].peaks.intensities # OLD MATCHMS SYNTAX
+            }))
     # Return single long data frame
     long = pd.concat(objs=spec_data, ignore_index=True)
     return long
@@ -92,7 +103,8 @@ def filter_binned_spectra_by_frequency(
         labels=binned_spectra.loc[~binned_spectra["bin"].isin(bins_to_keep)].index, inplace=True)
     binned_spectra.reset_index(inplace=True, drop=True)
 
-
+# ALERT: THE PRECURSOR MAY NOT BE A PEAK IN THE MS2 SPECTRUM. USE get_precursor() from matchms instead.
+# the precursor also certainly has nothing to do with highest intensity.
 def get_precursors(
     id_list: [int], spec_list: [matchms.Spectrum]) -> {int: float}:
     # Initialize emtpy dictionary of precursors
@@ -100,8 +112,10 @@ def get_precursors(
     # Iterate over all id's in ID-list
     for ind in id_list:
         # Identify the spectrum with the highest intensity, and save as precursor
-        max_peak_index = np.argmax(spec_list[ind].intensities)
-        precursors[ind] = spec_list[ind].mz[max_peak_index]
+        #max_peak_index = np.argmax(spec_list[ind].intensities) # NEW MATCHMS SYNTAX
+        max_peak_index = np.argmax(spec_list[ind].peaks.intensities) # OLD MATCHMS SYNTAX
+        #precursors[ind] = spec_list[ind].mz[max_peak_index] # NEW MATCHMS SYNTAX
+        precursors[ind] = spec_list[ind].peaks.mz[max_peak_index] # OLD MATCHMS SYNTAX
     # Return dictionary of precursors, indexed by spectrum ID's
     return precursors
 
@@ -109,14 +123,17 @@ def get_precursors(
 def calculate_neutral_loss(
     spectrum: matchms.Spectrum, precursor: float) -> ([float], [float]):
     # Determine the number of peaks and the index of the precursor therein
-    p_index, n_peaks = np.where(spectrum.mz == precursor), len(spectrum.mz)
+    #p_index, n_peaks = np.where(spectrum.mz == precursor), len(spectrum.mz) # NEW MATCHMS SYNTAX
+    p_index, n_peaks = np.where(spectrum.peaks.mz == precursor), len(spectrum.peaks.mz) # OLD MATCHMS SYNTAX
     # Calculate the adjusted m/z values, but ignore the precursor index
     mz_adj = [
-        abs(spectrum.mz[i] - precursor) 
+        abs(spectrum.peaks.mz[i] - precursor) # OLD MATCHMS SYNTAX
+        #abs(spectrum.mz[i] - precursor) # NEW MATCHMS SYNTAX
         for i in range(0, n_peaks) 
         if i != p_index]
     intensities = [
-        spectrum.intensities[i] 
+        #spectrum.intensities[i] # NEW MATCHMS SYNTAX
+        spectrum.peaks.intensities[i] # OLD MATCHMS SYNTAX
         for i in range(0, n_peaks) 
         if i != p_index]
     # Return adjusted m/z values and corresponding intensities
@@ -144,7 +161,8 @@ def get_neutral_losses(id_list: [int], spec_list: [matchms.Spectrum]) -> pd.Data
     # Concatenate all data into singular long pandas
     return pd.concat(objs=neutral_loss_data, ignore_index=True)
 
-
+# THIS CAN BE REPLACED WITH MATCHMS FILTERS FOR MZ BOUNDS, INTENSITY AND MAX NUMBER OF PEAKS
+# 3 lines of code.
 def filter_binned_spectra(spectra: pd.DataFrame,
                           intensity_threshold: float,
                           prevalence_threshold: int,
@@ -338,8 +356,6 @@ def generate_fragmap(id_list: [int], spec_list: [matchms.Spectrum],
     neutral_mapped = get_spectrum_plot_data(
         binned_spectra=binned_neutral, spectrum_map=spectrum_map, 
         bin_map=bin_map)
-    print(f"neutral mapped:")
-    print(neutral_mapped)
     # Step 6-1: Create Individual Traces
     heatmap_trace = get_binned_spectrum_trace(binned_spectra=spectra_mapped)
     points_trace = get_binned_neutral_trace(binned_spectra=neutral_mapped)
@@ -363,6 +379,7 @@ def generate_fragmap(id_list: [int], spec_list: [matchms.Spectrum],
             tickmode='array',
             tickvals=list(bin_map.values()),
             ticktext=list(bin_map.keys())
-        )
+        ),
+        margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":10}
     )
     return fragmentation_map
