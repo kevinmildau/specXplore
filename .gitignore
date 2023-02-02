@@ -33,9 +33,12 @@ example_01_gnps_nih-dataset.py
 specxplore/__pycache__/importing.cpython-38.pyc
 cython_utils.cpython-38-darwin.so
 
-specxplore/cython_utils.cpp
+./specxplore/cython_utils.cpp
+
 build/temp.macosx-11.1-arm64-cpython-38/specxplore/cython_utils.o
-specxplore/cython_utils.cpp
+
+./specxplore/cython_utils.cpp
+
 __pycache__/specxplore_settings.cpython-38.pyc
 
 testing
