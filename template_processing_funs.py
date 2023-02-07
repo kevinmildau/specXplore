@@ -80,72 +80,71 @@ def get_classes(inchi: str):
         'npc_isglycoside' : npc_result[3]}
     return output
 
-def do_url_request(url: str) -> [bytes, None]:
-    """
-    Do url request and return bytes from .read() or None if HTTPError is raised
+def do_url_request(url: str, sleep_time_seconds = 1) -> [bytes, None]:
+    """ Perform url request and return bytes from .read() or None if HTTPError is raised.
+
     :param url: url to access
     :return: open file or None if request failed
     """
-    time.sleep(1)  # to not overload the api
+    time.sleep(sleep_time_seconds) # Added to prevent API overloading.
     try:
         with urllib.request.urlopen(url) as inf:
             result = inf.read()
-    except (urllib.error.HTTPError, urllib.error.URLError):
-        # apparently the request failed
+    except (urllib.error.HTTPError, urllib.error.URLError): # request fail => None result
         result = None
     return result
 
+# DONE. PURE FUNCTION.
 def get_json_cf_results(raw_json: bytes) -> List[str]:
-    """
-    Extract the wanted CF classes from bytes version (open file) of json str
-    Names of the keys extracted in order are:
-    'kingdom', 'superclass', 'class', 'subclass', 'direct_parent'
-    List elements are concatonated with '; '.
-    :param raw_json: Json str as a bytes object containing ClassyFire
-        information
-    :return: Extracted CF classes
-    """
-    wanted_info = []
-    cf_json = json.loads(raw_json)
-    wanted_keys_list_name = ['kingdom', 'superclass', 'class',
-                             'subclass', 'direct_parent']
-    for key in wanted_keys_list_name:
-        info_dict = cf_json.get(key, "")
-        info = ""
-        if info_dict:
-            info = info_dict.get('name', "")
-        wanted_info.append(info)
-    return wanted_info
+    """ Extracts ClassyFire classification key data in order from bytes version of json string.
+    
+    Names of the keys extracted in order are: ['kingdom', 'superclass', 'class', 'subclass', 'direct_parent']
+    List elements are concatenated with '; '.
 
+    :param raw_json: Json str as a bytes object containing ClassyFire information
+    :return:List of extracted ClassyFire class assignment strings.
+    """
+    cf_results_list = []
+    json_string = json.loads(raw_json)
+    key_list = ['kingdom', 'superclass', 'class', 'subclass', 'direct_parent']
+    for key in key_list:
+        data_dict = json_string.get(key, "")
+        data_string = ""
+        if data_dict:
+            data_string = data_dict.get('name', "")
+        cf_results_list.append(data_string)
+    return cf_results_list
+
+# DONE. PURE FUNCTION.
 def get_json_npc_results(raw_json: bytes) -> List[str]:
-    """Read bytes version of json str, extract the keys in order
-    Names of the keys extracted in order are:
-    class_results, superclass_results, pathway_results, isglycoside.
-    List elements are concatonated with '; '.
-    :param raw_json:Json str as a bytes object containing NPClassifier
-        information
-    :return: Extracted NPClassifier classes
+    """ Extracts NPClassifier classification key data in order from bytes version of json string.
+    
+    Names of the keys extracted in order are: class_results, superclass_results, pathway_results, isglycoside.
+    List elements are concatenated with '; '.
+
+    :param raw_json: Json str as a bytes object containing NPClassifier information.
+    :return: List of extracted NPClassifier class assignment strings.
     """
-    wanted_info = []
-    cf_json = json.loads(raw_json)
-    wanted_keys_list = ["class_results", "superclass_results",
-                        "pathway_results"]
-    # this one returns a bool not a list like the others
-    last_key = "isglycoside"
-    for key in wanted_keys_list:
-        info_list = cf_json.get(key, "")
-        info = ""
-        if info_list:
-            info = "; ".join(info_list)
-        wanted_info.append(info)
-    last_info_bool = cf_json.get(last_key, "")
-    last_info = "0"
-    if last_info_bool:
-        last_info = "1"
-    wanted_info.append(last_info)
+    npc_results_list = []
+    json_string = json.loads(raw_json)
+    # Key list extraction
+    key_list = ["class_results", "superclass_results", "pathway_results"]
+    for key in key_list:
+        data_list = json_string.get(key, "")
+        data_string = ""
+        if data_list:
+            data_string = "; ".join(data_list)
+        npc_results_list.append(data_string)
+    # Boolean key special extraction
+    last_key = "isglycoside" # requires special treatment since boolean
+    data_last = json_string.get(last_key, "")
+    last_string = "0"
+    if data_last:
+        last_string = "1"
+    npc_results_list.append(last_string)
+    return npc_results_list
 
-    return wanted_info
-
+# DONE.  NOT PURE FUNCTION! ATTEMPTS CONNECTION TO REMOTE (output depends on remote state).
 def get_cf_classes(smiles: str, inchi: str) -> Union[None, List[str]]:
     """ Get ClassyFire classes through GNPS API.
 
@@ -162,7 +161,7 @@ def get_cf_classes(smiles: str, inchi: str) -> Union[None, List[str]]:
         smiles_query_result = do_url_request(cf_url_query_smiles)
         if smiles_query_result is not None:
             classes_list = get_json_cf_results(smiles_query_result)
-    if not classes_list: # do only if smiles query not successful.
+    if classes_list is not None: # do only if smiles query not successful.
         if inchi is not None:
             cf_url_query_inchi = f"https://gnps-classyfire.ucsd.edu/entities/{inchi}.json"
             inchi_query_result = do_url_request(cf_url_query_inchi)
