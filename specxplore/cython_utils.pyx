@@ -144,7 +144,9 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
         # Find level i edges, and level i+1 nodes
         for inner_index in range(0, n_edges):
             # if the edge connects to any previous nodes, but edge_id isn't captured yet.
-            if (source[inner_index] in all_nodes or target[inner_index] in all_nodes) and not (edge_ids[inner_index] in all_edges): # BEWARE OF LONG AND INT TYPING!
+            if (source[inner_index] in all_nodes or 
+                target[inner_index] in all_nodes) 
+                and not (edge_ids[inner_index] in all_edges): # BEWARE OF LONG AND INT TYPING!
                 # add edge
                 tmp_edges.add(edge_ids[inner_index])
                 # add nodes if not yet covered.
