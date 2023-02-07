@@ -14,7 +14,7 @@ def construct_grey_palette(n_colors, white_buffer = 20, black_buffer = 5):
     Similarly, the black_buffer is used to removes the darkest, 
     non-distinguishable shades of gray.
     
-    Args / Parameters
+    Parameters:
     ------
     n_colors:
         The number of colors to be generated.
@@ -23,7 +23,7 @@ def construct_grey_palette(n_colors, white_buffer = 20, black_buffer = 5):
     black_buffer
         The number of dark gray shades to remove.
 
-    Returns
+    Returns:
     ------
     colors:
         List of color strings.

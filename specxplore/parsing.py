@@ -1,17 +1,3 @@
-# Developer Notes:
-
-# white buffer should be a provided setting: white_buffer = 20
-# black buffer should be an input, and a provided setting.
-
-# visual utils and the functions in this could be merged into a more general 
-# utils module or into more concrete intermediate processing modules.
-
-# expand level limiters should be modifiable settings.
-
-
-# remove the white space fixing in the color dict creation and put it instead 
-# into the data pre-processing pipeline
-
 from specxplore import visuals as visual_utils
 import re
 
@@ -115,13 +101,11 @@ def update_expand_level(new_expand_level):
 def update_threshold(new_threshold):
     """ Function updates threshold level and placeholder in line with input.
     
-    Args / Parameters
-    ------
+    Args:
     new_threshold: 
         New threshold; float < 1 and > 0.
 
-    Returns
-    ------
+    Returns:
     output 0:
         A new threshold setting, float.
     output 1:
