@@ -35,6 +35,9 @@ cython_utils.cpython-38-darwin.so
 
 ./specxplore/cython_utils.cpp
 
+.ipynb_checkpoints
+./build
+
 build/temp.macosx-11.1-arm64-cpython-38/specxplore/cython_utils.o
 
 ./specxplore/cython_utils.cpp
