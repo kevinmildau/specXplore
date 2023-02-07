@@ -3,14 +3,14 @@
 # then run this script
 # Takes as input: specxplore phophe datastructure
 import pickle
-import specxplore.container
-from specxplore.container import specXplore_data_container
+import specxplore.specxplore_data
+from specxplore.specxplore_data import specxplore_data
 from specxplore import cython_utils as cu
 import numpy as np
 with open("testing/results/phophe_specxplore.pickle", 'rb') as handle:
-    specxplore_data = pickle.load(handle)
+    data = pickle.load(handle)
 
-sources, targets, values = cu.construct_long_format_sim_arrays(specxplore_data.ms2deepscore_sim)
+sources, targets, values = cu.construct_long_format_sim_arrays(data.ms2deepscore_sim)
 
 print(sources[0:5], targets[0:5], values[0:5])
 
