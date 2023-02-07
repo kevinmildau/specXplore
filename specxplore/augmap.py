@@ -17,26 +17,10 @@ def extract_sub_matrix(idx, similarity_matrix):
     out_similarity_matrix = similarity_matrix[idx, :][:, idx]
     return out_similarity_matrix
 
-@DeprecationWarning
-def extract_sub_matrices(idx, similarity_matrix_1, similarity_matrix_2, similarity_matrix_3):
-    """ Extract relevant subset of spec_ids from sm matrices. """
-    out_similarity_matrix_1 = similarity_matrix_1[idx, :][:, idx]
-    out_similarity_matrix_2 = similarity_matrix_2[idx, :][:, idx]
-    out_similarity_matrix_3 = similarity_matrix_3[idx, :][:, idx]
-    return out_similarity_matrix_1, out_similarity_matrix_2, out_similarity_matrix_3
-
 def reoder_matrix(ordered_index, similarity_matrix):
     """ Function reorders matrices according to ordered_index provided. """
     out_similarity_matrix = similarity_matrix[ordered_index,:][:,ordered_index]
     return out_similarity_matrix
-
-@DeprecationWarning
-def reoder_matrices(ordered_index, similarity_matrix_1, similarity_matrix_2, similarity_matrix_3):
-    """ Function reorders matrices according to ordered_index provided. """
-    out_similarity_matrix_1 = similarity_matrix_1[ordered_index,:][:,ordered_index]
-    out_similarity_matrix_2 = similarity_matrix_2[ordered_index,:][:,ordered_index]
-    out_similarity_matrix_3 = similarity_matrix_3[ordered_index,:][:,ordered_index]
-    return out_similarity_matrix_1, out_similarity_matrix_2, out_similarity_matrix_3
 
 def generate_edge_list(idx, all_possible_edges, similarity_matrix, threshold):
     """ Function generates edge list from pairwise similarity matrix and threshold while abiding by idx ordering. """
@@ -133,28 +117,32 @@ def generate_augmap_graph(
     """ Constructs augmap figure object from provided data and threshold settings. """
     
     # Convert string input to integer iloc
-    idx = [int(elem) for elem in clust_selection]
+    idx_iloc_list = [int(elem) for elem in clust_selection]
     n_elements = len(idx)
     
-    similarity_matrix_1 = extract_sub_matrix(idx, similarity_matrix_ms2ds)
-    similarity_matrix_2 = extract_sub_matrix(idx, similarity_matrix_modified_cosine)
-    similarity_matrix_3 = extract_sub_matrix(idx, similarity_matrix_s2v)
+    # Extract similarity matrices for selection
+    similarity_matrix_1 = extract_sub_matrix(idx_iloc_list, similarity_matrix_ms2ds)
+    similarity_matrix_2 = extract_sub_matrix(idx_iloc_list, similarity_matrix_modified_cosine)
+    similarity_matrix_3 = extract_sub_matrix(idx_iloc_list, similarity_matrix_s2v)
 
+    # Generate optimal order index based on ms2ds similarity matrix
     ordered_index = generate_optimal_leaf_ordering_index(similarity_matrix_1)
 
+    # Reorder similarity matrices according to optimal leaf ordering
     similarity_matrix_1 = reoder_matrix(ordered_index, similarity_matrix_1)
     similarity_matrix_2 = reoder_matrix(ordered_index, similarity_matrix_2)
     similarity_matrix_3 = reoder_matrix(ordered_index, similarity_matrix_3)
 
     # Reorder ids and idx according to optimal leaf ordering (computed above)
-    idx = np.array(idx)
-    idx = idx[ordered_index]
-    ids  = [str(e) for e in idx]
+    idx_iloc_array = np.array(idx_iloc_list)[ordered_index]
+    ids_string_list  = [str(e) for e in idx_iloc_array]
     
+    # Generate heathmap and joint hover trace
     colorscale = generate_heatmap_colorscale(threshold)
     heatmap_trace = generate_heatmap_trace(
-        ids, similarity_matrix_1, similarity_matrix_2, similarity_matrix_3, colorscale)
+        ids_string_list, similarity_matrix_1, similarity_matrix_2, similarity_matrix_3, colorscale)
     
+    # Generate overlay markers
     shapes1, shapes2 = generate_overlay_markers(
         np.arange(0, n_elements), similarity_matrix_2, similarity_matrix_3, threshold, colorblind)
     
@@ -163,7 +151,6 @@ def generate_augmap_graph(
         shapes=shapes1+shapes2, yaxis_nticks=n_elements, xaxis_nticks=n_elements,
         margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":10}, title_x=0.01, title_y=0.01,) 
     return augmap_figure
-
 
 def generate_augmap_panel(
     spectrum_ids, similarity_matrix_ms2ds, similarity_matrix_modified_cosine, similarity_matrix_s2v, threshold):
