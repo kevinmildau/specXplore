@@ -49,3 +49,7 @@ tmp.ipynb
 todo.md
 specxplore/cython_utils.cpp
 __pycache__/template_processing_funs.cpython-38.pyc
+
+
+# Ignore so objects that are constructed by setup.py and platform specific
+*.so
