@@ -4,13 +4,13 @@ import dash
 from dash import dcc, html, ctx, dash_table
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
-from specxplore import visuals as visual_utils
+
 from specxplore import egonet
 from specxplore import augmap
 from specxplore import tsne_plotting
 from specxplore import cytoscape_cluster
 from specxplore import fragmap
-from specxplore import parsing
+from specxplore import data_transfer
 
 from specxplore import cython_utils
 
@@ -72,8 +72,8 @@ selected_class_data=CLASS_DICT[AVAILABLE_CLASSES[0]]
 print(selected_class_data)
 # Create overall figure with color_dict mapping
 n_colors=len(set(selected_class_data)) # TODO: speed this up using n_clust argument that is pre-computed
-colors=visual_utils.construct_grey_palette(n_colors, white_buffer=20)
-init_color_dict=visual_utils.create_color_dict(colors, selected_class_data)
+colors=data_transfer.construct_grey_palette(n_colors, white_buffer=20)
+init_color_dict=data_transfer.create_color_dict(colors, selected_class_data)
 
 global ALL_SPEC_IDS
 #ALL_SPEC_IDS=TSNE_DF.index # <-- add list(np.unique(spec_id_list of sorts))
@@ -224,7 +224,7 @@ app.layout=html.Div([
               Input("edge_threshold_input_id", "value")])
 
 def update_threshold_trigger_handler(n_submit, new_threshold):
-    new_threshold, new_placeholder=parsing.update_threshold(new_threshold)
+    new_threshold, new_placeholder=data_transfer.update_threshold(new_threshold)
     return new_threshold, new_placeholder
 
 @app.callback(
@@ -234,7 +234,7 @@ def update_threshold_trigger_handler(n_submit, new_threshold):
     Input("expand_level_input", "value"))
 
 def expand_trigger_handler(n_submit, new_expand_level):
-    new_expand_level, new_placeholder=parsing.update_expand_level(
+    new_expand_level, new_placeholder=data_transfer.update_expand_level(
         new_expand_level)
     return new_expand_level, new_placeholder
 
@@ -323,7 +323,7 @@ def left_panel_trigger_handler(
     Input("class-dropdown", "value"))
 def class_update_trigger_handler(selected_class):
     """ Wrapper Function that construct class dcc.store data. """
-    selected_class_data, color_dict=parsing.update_class(selected_class, 
+    selected_class_data, color_dict=data_transfer.update_class(selected_class, 
         CLASS_DICT)
     print("Checkpoint - new selected class data constructed.")
     return selected_class, selected_class_data, color_dict, list(set(selected_class_data)), []
@@ -375,7 +375,7 @@ def right_panel_trigger_handler(
 def plotly_selected_data_trigger(plotly_selection_data):
     """ Wrapper Function for tsne point selection handling. """
     if ctx.triggered_id == "tsne-overview-graph":
-        selected_ids=parsing.extract_identifiers(plotly_selection_data)
+        selected_ids=data_transfer.extract_identifiers_from_plotly_selection(plotly_selection_data)
     else:
         selected_ids = []
     return selected_ids
