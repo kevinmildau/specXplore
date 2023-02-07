@@ -28,8 +28,8 @@ def construct_long_format_sim_arrays(double[:,::1] similarity_matrix):
     cdef long[:, ::1] index_array = construct_unique_pairwise_indices_array(n_nodes)
     cdef int n_edges = index_array.shape[0]
     cdef double[::1] value_array = np.zeros(n_edges, dtype=np.double)
-    cdef long[::1] source_array = np.zeros(n_edges, dtype=np.int_)
-    cdef long[::1] target_array = np.zeros(n_edges, dtype=np.int_)
+    cdef long[::1] source_array = np.zeros(n_edges, dtype=np.int64)
+    cdef long[::1] target_array = np.zeros(n_edges, dtype=np.int64)
     cdef int index
     for index in range(0, n_edges):
         value_array[index] = similarity_matrix[index_array[index][0]][index_array[index][1]]
@@ -49,8 +49,8 @@ def extract_selected_above_threshold(
     cdef set selected_set = set(selected_indexes)
 
     cdef double[::1] out_value = np.zeros(max_number_edges, dtype=np.double)
-    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int_)
-    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int_)
+    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
+    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
 
     cdef int index
     cdef int counter = 0
@@ -71,8 +71,8 @@ def extract_edges_above_threshold(
     #assert source.shape == target.shape == value.shape
     cdef int max_number_edges = int(source.shape[0])
     cdef double[::1] out_value = np.zeros(max_number_edges, dtype=np.double)
-    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int_)
-    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int_)
+    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
+    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
 
     cdef int index
     cdef int counter = 0
@@ -101,7 +101,7 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
             Populate branching dict with new edge and node sets.
             Repeat until no new nodes or edges are found, or until n_levels is reached.
     """
-    cdef vector[int] edge_ids = np.arange(0, source.shape[0], dtype = np.integer)
+    cdef vector[int] edge_ids = np.arange(0, source.shape[0], dtype = np.int64)
     cdef int index
     cdef int inner_index
     cdef set all_nodes = set()
