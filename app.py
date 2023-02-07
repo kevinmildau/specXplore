@@ -8,11 +8,11 @@ import dash_bootstrap_components as dbc
 from specxplore import egonet
 from specxplore import augmap
 from specxplore import tsne_plotting
-from specxplore import cytoscape_cluster
+from specxplore import clustnet
 from specxplore import fragmap
 from specxplore import data_transfer
 
-from specxplore import cython_utils
+from specxplore import specxplore_data_cython #, data_transfer_cython, egonet_cython, clustnet_cython
 
 import pickle
 import dash_cytoscape as cyto
@@ -23,7 +23,7 @@ from specxplore.specxplore_data import specxplore_data
 #app=Dash(__name__)
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-with open("testing/results/phophe_specxplore.pickle", 'rb') as handle:
+with open("data_import_testing/results/phophe_specxplore.pickle", 'rb') as handle:
     specxplore_data = pickle.load(handle) 
 
 
@@ -87,7 +87,7 @@ global ALL_SPECTRA
 ALL_SPECTRA = specxplore_data.spectra
 
 # PROTOTYPING CYTHON DATA STRUCTURES
-SOURCE, TARGET, VALUE = cython_utils.construct_long_format_sim_arrays(SM_MS2DEEPSCORE)
+SOURCE, TARGET, VALUE = specxplore_data_cython.construct_long_format_sim_arrays(SM_MS2DEEPSCORE)
 
 print(SOURCE[0:3], VALUE[0:3])
 
@@ -344,7 +344,7 @@ def right_panel_trigger_handler(
     selected_class_data, threshold, expand_level):
     btn = ctx.triggered_id
     if btn == "btn-run-clustnet" and spec_id_selection:
-        panel = cytoscape_cluster.generate_cluster_node_link_diagram_cythonized(
+        panel = clustnet.generate_cluster_node_link_diagram_cythonized(
             TSNE_DF, spec_id_selection, SM_MS2DEEPSCORE, selected_class_data,
             color_dict, threshold, SOURCE, TARGET, VALUE, MZ)
         #panel=cytoscape_cluster.generate_cluster_node_link_diagram(

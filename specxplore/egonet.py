@@ -1,10 +1,7 @@
 import numpy as np
-from specxplore import process_matchms as _myfun
-import itertools
 import dash_cytoscape as cyto
 from dash import html
-import plotly.express as px
-from specxplore import cython_utils as cu
+from specxplore import data_transfer_cython, egonet_cython, clustnet_cython
 import warnings
 import pandas
 from typing import List, Dict
@@ -92,10 +89,10 @@ def generate_ego_style_selector(ego_id):
 def construct_ego_net_elements_and_styles(
     data_frame, precursor_masses,  sources, targets, values, threshold, ego_id, expand_level, filter = True):
     """ Function constructs elements for EgoNet cytoscape graph. """
-    _,selected_sources, selected_targets = cu.extract_edges_above_threshold(sources, targets, values, threshold)
+    _,selected_sources, selected_targets = data_transfer_cython.extract_edges_above_threshold(sources, targets, values, threshold)
     nodes = generate_node_list(data_frame, precursor_masses)
-    bdict = cu.creating_branching_dict_new(selected_sources, selected_targets, ego_id, int(expand_level))
-    edge_elems, edge_styles = cu.generate_edge_elements_and_styles(bdict, selected_sources, selected_targets, nodes)
+    bdict = egonet_cython.creating_branching_dict_new(selected_sources, selected_targets, ego_id, int(expand_level))
+    edge_elems, edge_styles = egonet_cython.generate_edge_elements_and_styles(bdict, selected_sources, selected_targets, nodes)
     # Extract only nodes in connected node set; if deactivated, all nodes shown in cytoscape
     filter = True
     if filter:
