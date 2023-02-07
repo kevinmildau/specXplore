@@ -47,3 +47,5 @@ __pycache__/specxplore_settings.cpython-38.pyc
 testing
 tmp.ipynb
 todo.md
+specxplore/cython_utils.cpp
+__pycache__/template_processing_funs.cpython-38.pyc
