@@ -28,8 +28,8 @@ def construct_long_format_sim_arrays(double[:,::1] similarity_matrix):
     cdef long[:, ::1] index_array = construct_unique_pairwise_indices_array(n_nodes)
     cdef int n_edges = index_array.shape[0]
     cdef double[::1] value_array = np.zeros(n_edges, dtype=np.double)
-    cdef long[::1] source_array = np.zeros(n_edges, dtype=np.int_)
-    cdef long[::1] target_array = np.zeros(n_edges, dtype=np.int_)
+    cdef long[::1] source_array = np.zeros(n_edges, dtype=np.int64)
+    cdef long[::1] target_array = np.zeros(n_edges, dtype=np.int64)
     cdef int index
     for index in range(0, n_edges):
         value_array[index] = similarity_matrix[index_array[index][0]][index_array[index][1]]
@@ -43,14 +43,14 @@ def extract_selected_above_threshold(
     long[:] source, long[:] target, double[:] value, long[:] selected_indexes, double threshold):
     """ Loops through similarity arrays and filters down to edges for which both nodes are in the selected indexes array 
     and are above threshold. """
-    assert source.shape == target.shape == value.shape, "Input arrays must be of equal shape."
+    assert source.size == target.size == value.size, "Input arrays must be of equal size."
     cdef int max_number_edges = int(source.shape[0])
 
     cdef set selected_set = set(selected_indexes)
 
     cdef double[::1] out_value = np.zeros(max_number_edges, dtype=np.double)
-    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int_)
-    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int_)
+    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
+    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
 
     cdef int index
     cdef int counter = 0
@@ -71,8 +71,8 @@ def extract_edges_above_threshold(
     #assert source.shape == target.shape == value.shape
     cdef int max_number_edges = int(source.shape[0])
     cdef double[::1] out_value = np.zeros(max_number_edges, dtype=np.double)
-    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int_)
-    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int_)
+    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
+    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
 
     cdef int index
     cdef int counter = 0
@@ -87,36 +87,23 @@ def extract_edges_above_threshold(
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 def creating_branching_dict_new(long[:] source, long[:] target, long root, long n_levels):
-    """Function creates edge branching edge lists."""
-    # PSEUDOCODE
-    # Start with root id
-    # Root is a node.
-    #   For root, find all edges that source or target it and add to edges_set.
-    #   In addition, make a set of all nodes that are connected to root. 
-    #   This will constitute level 1 of the branching network.
-    #   Before going into levels loop, checcounter whether anything beyond root was
-    #   added.
-    # For lvl in n_levels:
-    #   Take note of the current edge and node set.
-    #   Sweep the edge list for any edges connected to the current node set.
-    #   Extract those edges and nodes, save as lvl_n sets, add lvl_n sets
-    #   to global sets.
-    #   Before going to next level, assess whether any new nodes were found. If
-    #   Not, abort.
-    # Input
-    #   Any pair in source and target will be above threshold and be a 
-    #   legitimate new edge if connected to any other nodes.
+    """Function creates edge branching edge lists.
     
-    # Code Notes --------------------------------------------------------------
-    # Edge ids can be simple index integers within this function. Each index
-    # points to the corresponding source and target entries.
+    Assumes all edges defined by source and target pairs are already above threshold!
 
-    #cdef vector[string] edge_ids = np.core.defchararray.add(
-    #    source.astype(np.str_), np.repeat(np.str_("-"), len(source)))
-    #edge_ids = np.core.defchararray.add(edge_ids, target.astype(np.str_))
-    cdef vector[int] edge_ids = np.arange(0, source.shape[0], dtype = np.integer)
+    Pseudocode:
+        Start with Root node id
+        Find all edges to it and corresponding nodes. 
+        Construct edge and node sets. These are level 0 of branching dictionary.
+        For each level in n_levels:
+            check for any edges connected to node set from previous level.
+            check for any new nodes among those edges.
+            Populate branching dict with new edge and node sets.
+            Repeat until no new nodes or edges are found, or until n_levels is reached.
+    """
+    cdef vector[int] edge_ids = np.arange(0, source.shape[0], dtype = np.int64)
     cdef int index
-    cdef int j
+    cdef int inner_index
     cdef set all_nodes = set()
     cdef set all_edges = set()
     cdef int n_edges = source.shape[0]
@@ -126,56 +113,60 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
     all_nodes.add(root)
     cdef dict branching_dict = dict()
 
-    # Initialize Layer 1
+    # Extract node and edge sets for root node connections
     tmp_nodes = set()
     tmp_edges = set()
-    for j in range(zero, n_edges):
-        if source[j] == root or target[j] == root:
-            tmp_nodes.add(source[j])
-            tmp_nodes.add(target[j])
-            tmp_edges.add(edge_ids[j]) # or simply j
+    for index in range(zero, n_edges):
+        if source[index] == root or target[index] == root:
+            tmp_nodes.add(source[index])
+            tmp_nodes.add(target[index])
+            tmp_edges.add(edge_ids[index]) # or simply j
+    
+    # Initialize branching dictionary
     if len(tmp_edges) != 0:
         branching_dict[0] = {"nodes": [root], "edges": list(tmp_edges)}
     else:
-        branching_dict[0] = {"nodes": [root], "edges": []}
+        branching_dict[0] = {"nodes": [root], "edges": []}    
+    
+    # Update already covered node and edge sets
     all_edges = all_edges.union(tmp_edges)
     all_nodes = all_nodes.union(tmp_nodes)
 
-    # Populate Levels
+    # Expand Branching Dict if possible
     for index in range(1, n_levels):
         if len(tmp_nodes) == zero:
-            print((f"Stopping edge tracing at level:{i}."
-                "No new nodes to expand from"))
+           # print((f"Stopping edge tracing at level:{index}. No new nodes to expand from"))
             break
         current_level_nodes = list(tmp_nodes)
         tmp_nodes = set()
         tmp_edges = set()
-        # This finds level i edges, and level i+1 nodes
-        for j in range(0, n_edges):
-            # if the edge connects to any previous nodes, but itself edge_id isn't captured yet.
-            if (source[j] in all_nodes or target[j] in all_nodes) and not (edge_ids[j] in all_edges): # BEWARE OF LONG AND INT TYPING!
-                if not source[j] in all_nodes:
-                    tmp_nodes.add(source[j])
-                if not target[j] in all_nodes:
-                    tmp_nodes.add(target[j])
-                tmp_edges.add(edge_ids[j]) # or simply j
-        
+
+        # Find level i edges, and level i+1 nodes
+        for inner_index in range(0, n_edges):
+            # if the edge connects to any previous nodes, but edge_id isn't captured yet.
+            if (source[inner_index] in all_nodes or target[inner_index] in all_nodes) and not (edge_ids[inner_index] in all_edges): # BEWARE OF LONG AND INT TYPING!
+                # add edge
+                tmp_edges.add(edge_ids[inner_index])
+                # add nodes if not yet covered.
+                if not source[inner_index] in all_nodes:
+                    tmp_nodes.add(source[inner_index])
+                if not target[inner_index] in all_nodes:
+                    tmp_nodes.add(target[inner_index])
+
+        # Update branching dict with tmp edge and node sets  
         if len(tmp_edges) != zero:
             all_edges = all_edges.union(tmp_edges)
             all_nodes = all_nodes.union(tmp_nodes)
             branching_dict[index] = {
                 "nodes": list(current_level_nodes), "edges": list(tmp_edges)}
         else:
-            branching_dict[index] = {
-                "nodes": list(current_level_nodes), "edges": list()}
-            print(f"Stopping edge tracing at level:{i}. No new edges found.")
+            branching_dict[index] = {"nodes": list(current_level_nodes), "edges": list()}
+            #print(f"Stopping edge tracing at level:{index}. No new edges found.")
             break
-
-        branching_dict[index] = {
-            "nodes": list(current_level_nodes), "edges": list(tmp_edges)}
-        all_edges = all_edges.union(tmp_edges)
-        all_nodes = all_nodes.union(tmp_nodes)
-    
+        #branching_dict[index] = {
+        #    "nodes": list(current_level_nodes), "edges": list(tmp_edges)}
+        #all_edges = all_edges.union(tmp_edges)
+        #all_nodes = all_nodes.union(tmp_nodes)
     # Add nodes added in final level if any
     if len(tmp_nodes) != 0:
         branching_dict[n_levels+1] = {"nodes": list(tmp_nodes), "edges": []}

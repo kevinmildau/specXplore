@@ -1,56 +1,27 @@
 # Main specXplore prototype
 from logging import warning
 import dash
-from dash import Dash, dcc, html, ctx, dash_table
+from dash import dcc, html, ctx, dash_table
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
-import plotly.express as px
-import plotly
-import pandas as pd
-import numpy as np
-from specxplore import dashboard_components as _dc
-from specxplore import loading as load_utils
 from specxplore import visuals as visual_utils
-from specxplore import process_matchms as _myfun
 from specxplore import egonet
 from specxplore import augmap
 from specxplore import tsne_plotting
 from specxplore import cytoscape_cluster
 from specxplore import fragmap
 from specxplore import parsing
-import cython_utils
+
+from specxplore import cython_utils
+
 import pickle
-import copy
-import itertools
 import dash_cytoscape as cyto
 import plotly.graph_objects as go
-from scipy.cluster import hierarchy
-import json 
+import specxplore.specxplore_data
+from specxplore.specxplore_data import specxplore_data
 
 #app=Dash(__name__)
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-
-class specXplore_data_container:
-  def __init__(
-    self, ms2deepscore_sim, spec2vec_sim, cosine_sim, 
-    tsne_df, class_table, clust_table, is_standard, spectra, mz, specxplore_id
-    ):
-    self.ms2deepscore_sim = ms2deepscore_sim
-    self.spec2vec_sim = spec2vec_sim
-    self.cosine_sim = cosine_sim
-    self.tsne_df = tsne_df
-    #tmp_class_table = class_table.merge(
-    #  clust_table, 
-    #  how = 'inner', 
-    #  on='specxplore_id').drop(["specxplore_id"], axis = 1)
-    #tmp_class_table.replace(np.nan, 'Unknown')
-    #self.class_table = tmp_class_table
-    self.class_table = class_table
-    self.is_standard = is_standard
-    self.spectra = spectra
-    self.mz = mz # precursor mz values for each spectrum
-    self.specxplore_id = specxplore_id
 
 with open("testing/results/phophe_specxplore.pickle", 'rb') as handle:
     specxplore_data = pickle.load(handle) 

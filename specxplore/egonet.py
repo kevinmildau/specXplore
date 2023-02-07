@@ -4,7 +4,7 @@ import itertools
 import dash_cytoscape as cyto
 from dash import html
 import plotly.express as px
-import cython_utils as cu
+from specxplore import cython_utils as cu
 import warnings
 import pandas
 from typing import List, Dict
@@ -124,13 +124,14 @@ def generate_egonet_cythonized(
             " in input as root for egonet."))
         ego_id = int(clust_selection[0])
     else:
-        ego_id = int(clust_selection)
+        ego_id = int(clust_selection[0]) # <- DEV NOTE: this always appears as a list. FIX. 
     
     # Construct Data for ego net visualization
     elements, edge_styles = construct_ego_net_elements_and_styles(
         TSNE_DF, MZ, SOURCE, TARGET, VALUE, threshold, ego_id, expand_level, True)
-    style_sheet = BASIC_NODE_STYLE_SHEET + edge_styles + generate_ego_style_selector(ego_id) + SELECTED_STYLE,
     
+    style_sheet = BASIC_NODE_STYLE_SHEET + edge_styles + generate_ego_style_selector(ego_id) + SELECTED_STYLE
+
     # Generate egonet with elements size dependent flexibility
     if len(elements) <= max_elements:
         out = html.Div([construct_cytoscape_egonet(elements, style_sheet)])
