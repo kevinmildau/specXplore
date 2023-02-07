@@ -1,7 +1,7 @@
 import numpy as np
 import dash_cytoscape as cyto
 from dash import html
-from specxplore import cython_utils
+from specxplore import data_transfer_cython, clustnet_cython
 
 SELECTION_STYLE = [{
         "selector": '.edge_within_set', 
@@ -37,7 +37,7 @@ def generate_cluster_node_link_diagram_cythonized(
     selected_nodes_np = np.array(selected_nodes)
     
     # Get source and target identifier arrays
-    v,s,t = cython_utils.extract_selected_above_threshold(
+    v,s,t = data_transfer_cython.extract_selected_above_threshold(
         SOURCE, TARGET, VALUE, selected_nodes_np, threshold)
     
     connected_nodes = set(list(np.unique(np.concatenate([s, t]))))             # <---------- for filtering
@@ -50,7 +50,7 @@ def generate_cluster_node_link_diagram_cythonized(
         t = t[indices[len(indices)-max_edges:len(indices)]]
 
     # Create Edge list
-    edges = cython_utils.create_cluster_edge_list(s,t,selected_nodes_np)
+    edges = clustnet_cython.create_cluster_edge_list(s,t,selected_nodes_np)
 
     cluster_set = set(selected_nodes)
     n_nodes = TSNE_DF.shape[0]
