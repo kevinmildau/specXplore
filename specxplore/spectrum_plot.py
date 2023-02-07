@@ -64,6 +64,10 @@ def generate_mirror_plot(top_spectrum : Spectrum, bottom_spectrum: Spectrum) -> 
         **PLOT_LAYOUT_SETTINGS)
     return figure
 
+# DEVELOPER NOTE:
+# Initially attempted a single plotly object. However, make_subplot from plotly created many layout related issues, and
+# would have required tedious workarounds to accomodate our multiple traces per subplot scenario. dcc.Graph listing
+# ultimately appeared simpler.
 def generate_multiple_spectra_figure_div_list(spectra : List[Spectrum]) -> List[dcc.Graph]:
     """ Generate list of single spectrum plots, each of which embedded into a separate dcc.Graph containers.
     """
