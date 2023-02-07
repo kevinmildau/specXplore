@@ -89,10 +89,12 @@ def generate_ego_style_selector(ego_id):
 def construct_ego_net_elements_and_styles(
     data_frame, precursor_masses,  sources, targets, values, threshold, ego_id, expand_level, filter = True):
     """ Function constructs elements for EgoNet cytoscape graph. """
-    _,selected_sources, selected_targets = data_transfer_cython.extract_edges_above_threshold(sources, targets, values, threshold)
+    _,selected_sources, selected_targets = data_transfer_cython.extract_edges_above_threshold(
+        sources, targets, values, threshold)
     nodes = generate_node_list(data_frame, precursor_masses)
     bdict = egonet_cython.creating_branching_dict_new(selected_sources, selected_targets, ego_id, int(expand_level))
-    edge_elems, edge_styles = egonet_cython.generate_edge_elements_and_styles(bdict, selected_sources, selected_targets, nodes)
+    edge_elems, edge_styles = egonet_cython.generate_edge_elements_and_styles(
+        bdict, selected_sources, selected_targets, nodes)
     # Extract only nodes in connected node set; if deactivated, all nodes shown in cytoscape
     filter = True
     if filter:
