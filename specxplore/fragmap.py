@@ -5,7 +5,8 @@ import numpy as np
 import matchms
 from specxplore.specxplore_data import Spectrum
 import typing
-from typing import List
+from typing import List, Tuple
+import copy
 # import pickle
 
 def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_list : List[Spectrum]) -> html.Div:
@@ -37,58 +38,56 @@ def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_lis
     return(fragmap_output_panel)
 
 # generates long format data frame with spectral data columns id, mz, intensity
-def spectrum_list_to_pandas(id_list: [int], 
-    spec_list: [matchms.Spectrum]) -> pd.DataFrame:
+def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> pd.DataFrame:
     """
-    Description
+    Constructs long format pandas data frame from spectrum list.
     """
-    # Ensure the provided ID list is valid
-    assert all([ind in range(0, len(spec_list)) for ind in id_list]), (
-        f"Error: Provided ID list {id_list} contains ID's which do not" 
-        f"match the spec_list of length {len(spec_list)}."
-    )
     # Initialize empty list of data frames
-    spec_data = list()
-    for identifier in id_list:
-        spec_data.append(pd.DataFrame({
-            "spectrum": identifier, 
-            "mz": spec_list[identifier].peaks.mz, # OLD MATCHMS SYNTAX
-            #"mz": spec_list[identifier].mz, # NEW MATCHMS SYNTAX
-            #"intensity": spec_list[identifier].intensities # NEW MATCHMS SYNTAX
-            "intensity": spec_list[identifier].peaks.intensities # OLD MATCHMS SYNTAX
-            }))
+    spectrum_dataframe_list = list()
+    for spectrum in spectrum_list:
+        spectrum_dataframe_list.append(pd.DataFrame({
+            "spectrum_identifier": spectrum.identifier, 
+            "mass-to-charge-ratio": spectrum.mass_to_charge_ratios, 
+            "intensity": spectrum.intensities }))
     # Return single long data frame
-    long = pd.concat(objs=spec_data, ignore_index=True)
-    return long
+    long_pandas_df = pd.concat(objs=spectrum_dataframe_list, ignore_index=True)
+    return long_pandas_df
 
-
-
-def bin_spectra(spectra: pd.DataFrame, bins: [float]) -> pd.DataFrame:
+# PURE FUNCTION
+def bin_spectra(spectra_data_frame: pd.DataFrame, bins: List[float]) -> pd.DataFrame:
     """
-    Description
-
+    MODIFIES INPUT SPECTRA DATA FRAME SUCH THAT ALL MZ VALUES ARE PUSHED TO COMPLY WITH BINNING.
+    UNCLEAR WORKING MECHANISM. 
+    WORKS ON WHILE DF LEVEL
     """
-
-    # Generalize to work with single spectrum object
-    # return binned spectrum object
-    # aggregate mz values into bins with intensity
-    # spectrum object with modified mz and intensity values to correspond directly to bins
+    # GENERALIZE TO WORK WITH SINGLE SPECTRUM OBJECT
+    # INPUT IS A SPECTRUM OBJECT, OUTPUT IS A SPECTRUM OBJECT. 
+    # GENERALIZE AT A LATER STAGE TO: OUTPUT IS A BINNED SPECTRUM OBJECT WITH TUPLES OF BINNED VALUES ACCESSIBLE
 
     # Bin Spectrum Data
-    index_bin_map = pd.cut(
-        x=spectra["mz"], bins=bins, labels=bins[0:-1], include_lowest=True)
-    spectra.insert(
-        loc=2, column="bin", value=index_bin_map, allow_duplicates=True)
+
+    spectra_data_frame_copy = copy.deepcopy(spectra_data_frame)
+    index_bin_map = pd.cut(x=spectra_data_frame_copy["mass-to-charge-ratio"], bins=bins, labels=bins[0:-1], include_lowest=True)
+    spectra_data_frame_copy.insert(loc=2, column="bin", value=index_bin_map, allow_duplicates=True)
 
     # Return Binned Data as long pandas dataframe
-    return spectra
+    return spectra_data_frame_copy
 
-
-def filter_binned_spectra_by_frequency(
-    binned_spectra: pd.DataFrame, n_bin_cutoff: int):
+def filter_binned_spectra_by_frequency(binned_spectra: pd.DataFrame, n_bin_cutoff: int):
     """
     Clean up binned data in place
     """
+    # TODO: EVALUATE BEST PLACE FOR THIS FILTER. 
+    # IF LIST OF SPECTRA IS INPUT:
+    #   1) construct set of all unique possible fragments (mz) - loop over list of mz vals arrays
+    #   --> as you do, keep track of occurence number
+    #   2) loop through occurence number structure and extract only bins above threshold (set)
+    #   3) loop through all spectra once more and create replacement mz bins limited by occurence set
+
+    # first find out which mz values (and correspondingly intensity values) should be kept
+    # then filter the mz values of each spectrum down to this selection
+    # finally check whether there are now empty spectra, if so, remove; 
+    # if there are no spectra left at all, pass toward empty div
 
     # TODO: turn input into list of spectra (binned, but still simple spectra)
     # Simply a filter for max number of mz int tuples by sorted intensity
@@ -96,12 +95,11 @@ def filter_binned_spectra_by_frequency(
     # Count the total number of unique bins the dataset. Return if below threshold
     unique_bins = np.unique(binned_spectra['bin'].tolist())
     if len(unique_bins) <= n_bin_cutoff:
-        return
+        return # <-- # TODO: FIX NO OUTPUT DEPENDING ON INPUT TO MORE PREDICTABLE RETURN. return binned_spectra ?
+    
     # Count the number of occurrences per bin
-    bin_counts = binned_spectra.groupby(
-        by="bin", axis=0, as_index=False, observed=True).size()
-    bin_counts.sort_values(
-        by="size", axis=0, ascending=False, inplace=True, ignore_index=True)
+    bin_counts = binned_spectra.groupby(by="bin", axis=0, as_index=False, observed=True).size()
+    bin_counts.sort_values(by="size", axis=0, ascending=False, inplace=True, ignore_index=True)
 
     # Filter Binned Spectra in place
     bins_to_keep = bin_counts.head(n=n_bin_cutoff)["bin"].tolist()
@@ -109,72 +107,36 @@ def filter_binned_spectra_by_frequency(
         labels=binned_spectra.loc[~binned_spectra["bin"].isin(bins_to_keep)].index, inplace=True)
     binned_spectra.reset_index(inplace=True, drop=True)
 
-
-
-# ALERT: THE PRECURSOR MAY NOT BE A PEAK IN THE MS2 SPECTRUM. USE get_precursor() from matchms instead.
-# the precursor also certainly has nothing to do with highest intensity.
-# REMOVE ONCE FIXED
-def get_precursors(
-    id_list: [int], spec_list: [matchms.Spectrum]) -> {int: float}:
-    # Initialize emtpy dictionary of precursors
-    precursors = {spectrum: -1.0 for spectrum in id_list}
-    # Iterate over all id's in ID-list
-    for ind in id_list:
-        # Identify the spectrum with the highest intensity, and save as precursor
-        #max_peak_index = np.argmax(spec_list[ind].intensities) # NEW MATCHMS SYNTAX
-        max_peak_index = np.argmax(spec_list[ind].peaks.intensities) # OLD MATCHMS SYNTAX
-        #precursors[ind] = spec_list[ind].mz[max_peak_index] # NEW MATCHMS SYNTAX
-        precursors[ind] = spec_list[ind].peaks.mz[max_peak_index] # OLD MATCHMS SYNTAX
-    # Return dictionary of precursors, indexed by spectrum ID's
-    return precursors
-
 # specxplore dataclass spectrum
 # generate only neutral losses --> list of mz, list of intensities ==> np.arrays()
-def calculate_neutral_loss(
-    spectrum: matchms.Spectrum, precursor: float) -> ([float], [float]):
-    # Determine the number of peaks and the index of the precursor therein
-    #p_index, n_peaks = np.where(spectrum.mz == precursor), len(spectrum.mz) # NEW MATCHMS SYNTAX
-    p_index, n_peaks = np.where(spectrum.peaks.mz == precursor), len(spectrum.peaks.mz) # OLD MATCHMS SYNTAX
-    # Calculate the adjusted mz values, but ignore the precursor index
-    # 
-    mz_adj = [
-        abs(spectrum.peaks.mz[i] - precursor) # OLD MATCHMS SYNTAX
-        #abs(spectrum.mz[i] - precursor) # NEW MATCHMS SYNTAX
-        for i in range(0, n_peaks) 
-        if i != p_index]
-    
-
-    intensities = [
-        #spectrum.intensities[i] # NEW MATCHMS SYNTAX
-        spectrum.peaks.intensities[i] # OLD MATCHMS SYNTAX
-        for i in range(0, n_peaks) 
-        if i != p_index]
-    # Return adjusted mz values and corresponding intensities
-    return mz_adj, intensities
+def compute_neutral_losses(spectrum: Spectrum) -> Tuple[np.ndarray, np.ndarray]:
+    """ Computes neutral loss mass to charge ratio values and corresponding intensities (nan)
+    """
+    neutral_losses_mass_to_charge_ratios = abs(spectrum.precursor_mass_to_charge_ratio - spectrum.mass_to_charge_ratios)
+    neutral_losses_intensities = np.repeat(np.nan, neutral_losses_mass_to_charge_ratios.size)
+    return neutral_losses_mass_to_charge_ratios, neutral_losses_intensities
 
 # get as input precursor and mz and int; do not require subselection in this; only pass relevant
 # generate list of datclass spectrums
 # create func to generate the pandas df / whatever needed for the plot
-def get_neutral_losses(id_list: [int], spec_list: [matchms.Spectrum]) -> pd.DataFrame:
+def get_neutral_losses_data_frame(spec_list: List[Spectrum]) -> pd.DataFrame:
     """
     Description
     """
-    # Get Precursors
-    precursors = get_precursors(id_list=id_list, spec_list=spec_list)
-    # Initialize list of pandas to contain the neutral loss data
-    neutral_loss_data = list()
-    # Iterate over all indices specified or all indices in the data
-    for ind in id_list:
-        # Extra data, create pandas data frame, and append to growing list data frames
-        neutral_loss_mz, neutral_loss_intensities = calculate_neutral_loss(
-            spectrum=spec_list[ind], precursor=precursors[ind])
-        neutral_loss_data.append(pd.DataFrame({
-            "spectrum": ind,
-            "mz": neutral_loss_mz,
-            "intensity": neutral_loss_intensities}))
+    # Initialize list of pandas data frames to contain the neutral loss data
+    neutral_losses_pandas_list = list()
 
+    # Iterate over all indices specified or all indices in the data
+    for spectrum in spec_list:
+        # Extra data, create pandas data frame, and append to growing list data frames
+        neutral_losses_mass_to_charge_ratios, neutral_losses_intensities = compute_neutral_losses(spectrum=spectrum)
+        neutral_losses_pandas_list.append(pd.DataFrame({
+            "spectrum": spectrum.identifier, # TODO: DOUBLE CHECK FOR ILOC IN LOCAL SET VS GLOBAL SET CONSISTENCY
+            "mass-to-charge-ratios": neutral_losses_mass_to_charge_ratios,
+            "intensity": neutral_losses_intensities}))
     # Concatenate all data into singular long pandas
-    return pd.concat(objs=neutral_loss_data, ignore_index=True)
+    long_pandas = pd.concat(objs=neutral_losses_pandas_list, ignore_index=True)
+    return long_pandas
 
 # THIS CAN BE REPLACED WITH MATCHMS FILTERS FOR MZ BOUNDS, INTENSITY AND MAX NUMBER OF PEAKS
 # 3 lines of code.
@@ -281,7 +243,7 @@ def get_spectrum_plot_data(
     new_data_frame = pd.DataFrame({
         "spectrum": [spectrum_map[spectrum] for spectrum in binned_spectra["spectrum"].tolist()],
         "bin": [bin_map[bin_id] for bin_id in binned_spectra["bin"].tolist()], # integer for x_axis
-        "mz": binned_spectra["mz"].tolist(), # --> actual mz values for each x_axis thing; could be tuple
+        "mass-to-charge-ratio": binned_spectra["mass-to-charge-ratio"].tolist(), # --> actual mz values for each x_axis thing; could be tuple
         "intensity": binned_spectra["intensity"].tolist()
     })
     # Return Mapped Dataset
@@ -295,7 +257,7 @@ def get_binned_spectrum_trace(binned_spectra: pd.DataFrame):
     heatmap_trace = go.Heatmap(x=binned_spectra["bin"].tolist(),
                                y=binned_spectra["spectrum"].tolist(),
                                z=binned_spectra["intensity"].tolist(),
-                               text = binned_spectra["mz"].tolist(),
+                               text = binned_spectra["mass-to-charge-ratio"].tolist(),
                                xgap=5,
                                ygap=5, 
                                colorscale = "blugrn")
@@ -377,7 +339,7 @@ def generate_fragmap(id_list: [int], spec_list: [matchms.Spectrum],
 
 
     # Step 3-1: Calculate and Bin Neutral Losses
-    neutral_losses = get_neutral_losses(id_list=id_list, spec_list=spec_list)
+    neutral_losses = get_neutral_losses_data_frame(spec_list=spec_list)
     binned_neutral = bin_spectra(spectra=neutral_losses, bins=bins)
 
     # Step 3-2: Keep only those bins featured in the binned spectrum set
