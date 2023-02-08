@@ -1,39 +1,40 @@
-# Developer Notes
-# TODO: add max_spec = 50
-#   Add a limiter to fragmap that prevents generation of a plot with more than 
-#   50 spectra. At 50 spectra the y-axis becomes barely legible, and spectral 
-#   differences crowd the plot so much that the x-axis requires very heavy zoom 
-#   in, defeating the point of the visualization.
-#   --> filter spectra to set of 50 most similar to root OR to 50 first indexed
-
-from dash import html
-from dash import dcc
+from dash import html, dcc
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import matchms
+from specxplore.specxplore_data import Spectrum
+import typing
+from typing import List
 # import pickle
 
-def generate_fragmap_panel(spec_ids, all_spectra):
-    if spec_ids and len(spec_ids) >= 2:
-        # TODO: incorporate Henry's fragmap scripts.
-        spectra = [all_spectra[i] for i in spec_ids]
-        step = 0.1
-        bins = [round(x, 1) for x in list(np.arange(0, 1000 + step, step))]
-        fragmap = generate_fragmap(id_list=list(range(0, len(spectra))),
-            spec_list=spectra, rel_intensity_threshold=0.00000,
-            prevalence_threshold=0, mz_min=0, mz_max=1000,
-            bins=bins)
-        out = [
-            html.Div(dcc.Graph(id = "fragmap-panel", figure=fragmap, 
-                style={"width":"100%","height":"60vh", 
-                       "border":"1px grey solid"}))]
-        return(out)
-    else:
-        out = [html.H6((
-            "Select focus data and press " 
-            "generate fragmap button for fragmap."))]
-        return(out)
+def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_list : List[Spectrum]) -> html.Div:
+    """ Generates fragmap panel.
+    """
+    # 3 conditions
+    # 1 --> empty or too small input; return empty
+    # 2 --> input leads to fragmap build, return fragmap
+    # 3 --> input is valid, but filtering prevents fragmap built, return empty
+
+    if not spectrum_identifier_list or len(spectrum_identifier_list) < 2:
+        empty_output_panel = [html.H6(("Select focus data and press generate fragmap button for fragmap."))]
+        return empty_output_panel
+    # Extract Spectra fro
+    selected_spectra = [all_spectra_list[i] for i in spectrum_identifier_list]
+    # Set bin settings TODO: do this somewhere more appropriate
+    mass_to_charge_ratio_step_size = 0.1
+    spectrum_bin_template = [
+        round(x, 1) 
+        for x in list(np.arange(0, 1000 + mass_to_charge_ratio_step_size, mass_to_charge_ratio_step_size))]
+    # Call fragmap generator # TODO: add control interface for settings to app.py and add settings as input.
+    # TODO: check whether passing actual identifier list works with downstream code indexing; it is unclear whether id_list
+    # is actually a list of spectrum identifiers from all_spectra_list or whether it represents new iloc for the subset.
+    fragmap = generate_fragmap(
+        id_list=list(range(0, len(selected_spectra))), spec_list=selected_spectra, rel_intensity_threshold=0.00000,
+        prevalence_threshold=0, mz_min=0, mz_max=1000, bins=spectrum_bin_template)
+    fragmap_output_panel = [html.Div(dcc.Graph(id = "fragmap-panel", figure=fragmap, style={
+        "width":"100%","height":"60vh", "border":"1px grey solid"}))]
+    return(fragmap_output_panel)
 
 # generates long format data frame with spectral data columns id, mz, intensity
 def spectrum_list_to_pandas(id_list: [int], 
