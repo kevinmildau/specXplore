@@ -24,6 +24,20 @@ class specxplore_data:
 
 @dataclass
 class Spectrum:
+    """ Spectrum data class for storing basic spectrum information and neutral loss spectra. 
+
+    :param mass_to_charge_ratio: np.ndarray of shape(1,n) where n is the number of mass to charge ratios.
+    :param precursor_mass_to_charge_ratio: np.double with mass to charge ratio of precursor.
+    :param identifier: np.int64 is the spectrum's identifier number.
+    :param intensities: np.ndarray of shape(1,n) where n is the number of intensities.
+    :raises: Error if size shapes of intensities and mass_to_charge_ratio arrays differ.
+    
+    Developer Notes: 
+    Spectrum identifier should correspond to the iloc of the spectrum in the orginal spectrum list used in specxplore.
+    There are no checks in place within the Spectrum object to make sure this is the case.
+    Intensities are not necessary as an input. This is to accomodate neutral loss mock spectra objects. If no 
+    intensities are provided, intensity values are set to np.nan assuming neutral loss spectra were provided.
+    """
     mass_to_charge_ratios : np.ndarray #np.ndarray[int, np.double] # for python 3.9 and up
     precursor_mass_to_charge_ratio : np.double
     identifier : np.int64
