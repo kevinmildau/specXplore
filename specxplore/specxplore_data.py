@@ -1,6 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
-
+import pandas as pd
+from collections import namedtuple
+import typing
+from typing import List, TypedDict, Tuple, Dict, NamedTuple
 class specxplore_data:
   def __init__(
     self, ms2deepscore_sim, spec2vec_sim, cosine_sim, 
@@ -47,3 +50,55 @@ class Spectrum:
             self.intensities = np.repeat(np.nan, self.mass_to_charge_ratios.size)
         assert self.intensities.shape == self.mass_to_charge_ratios.shape, (
             "Intensities and mass to charge ratios must be equal length.")
+
+@dataclass(frozen=True)
+class MultiSpectrumDataFrameContainer:
+    """ 
+    Dataclass container for long format data frame containing multiple spectra.
+    :param data: A dataframe with columns ("identifier", "mass-to-charge-ratio", "intensity") of types 
+        (np.int64, np.double, np.double).
+    Note: 
+        Requires check_columns and check_column_types functions.
+        The data dataframe elements are still mutable, frozen only prevent overwriting the object as a whole.
+    """
+    data: pd.DataFrame
+    expected_columns : Tuple = field(
+        default=("identifier", "mass-to-charge-ratio", "intensity"), 
+        compare = False, hash = False, repr=False)
+    expected_column_types : Tuple = field(
+        default=(np.int64, np.double, np.double), 
+        compare = False, hash = False, repr=False )    
+    def __post_init__(self):
+        # Check whether all provided information is in line with expected values
+        # Note that data frame elements will still be mutable.
+        expected_column_types = dict(zip(self.expected_columns, self.expected_column_types))
+        check_columns(self.data.columns.to_list(), self.expected_columns)
+        check_column_types(self.data.dtypes.to_dict(), expected_column_types)
+    def get_data(self):
+        return self.data
+    def get_column_as_np(self, column_name):
+        assert column_name in self.expected_columns, f"Column {column_name} not a member of MultiSpectrumDataContainer."
+        array = self.data[column_name].to_numpy()
+        return array
+
+def check_column_types(type_dict_provided , type_dict_expected ) -> None:
+    print("Checkpoint")
+    for key in type_dict_provided:
+        assert type_dict_provided[key] == type_dict_expected[key], (
+            f"Provided dtype for column {key} is {type_dict_provided[key]},"
+            f" but requires {type_dict_expected[key]}")
+    return None
+
+def check_columns(columns_provided : List[str], columns_expected : List[str]) -> None:
+    """
+    Check if provided columns match with expected columns.
+
+    :param columns_provided: List[str] of column names (expected derived from pd.DataFrame).
+    :param columns_expected: List[str] of column names (expected columns for pd.DataFrame)
+    
+    :raises: ValueError if column sets provided don't match.
+    """
+    set_provided = set(columns_provided)
+    set_expected = set(columns_expected)
+    assert set_provided == set_expected, ("Initialization error, provided columns do not match expected set.")
+    return None
