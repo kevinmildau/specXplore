@@ -373,7 +373,7 @@ def generate_fragmap(id_list: [int], spec_list: [matchms.Spectrum],
     filter_binned_spectra_by_frequency(
         binned_spectra=binned_spectra, n_bin_cutoff=n_bin_cutoff)
     remaining_bins = np.unique(binned_spectra["bin"].tolist())
-    print(binned_spectra)
+
 
     # Step 3-1: Calculate and Bin Neutral Losses
     neutral_losses = get_neutral_losses(id_list=id_list, spec_list=spec_list)
