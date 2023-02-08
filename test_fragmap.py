@@ -4,7 +4,7 @@ from specxplore.specxplore_data import specxplore_data
 import numpy as np
 from specxplore import fragmap
 
-with open("testing/results/phophe_specxplore.pickle", 'rb') as handle:
+with open("data_import_testing/results/phophe_specxplore.pickle", 'rb') as handle:
     data = pickle.load(handle)
 
 spectra = data.spectra
