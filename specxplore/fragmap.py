@@ -56,9 +56,7 @@ def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> pd.DataFrame:
 # PURE FUNCTION
 def bin_spectra(spectra_data_frame: pd.DataFrame, bins: List[float]) -> pd.DataFrame:
     """
-    MODIFIES INPUT SPECTRA DATA FRAME SUCH THAT ALL MZ VALUES ARE PUSHED TO COMPLY WITH BINNING.
-    UNCLEAR WORKING MECHANISM. 
-    WORKS ON WHILE DF LEVEL
+    Input is a dataframe with multiple a single or multiple spectra. Bin values are 
     """
     # GENERALIZE TO WORK WITH SINGLE SPECTRUM OBJECT
     # INPUT IS A SPECTRUM OBJECT, OUTPUT IS A SPECTRUM OBJECT. 
@@ -67,7 +65,9 @@ def bin_spectra(spectra_data_frame: pd.DataFrame, bins: List[float]) -> pd.DataF
     # Bin Spectrum Data
 
     spectra_data_frame_copy = copy.deepcopy(spectra_data_frame)
+    
     index_bin_map = pd.cut(x=spectra_data_frame_copy["mass-to-charge-ratio"], bins=bins, labels=bins[0:-1], include_lowest=True)
+    
     spectra_data_frame_copy.insert(loc=2, column="bin", value=index_bin_map, allow_duplicates=True)
 
     # Return Binned Data as long pandas dataframe
