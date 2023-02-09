@@ -44,10 +44,17 @@ class Spectrum:
     mass_to_charge_ratios : np.ndarray #np.ndarray[int, np.double] # for python 3.9 and up
     precursor_mass_to_charge_ratio : np.double
     identifier : np.int64
-    intensities : np.ndarray = None,
+    intensities : np.ndarray = None
+    mass_to_charge_ratio_aggregate_list : field(default_factory=tuple) = ()
+    intensity_aggregate_list : field(default_factory=tuple) = ()
     def __post_init__(self):
         if self.intensities is None:
             self.intensities = np.repeat(np.nan, self.mass_to_charge_ratios.size)
+        #if self.mass_to_charge_ratio_aggregate_list:
+        #    assert len(self.mass_to_charge_ratio_aggregate_list) == len(self.intensity_aggregate_list), (
+        #        "Bin data tuples must be of equal length.")
+        #    for x,y in (self.intensity_aggregate_list, self.mass_to_charge_ratio_aggregate_list):
+        #        assert len(x) == len(y), "Sub-tuples of bin tuple must be of equal length."
         assert self.intensities.shape == self.mass_to_charge_ratios.shape, (
             "Intensities and mass to charge ratios must be equal length.")
 
