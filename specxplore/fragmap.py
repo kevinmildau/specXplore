@@ -7,8 +7,11 @@ from specxplore.specxplore_data import Spectrum
 import typing
 from typing import List, Tuple
 import copy
+from specxplore.compose import compose_function
+from functools import partial
 # import pickle
 
+# TODO: REFACTOR THE PANEL GENERATOR
 def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_list : List[Spectrum]) -> html.Div:
     """ Generates fragmap panel.
     """
@@ -16,7 +19,6 @@ def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_lis
     # 1 --> empty or too small input; return empty
     # 2 --> input leads to fragmap build, return fragmap
     # 3 --> input is valid, but filtering prevents fragmap built, return empty
-
     if not spectrum_identifier_list or len(spectrum_identifier_list) < 2:
         empty_output_panel = [html.H6(("Select focus data and press generate fragmap button for fragmap."))]
         return empty_output_panel
@@ -70,7 +72,7 @@ def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> pd.DataFrame:
 
 # Pure Function.
 def bin_spectrum(spectrum : Spectrum, bin_map : np.ndarray) -> Spectrum:
-    """ Applies binning to mass-to-charge-ratio (mz) and intensity values and preserves aggregation information. 
+    """ Applies binning to mass_to_charge_ratio (mz) and intensity values and preserves aggregation information. 
 
     :param Spectrum: A spectrum object with mass_to_charge_ratios confined to the range of the bin_map.
     :param bin_map: An array with bins for mass to charge ratios, usually between 0 and 1000 with step_size of 0.1,
@@ -144,14 +146,14 @@ def bin_spectra(spectra_data_frame: pd.DataFrame, bins: List[float]) -> pd.DataF
 
     spectra_data_frame_copy = copy.deepcopy(spectra_data_frame)
     
-    index_bin_map = pd.cut(x=spectra_data_frame_copy["mass-to-charge-ratio"], bins=bins, labels=bins[0:-1], include_lowest=True)
+    index_bin_map = pd.cut(x=spectra_data_frame_copy["mass_to_charge_ratio"], bins=bins, labels=bins[0:-1], include_lowest=True)
     
     spectra_data_frame_copy.insert(loc=2, column="bin", value=index_bin_map, allow_duplicates=True)
 
     # Return Binned Data as long pandas dataframe
     return spectra_data_frame_copy
 
-def filter_binned_spectra_by_frequency(binned_spectra: pd.DataFrame, n_bin_cutoff: int):
+def filter_binned_fragments_by_prevalence(binned_spectra: pd.DataFrame, n_bin_cutoff: int):
     """
     Clean up binned data in place
     """
@@ -185,8 +187,9 @@ def filter_binned_spectra_by_frequency(binned_spectra: pd.DataFrame, n_bin_cutof
         labels=binned_spectra.loc[~binned_spectra["bin"].isin(bins_to_keep)].index, inplace=True)
     binned_spectra.reset_index(inplace=True, drop=True)
 
-# specxplore dataclass spectrum
-# generate only neutral losses --> list of mz, list of intensities ==> np.arrays()
+
+# Pure function.
+# TODO: add documentation.
 def compute_neutral_loss_spectrum(spectrum: Spectrum) -> Spectrum:
     """ Computes neutral loss mass to charge ratio values and corresponding intensities (nan)
     """
@@ -201,35 +204,14 @@ def compute_neutral_loss_spectrum(spectrum: Spectrum) -> Spectrum:
         is_neutral_loss = True)
     return neutral_loss_spectrum
 
-# get as input precursor and mz and int; do not require subselection in this; only pass relevant
-# generate list of datclass spectrums
-# create func to generate the pandas df / whatever needed for the plot
-def get_neutral_losses_data_frame(spec_list: List[Spectrum]) -> pd.DataFrame:
-    """
-    Description
-    """
-    # Initialize list of pandas data frames to contain the neutral loss data
-    neutral_losses_pandas_list = list()
-
-    # Iterate over all indices specified or all indices in the data
-    for spectrum in spec_list:
-        # Extra data, create pandas data frame, and append to growing list data frames
-        neutral_losses_mass_to_charge_ratios, neutral_losses_intensities = compute_neutral_losses(spectrum=spectrum)
-        neutral_losses_pandas_list.append(pd.DataFrame({
-            "spectrum": spectrum.identifier, # TODO: DOUBLE CHECK FOR ILOC IN LOCAL SET VS GLOBAL SET CONSISTENCY
-            "mass-to-charge-ratios": neutral_losses_mass_to_charge_ratios,
-            "intensity": neutral_losses_intensities}))
-    # Concatenate all data into singular long pandas
-    long_pandas = pd.concat(objs=neutral_losses_pandas_list, ignore_index=True)
-    return long_pandas
 
 # THIS CAN BE REPLACED WITH MATCHMS FILTERS FOR MZ BOUNDS, INTENSITY AND MAX NUMBER OF PEAKS
 # 3 lines of code.
 def filter_binned_spectra(spectra: pd.DataFrame,
                           intensity_threshold: float,
                           prevalence_threshold: int,
-                          mz_bounds: (float, float),
-                          to_discard=None) -> [int]:
+                          mz_bounds: Tuple[float, float],
+                          to_discard=None) -> List[int]:
     """
     Description
     """
@@ -271,17 +253,9 @@ def filter_binned_spectra(spectra: pd.DataFrame,
     return to_discard
 
 
-# generate_x_axis_labels_for_bins()
-# bins = all_observed_mz_values (binned)
-def get_bin_map(bins: [int]):
-    # Get all unique bins and sort them in ascending order
-    unique_bins = np.unique(bins)
-    unique_bins.sort()
-    # Create mapping of bins to integers based on ascending order
-    integer_map = {bin_id: index for index, bin_id in enumerate(unique_bins)}
-    # Return a list of bins mapped to corresponding integer values
-    return integer_map
 
+
+# TODO: INCORPORATE INTO GENERATE DATA FRAMES MODULES (PLOT RELEVANT DATA CONSTRUCTION)
 # generate_y_axis_labels_for_specs
 # input to get_spectrum_map should ??? contain actual spec_ids for y axis labelling.
 # beware of non-iloc downstream effects
@@ -308,6 +282,19 @@ def get_spectrum_map(spectra: [int], root: int):
     integer_map[root] = 0
     return integer_map
 
+# TODO: INCORPORATE INTO GENERATE HEATMAP FUNCTION
+# generate_x_axis_labels_for_bins()
+# bins = all_observed_mz_values (binned)
+def get_bin_map(bins: [int]):
+    # Get all unique bins and sort them in ascending order
+    unique_bins = np.unique(bins)
+    unique_bins.sort()
+    # Create mapping of bins to integers based on ascending order
+    integer_map = {bin_id: index for index, bin_id in enumerate(unique_bins)}
+    # Return a list of bins mapped to corresponding integer values
+    return integer_map
+
+# TODO: INCORPORATE INTO GENERATE HEATMAP FUNCTION
 # plot data generator function that creates input for heatmap
 # this is where the pandas aggregation should happen
 def get_spectrum_plot_data(
@@ -328,13 +315,13 @@ def get_spectrum_plot_data(
     new_data_frame = pd.DataFrame({
         "spectrum": [spectrum_map[spectrum] for spectrum in binned_spectra["spectrum"].tolist()],
         "bin": [bin_map[bin_id] for bin_id in binned_spectra["bin"].tolist()], # integer for x_axis
-        "mass-to-charge-ratio": binned_spectra["mass-to-charge-ratio"].tolist(), # --> actual mz values for each x_axis thing; could be tuple
+        "mass_to_charge_ratio": binned_spectra["mass_to_charge_ratio"].tolist(), # --> actual mz values for each x_axis thing; could be tuple
         "intensity": binned_spectra["intensity"].tolist()
     })
     # Return Mapped Dataset
     return new_data_frame
 
-
+# TODO: INCORPORATE INTO GENERATE HEATMAP FUNCTION
 def get_binned_spectrum_trace(binned_spectra: pd.DataFrame):
     # Create Heatmap Trace
     # TODO: parameterize the gaps in terms of the x and y axis instead of pixels
@@ -342,7 +329,7 @@ def get_binned_spectrum_trace(binned_spectra: pd.DataFrame):
     heatmap_trace = go.Heatmap(x=binned_spectra["bin"].tolist(),
                                y=binned_spectra["spectrum"].tolist(),
                                z=binned_spectra["intensity"].tolist(),
-                               text = binned_spectra["mass-to-charge-ratio"].tolist(),
+                               text = binned_spectra["mass_to_charge_ratio"].tolist(),
                                xgap=5,
                                ygap=5, 
                                colorscale = "blugrn")
@@ -351,6 +338,7 @@ def get_binned_spectrum_trace(binned_spectra: pd.DataFrame):
     return heatmap_trace
 
 
+# TODO: INCORPORATE INTO GENERATE HEATMAP FUNCTION
 # generate_neutral_loss_shape_list()
 # THIS IS NOT THE BINNED SPECTRA, BUT BINNED NEUTRAL LOSSES NOW CONCATENATED TO A PD.DATAFRAME
 # THE NEUTRAL NEED TO BE BINNED
@@ -379,7 +367,6 @@ def get_binned_neutral_trace(binned_spectra: pd.DataFrame):
     # Return the points trace
     return shapes
 
-
 def generate_fragmap(
     spectrum_list : List[Spectrum], relative_intensity_threshold : float, prevalence_threshold : int,
     mass_to_charge_ratio_minimum : float, mass_to_charge_ratio_maximum : float, bin_map : List[float],
@@ -402,20 +389,28 @@ def generate_fragmap(
         with the largest 200 intensities (i.e. low intensity noise fragment removal). Deactivating this behavior can be 
         achieved by setting the max number of fragments very high (e.g. 9999), but may lead to unreadable fragmaps.
     """
-    # prefilter spectra to size 200
+    # TODO: CONSIDER: prefilter spectra to size 200 before doing all data processing. Requires additional input?
 
-    # get neutral loss spectra
-
-    # bin spectra
-    # bin neutral loss spectra
+    # Get binned spectra and binned neutral loss spectra
+    neutral_loss_spectrum_list = [
+        bin_spectrum(compute_neutral_loss_spectrum(spectrum), bin_map) for spectrum in spectrum_list]
+    binned_spectrum_list = [bin_spectrum(spectrum, bin_map) for spectrum in spectrum_list]
    
-    # construct neutral loss df
-    # construct spectra df
+    print(f"--> Binned Neutral Loss Spectrum List: {neutral_loss_spectrum_list}")
+    print(f"--> Binned Spectrum List: {binned_spectrum_list}")
 
-    # apply filters to neutral loss df
-    # apply filters to spectra df
-
+    # construct spectra df and neutral loss df
+    #spectra_df = spectrum_list_to_pandas(binned_spectrum_list)
+    #losses_df = spectrum_list_to_pandas(neutral_loss_spectrum_list)
+    
+    # apply prevalence filters to joined spectra and neutral loss df
+    # Note: neutral loss prevalence may exceed 1 if a neutral loss is also an observed fragment. if so, it should be visualized
+    # Note: max frag filters wouldn't work well here.
+    #filtered_spectra_df = filter_binned_fragments_by_prevalence(spectra_df, max_number_of_binned_fragments)
+    #filtered_losses_df = filter_binned_fragments_by_prevalence(losses_df, max_number_of_binned_fragments)
+    
     # construct heatmap df
+
     # construct plotly graph
 
     # return plotly graph
@@ -454,12 +449,13 @@ def generate_fragmap_old(id_list: [int], spec_list: [matchms.Spectrum],
     # neutral losses should be exclusively in the existing bin set
 
 
+
     # Step 1: Construct Binned Spectra
     spectra_long = spectrum_list_to_pandas(id_list=id_list, spec_list=spec_list)
     binned_spectra = bin_spectra(spectra=spectra_long, bins=bins)
 
     # Step 2: Filter Binned Spectra
-    filter_binned_spectra_by_frequency(binned_spectra=binned_spectra, n_bin_cutoff=n_bin_cutoff)
+    filter_binned_fragments_by_prevalence(binned_spectra=binned_spectra, n_bin_cutoff=n_bin_cutoff)
     remaining_bins = np.unique(binned_spectra["bin"].tolist())
 
 
