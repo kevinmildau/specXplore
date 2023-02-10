@@ -42,8 +42,12 @@ def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_lis
 # TODO
 # generates long format data frame with spectral data columns id, mz, intensity
 def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> pd.DataFrame:
-    """
-    Constructs long format pandas data frame from spectrum list.
+    """ Constructs long format pandas data frame from spectrum list.
+
+    :param spectrum_list: A list of Spectrum objects. The spectrum need to be binned already for aggregate lists to be
+        available.
+    :raises: Assertion error if is_binned_spectrum is False for a provided spectrum.
+    :returns: Long format pandas data frame with all data needed for plotting fragmap.
     """
     # Check that all information required for data frame creation is present in spectrum object
     for spectrum in spectrum_list:
