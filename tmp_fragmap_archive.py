@@ -141,3 +141,141 @@ def generate_fragmap_old(id_list: [int], spec_list: [matchms.Spectrum],
         margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":10}
     )
     return fragmentation_map
+
+# PURE FUNCTION
+def bin_spectra(spectra_data_frame: pd.DataFrame, bins: List[float]) -> pd.DataFrame:
+    """
+    Input is a dataframe with multiple a single or multiple spectra. Bin values are 
+    """
+    # GENERALIZE TO WORK WITH SINGLE SPECTRUM OBJECT
+    # INPUT IS A SPECTRUM OBJECT, OUTPUT IS A SPECTRUM OBJECT. 
+    # GENERALIZE AT A LATER STAGE TO: OUTPUT IS A BINNED SPECTRUM OBJECT WITH TUPLES OF BINNED VALUES ACCESSIBLE
+
+    # Bin Spectrum Data
+
+    spectra_data_frame_copy = copy.deepcopy(spectra_data_frame)
+    
+    index_bin_map = pd.cut(x=spectra_data_frame_copy["mass_to_charge_ratio"], bins=bins, labels=bins[0:-1], include_lowest=True)
+    
+    spectra_data_frame_copy.insert(loc=2, column="bin", value=index_bin_map, allow_duplicates=True)
+
+    # Return Binned Data as long pandas dataframe
+    return spectra_data_frame_copy
+
+
+# THIS CAN BE REPLACED WITH MATCHMS FILTERS FOR MZ BOUNDS, INTENSITY AND MAX NUMBER OF PEAKS
+# 3 lines of code.
+def filter_binned_spectra(spectra: pd.DataFrame,
+                          intensity_threshold: float,
+                          prevalence_threshold: int,
+                          mz_bounds: Tuple[float, float],
+                          to_discard=None) -> List[int]:
+    """
+    Description
+    """
+    #for each spec:
+    #    filter_intensity (each spectrum) # get ridd of noise
+    #    filter_mz (each spectrum) # limit to range
+    
+    # filter prevalence would work in a single line when using pd filters
+    #filter_prevalence (list of spectra) # avoid non-overlaps
+
+    # Initialize a list of bins to remove if they do not meet the criteria set
+    to_discard = list() if to_discard is None else to_discard
+    # Iterate over all bins in the current spectra dataset
+    all_bins = np.unique(spectra["bin"].tolist())
+    for current_bin in all_bins:
+        # If the bin has already been flagged for removal, continue
+        if current_bin in to_discard:
+            continue
+        # If the current bin's mz values do not fall within the specified range, remove
+        if mz_bounds[0] > current_bin or mz_bounds[1] <= current_bin:
+            to_discard.append(current_bin)
+            continue
+        # Extract all data of the current bin
+        bin_data = spectra.loc[spectra['bin'] == current_bin]
+        # If the bin has too few spectra featured within it, discard
+        if bin_data.shape[0] < prevalence_threshold:
+            to_discard.append(current_bin)
+            continue
+        # If all the bin's intensities are below the threshold, discard
+        if all(intensity < intensity_threshold for intensity in bin_data["intensity"].tolist()):
+            to_discard.append(current_bin)
+            continue
+    # Filter out all the
+    spectra.drop(
+        labels=spectra.loc[spectra["bin"].isin(to_discard)].index, 
+        inplace=True)
+    spectra.reset_index(inplace=True, drop=True)
+    # Return the list of bins discarded
+    return to_discard
+
+# TODO: INCORPORATE INTO GENERATE HEATMAP FUNCTION
+# plot data generator function that creates input for heatmap
+# this is where the pandas aggregation should happen
+def get_spectrum_plot_data(
+    binned_spectra: pd.DataFrame, spectrum_map: {int: int}, 
+    bin_map: {int: int}):
+    """
+    Description
+    """
+    # Map Bins and Spectra to their new continuous values for plotting
+
+
+    # create list of mapped spectra
+    # 1 row for each spec_id and y_index tuple
+    # key indexing, get for each spectrum_identifier the corresponding y_index continuous position
+
+    # [spectrum_map[spectrum] for spectrum in binned_spectra["spectrum"].tolist()]
+
+    new_data_frame = pd.DataFrame({
+        "spectrum": [spectrum_map[spectrum] for spectrum in binned_spectra["spectrum"].tolist()],
+        "bin": [bin_map[bin_id] for bin_id in binned_spectra["bin"].tolist()], # integer for x_axis
+        "mass_to_charge_ratio": binned_spectra["mass_to_charge_ratio"].tolist(), # --> actual mz values for each x_axis thing; could be tuple
+        "intensity": binned_spectra["intensity"].tolist()
+    })
+    # Return Mapped Dataset
+    return new_data_frame
+# TODO: INCORPORATE INTO GENERATE DATA FRAMES MODULES (PLOT RELEVANT DATA CONSTRUCTION)
+# generate_y_axis_labels_for_specs
+# input to get_spectrum_map should ??? contain actual spec_ids for y axis labelling.
+# beware of non-iloc downstream effects
+def get_spectrum_map(spectra: [int], root: int):
+    assert root in spectra, (
+        f"Error: Root Spectrum {root} not present in provided spectrum list."
+    )
+
+    
+    # pandas specific artefacts since ids may now be duplicated
+    unique_spectra = np.unique(spectra)
+    unique_spectra = [ spectrum for spectrum in unique_spectra if spectrum != root]
+
+    unique_spectra.sort()
+    
+    # TODO: double check indexing validity
+    integer_map = {
+        spectrum: index + 1 
+        for index, spectrum in enumerate(unique_spectra) 
+        if spectrum != root}
+    
+    integer_map[root] = 0
+    return integer_map
+
+def filter_binned_fragments_by_prevalence(binned_spectra: pd.DataFrame, n_bin_cutoff: int):
+    """
+    Return copy of spectrum data frame with prevalence filter applied to fragments / bins.
+    """
+    # Count the total number of unique bins the dataset. Return if below threshold
+    unique_bins = np.unique(binned_spectra['bin'].tolist())
+    if len(unique_bins) <= n_bin_cutoff:
+        return # <-- # TODO: FIX NO OUTPUT DEPENDING ON INPUT TO MORE PREDICTABLE RETURN. return binned_spectra ?
+    
+    # Count the number of occurrences per bin
+    bin_counts = binned_spectra.groupby(by="bin", axis=0, as_index=False, observed=True).size()
+    bin_counts.sort_values(by="size", axis=0, ascending=False, inplace=True, ignore_index=True)
+
+    # Filter Binned Spectra in place
+    bins_to_keep = bin_counts.head(n=n_bin_cutoff)["bin"].tolist()
+    binned_spectra.drop(
+        labels=binned_spectra.loc[~binned_spectra["bin"].isin(bins_to_keep)].index, inplace=True)
+    binned_spectra.reset_index(inplace=True, drop=True)
