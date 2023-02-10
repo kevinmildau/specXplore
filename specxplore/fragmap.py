@@ -53,6 +53,69 @@ def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> pd.DataFrame:
     long_pandas_df = pd.concat(objs=spectrum_dataframe_list, ignore_index=True)
     return long_pandas_df
 
+# Pure Function.
+def bin_spectrum(spectrum : Spectrum, bin_map : np.ndarray) -> Spectrum:
+    """ Applies binning to mass-to-charge-ratio (mz) and intensity values and preserves aggregation information. 
+
+    :param Spectrum: A spectrum object with mass_to_charge_ratios confined to the range of the bin_map.
+    :param bin_map: An array with bins for mass to charge ratios, usually between 0 and 1000 with step_size of 0.1,
+    :returns: A new spectrum object with binned spectra and aggregated data.
+
+    Details:
+    Constructs bin assignments for each mz value in the spectrum using bin_map. Then proceeds to loop through each
+    unique bin assignment (i.e. index to bin_map). For each unique index, it gather all instances' data into 4 data
+    containers:
+        mass_to_charge_ratio_list --> list of unique binned mz values (multiple mz may be put into one bin)
+        intensity_list --> list of additive intensities for each mz bin, renormalized as a final step
+        mass_to_charge_ratio_aggregate_list -> List with sub lists of all mz values joined into single bin.
+        intensity_aggregate_list -> List with sub lists of all intensity values joined into single bin.
+    """
+    mz_values = copy.deepcopy(spectrum.mass_to_charge_ratios)
+
+    assert (max(mz_values) <= max(bin_map)) and (min(mz_values) >= min(bin_map)), ("All mz values in spectrum must be" 
+        f" within range of bin_map, i.e. {min(bin_map)} and {max(bin_map)}")
+
+    intensities = copy.deepcopy(spectrum.intensities)
+    mz_value_bin_assignments = np.digitize(mz_values, bin_map, right=True)
+    # Pre-allocation
+    unique_assignments = np.unique(mz_value_bin_assignments)
+    number_of_unique_assignments = len(unique_assignments)
+    mass_to_charge_ratio_aggregate_list = [None] * number_of_unique_assignments
+    intensity_aggregate_list = [None] * number_of_unique_assignments
+    intensity_list = [0.0 for _ in range(0, number_of_unique_assignments)]
+    mass_to_charge_ratio_list = [None for _ in range(0, number_of_unique_assignments)]
+    # Double loop container assignment
+    for idx_unique_assignments in range(0, number_of_unique_assignments):
+        unique_assignment = unique_assignments[idx_unique_assignments] # this is an index for the bin_map
+        for idx_bin_number in range(0, len(mz_value_bin_assignments)): # for all mz values / mz_bin_assignments
+            # check whether the unique_assignment is a match to the assignment
+            assignment = mz_value_bin_assignments[idx_bin_number]
+            if unique_assignment == assignment:
+                tmp_mz_bin = bin_map[assignment]
+                tmp_mass_to_charge_ratio = mz_values[idx_bin_number]
+                tmp_intensity = intensities[idx_bin_number]
+                if mass_to_charge_ratio_aggregate_list[idx_unique_assignments] is None:
+                    mass_to_charge_ratio_aggregate_list[idx_unique_assignments] = [tmp_mass_to_charge_ratio]
+                else: 
+                    mass_to_charge_ratio_aggregate_list[idx_unique_assignments].append(tmp_mass_to_charge_ratio)
+                if intensity_aggregate_list[idx_unique_assignments] is None:
+                    intensity_aggregate_list[idx_unique_assignments] = [tmp_intensity]
+                else:
+                    intensity_aggregate_list[idx_unique_assignments].append(tmp_intensity)
+                intensity_list[idx_unique_assignments] += tmp_intensity
+                if mass_to_charge_ratio_list[idx_unique_assignments] is None:
+                    mass_to_charge_ratio_list[idx_unique_assignments] = tmp_mz_bin
+    # Renormalization of intensities
+    intensity_list = intensity_list / max(intensity_list)
+    output_spectrum = Spectrum(
+        mass_to_charge_ratios=np.array(mass_to_charge_ratio_list),
+        precursor_mass_to_charge_ratio=copy.deepcopy(spectrum.precursor_mass_to_charge_ratio),
+        identifier=copy.deepcopy(spectrum.identifier),
+        intensities=np.array(intensity_list),
+        intensity_aggregate_list=intensity_aggregate_list,
+        mass_to_charge_ratio_aggregate_list=mass_to_charge_ratio_aggregate_list)
+    return output_spectrum
+
 # PURE FUNCTION
 def bin_spectra(spectra_data_frame: pd.DataFrame, bins: List[float]) -> pd.DataFrame:
     """
