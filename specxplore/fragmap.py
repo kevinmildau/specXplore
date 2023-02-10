@@ -365,7 +365,49 @@ def get_binned_neutral_trace(binned_spectra: pd.DataFrame):
     return shapes
 
 
-def generate_fragmap(id_list: [int], spec_list: [matchms.Spectrum], 
+def generate_fragmap(
+    spectrum_list : List[Spectrum], relative_intensity_threshold : float, prevalence_threshold : int,
+    mass_to_charge_ratio_minimum : float, mass_to_charge_ratio_maximum : float, bin_map : List[float],
+    root_spectrum_identifier : int, max_number_of_binned_fragments : int = 200) -> None:
+    """ Processes list of spectra and generates fragmap graph. 
+
+    :param spectrum_list: List of Spectrum objects with mass_to_charge_ratios and intensities arrays.
+    :param relative_intensity_threshold: Minimum relative peak intensity after binning for binned fragment to be 
+        included in plot.
+    :param prevalence_threshold: Minimum occurence number accross spectra for binned fragment to be included in plot.
+    :param mass_to_charge_ratio_minimum: Minimum mass to charge ratio considered for plotting. All lower values will be 
+        cut.
+    :param mass_to_charge_ratio_maximum: Maximum mass to charge ratio considered for plotting. All higher values will be
+        cut.
+    :param bin_map: List with sequence of mass to charge ratio values to be used for binning. Usually a sequence from
+        0 to 1000 in steps of 0.1, e.g. 0, 0.1, 0.2, 0.3 ... 999.8, 999.9, 1000.
+    :param root_spectrum_identifier: Spectrum identifier for spectrum to be used as lowest entry in fragmap.
+    :param max_number_of_binned_fragments: Maximum number of binned fragments per Spectrum considered. If, after all
+        other filtering steps, a spectrum exceeds this number of fragments, the spectrum is truncated to the fragments
+        with the largest 200 intensities (i.e. low intensity noise fragment removal). Deactivating this behavior can be 
+        achieved by setting the max number of fragments very high (e.g. 9999), but may lead to unreadable fragmaps.
+    """
+    # prefilter spectra to size 200
+
+    # get neutral loss spectra
+
+    # bin spectra
+    # bin neutral loss spectra
+   
+    # construct neutral loss df
+    # construct spectra df
+
+    # apply filters to neutral loss df
+    # apply filters to spectra df
+
+    # construct heatmap df
+    # construct plotly graph
+
+    # return plotly graph
+
+
+
+def generate_fragmap_old(id_list: [int], spec_list: [matchms.Spectrum], 
     rel_intensity_threshold: float, prevalence_threshold: int, mz_min: float,
     mz_max: float, bins: [float], root: int = 0, n_bin_cutoff: int = 200):
     """
@@ -398,13 +440,11 @@ def generate_fragmap(id_list: [int], spec_list: [matchms.Spectrum],
 
 
     # Step 1: Construct Binned Spectra
-    spectra_long = spectrum_list_to_pandas(
-        id_list=id_list, spec_list=spec_list)
+    spectra_long = spectrum_list_to_pandas(id_list=id_list, spec_list=spec_list)
     binned_spectra = bin_spectra(spectra=spectra_long, bins=bins)
 
     # Step 2: Filter Binned Spectra
-    filter_binned_spectra_by_frequency(
-        binned_spectra=binned_spectra, n_bin_cutoff=n_bin_cutoff)
+    filter_binned_spectra_by_frequency(binned_spectra=binned_spectra, n_bin_cutoff=n_bin_cutoff)
     remaining_bins = np.unique(binned_spectra["bin"].tolist())
 
 
@@ -413,10 +453,7 @@ def generate_fragmap(id_list: [int], spec_list: [matchms.Spectrum],
     binned_neutral = bin_spectra(spectra=neutral_losses, bins=bins)
 
     # Step 3-2: Keep only those bins featured in the binned spectrum set
-    binned_neutral.drop(
-        labels=binned_neutral.loc[
-            ~binned_neutral["bin"].isin(remaining_bins)].index, 
-            inplace=True)
+    binned_neutral.drop(labels=binned_neutral.loc[~binned_neutral["bin"].isin(remaining_bins)].index, inplace=True)
     binned_neutral.reset_index(inplace=True, drop=True)
 
 
@@ -424,8 +461,7 @@ def generate_fragmap(id_list: [int], spec_list: [matchms.Spectrum],
     # Step 4-1: Filter Binned Spectra
     discarded_bins = filter_binned_spectra(
         spectra=binned_spectra, intensity_threshold=rel_intensity_threshold,
-        prevalence_threshold=prevalence_threshold,
-        mz_bounds=(mz_min, mz_max))
+        prevalence_threshold=prevalence_threshold, mz_bounds=(mz_min, mz_max))
 
     # THIS SECOND STEP SEEMS SUPERFLUOUS
     #
