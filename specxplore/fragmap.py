@@ -172,12 +172,19 @@ def filter_binned_spectra_by_frequency(binned_spectra: pd.DataFrame, n_bin_cutof
 
 # specxplore dataclass spectrum
 # generate only neutral losses --> list of mz, list of intensities ==> np.arrays()
-def compute_neutral_losses(spectrum: Spectrum) -> Tuple[np.ndarray, np.ndarray]:
+def compute_neutral_loss_spectrum(spectrum: Spectrum) -> Spectrum:
     """ Computes neutral loss mass to charge ratio values and corresponding intensities (nan)
     """
     neutral_losses_mass_to_charge_ratios = abs(spectrum.precursor_mass_to_charge_ratio - spectrum.mass_to_charge_ratios)
     neutral_losses_intensities = np.repeat(np.nan, neutral_losses_mass_to_charge_ratios.size)
-    return neutral_losses_mass_to_charge_ratios, neutral_losses_intensities
+
+    neutral_loss_spectrum = Spectrum(
+        mass_to_charge_ratios = neutral_losses_mass_to_charge_ratios, 
+        precursor_mass_to_charge_ratio = copy.deepcopy(spectrum.precursor_mass_to_charge_ratio), 
+        identifier = copy.deepcopy(spectrum.identifier),
+        intensities = neutral_losses_intensities,
+        is_neutral_loss = True)
+    return neutral_loss_spectrum
 
 # get as input precursor and mz and int; do not require subselection in this; only pass relevant
 # generate list of datclass spectrums
