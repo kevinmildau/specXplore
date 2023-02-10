@@ -8,20 +8,19 @@ with open("data_import_testing/results/phophe_specxplore.pickle", 'rb') as handl
     data = pickle.load(handle).spectra
 
 spectra = [Spectrum(spec.peaks.mz, max(spec.peaks.mz),idx, spec.peaks.intensities) for idx, spec in enumerate(data)]
+print(f"Spectrum object 0: {spectra[0]}")
 
-print(spectra[0])
-print(len(spectra))
-
-spectrum_df = fragmap.spectrum_list_to_pandas(spectra[0:2])
-print("--> Spectrum df", spectrum_df)
-spectrum_bin_template = [round(x, 1) for x in list(np.arange(0, 1000 + 1, 1))]
-print("--> Spectrum bin template head:", spectrum_bin_template[0:6])
-spectrum_df_binned = fragmap.bin_spectra(spectrum_df, spectrum_bin_template)
-print("--> Spectrum df after binning:", spectrum_df_binned)
+spectrum_bin_template = [round(x, 1) for x in list(np.arange(0, 1000 + 10, 10))]
 
 # test binning
-print(fragmap.bin_spectrum(spectra[0], bin_map=np.round(np.arange(0, 1000, step = 0.1), decimals= 2)))
-#bins = [round(x, 1) for x in list(np.arange(0, 1000 + 0.1, 0.1))]
-#fig = fragmap.generate_fragmap([0,16,17,18,19], spectra, 0.01, 1, 0, 1000, bins, 0, 200)
+bin_test = fragmap.bin_spectrum(spectra[0], spectrum_bin_template)
+print(f"Binning Output: {bin_test}")
 
-#fig.show(renderer = "browser")
+#
+spectra_subset = [spectra[idx] for idx in [0,16,17,18]]
+binned_spectra = [fragmap.bin_spectrum(spectrum, spectrum_bin_template) for spectrum in spectra_subset]
+print("--> Multiple binning output:", binned_spectra)
+
+#
+spectrum_df = fragmap.spectrum_list_to_pandas(binned_spectra)
+print("--> Spectrum df generator output\n", spectrum_df)
