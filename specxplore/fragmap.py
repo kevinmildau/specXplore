@@ -37,19 +37,34 @@ def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_lis
         "width":"100%","height":"60vh", "border":"1px grey solid"}))]
     return(fragmap_output_panel)
 
+# TODO
 # generates long format data frame with spectral data columns id, mz, intensity
 def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> pd.DataFrame:
     """
     Constructs long format pandas data frame from spectrum list.
     """
+    # Check that all information required for data frame creation is present in spectrum object
+    for spectrum in spectrum_list:
+        assert spectrum.is_binned_spectrum == True, "spectrum list to pandas expects binned spectra as input."
+    
     # Initialize empty list of data frames
     spectrum_dataframe_list = list()
+    # Add spectra to data frame list
     for spectrum in spectrum_list:
-        spectrum_dataframe_list.append(pd.DataFrame({
-            "spectrum_identifier": spectrum.identifier, 
-            "mass-to-charge-ratio": spectrum.mass_to_charge_ratios, 
-            "intensity": spectrum.intensities }))
-    # Return single long data frame
+        n_repeats = len(spectrum.mass_to_charge_ratios)
+        spectrum_identifier_repeated = np.repeat(spectrum.identifier, n_repeats)
+        is_binned_spectrum_repeated = np.repeat(spectrum.is_binned_spectrum, n_repeats)
+        is_neutral_loss_repeated = np.repeat(spectrum.is_neutral_loss, n_repeats)
+        tmp_df = pd.DataFrame({
+            "spectrum_identifier": spectrum_identifier_repeated, 
+            "mass_to_charge_ratio":spectrum.mass_to_charge_ratios, 
+            "intensity":spectrum.intensities,
+            "mass_to_charge_ratio_aggregate_list":spectrum.mass_to_charge_ratio_aggregate_list,
+            "intensity_aggregate_list":spectrum.intensity_aggregate_list,
+            "is_neutral_loss":is_neutral_loss_repeated,
+            "is_binned_spectrum":is_binned_spectrum_repeated})
+        spectrum_dataframe_list.append(tmp_df)
+    # Concatenate data frame list
     long_pandas_df = pd.concat(objs=spectrum_dataframe_list, ignore_index=True)
     return long_pandas_df
 
