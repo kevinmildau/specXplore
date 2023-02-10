@@ -33,6 +33,11 @@ class Spectrum:
     :param precursor_mass_to_charge_ratio: np.double with mass to charge ratio of precursor.
     :param identifier: np.int64 is the spectrum's identifier number.
     :param intensities: np.ndarray of shape(1,n) where n is the number of intensities.
+    :param mass_to_charge_ratio_aggregate_list: List[List] containing original mass to charge ratios merged 
+        together during binning.
+    :param intensity_aggregate_list: List[List] containing original intensity values merged together during binning.
+    :param binned_spectrum: Bool, autodetermined from presence of aggregate lists to specify that the spectrum has been 
+        binned.
     :raises: Error if size shapes of intensities and mass_to_charge_ratio arrays differ.
     
     Developer Notes: 
@@ -40,6 +45,8 @@ class Spectrum:
     There are no checks in place within the Spectrum object to make sure this is the case.
     Intensities are not necessary as an input. This is to accomodate neutral loss mock spectra objects. If no 
     intensities are provided, intensity values are set to np.nan assuming neutral loss spectra were provided.
+    Aggregate lists are an optional input an by-product of binning. If no two mz values were put into the same mass-
+    to-charge-ratio bin, then the aggregate lists contains only lists of len 1.
     """
     mass_to_charge_ratios : np.ndarray #np.ndarray[int, np.double] # for python 3.9 and up
     precursor_mass_to_charge_ratio : np.double
@@ -47,16 +54,21 @@ class Spectrum:
     intensities : np.ndarray = None
     mass_to_charge_ratio_aggregate_list : field(default_factory=tuple) = ()
     intensity_aggregate_list : field(default_factory=tuple) = ()
+    is_binned_spectrum : bool = False
+    is_neutral_loss : bool = False
     def __post_init__(self):
         if self.intensities is None:
             self.intensities = np.repeat(np.nan, self.mass_to_charge_ratios.size)
-        #if self.mass_to_charge_ratio_aggregate_list:
-        #    assert len(self.mass_to_charge_ratio_aggregate_list) == len(self.intensity_aggregate_list), (
-        #        "Bin data tuples must be of equal length.")
-        #    for x,y in (self.intensity_aggregate_list, self.mass_to_charge_ratio_aggregate_list):
-        #        assert len(x) == len(y), "Sub-tuples of bin tuple must be of equal length."
         assert self.intensities.shape == self.mass_to_charge_ratios.shape, (
-            "Intensities and mass to charge ratios must be equal length.")
+            "Intensities (array) and mass to charge ratios (array) must be equal shape.")
+        if (self.intensity_aggregate_list) and (self.mass_to_charge_ratio_aggregate_list):
+            self.is_binned_spectrum = True
+            assert len(self.mass_to_charge_ratio_aggregate_list) == len(self.intensity_aggregate_list), (
+                "Bin data lists of lists must be of equal length.")
+            for x,y in zip(self.intensity_aggregate_list, self.mass_to_charge_ratio_aggregate_list):
+                assert len(x) == len(y), ("Sub-lists of aggregate lists must be of equal length, i.e. for each"
+                    " mass-to-charge-ratio there must be an intensity value at equal List[sublist] position.")
+
 
 @dataclass(frozen=True)
 class MultiSpectrumDataFrameContainer:
