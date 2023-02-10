@@ -18,6 +18,9 @@ spectrum_bin_template = [round(x, 1) for x in list(np.arange(0, 1000 + 1, 1))]
 print("--> Spectrum bin template head:", spectrum_bin_template[0:6])
 spectrum_df_binned = fragmap.bin_spectra(spectrum_df, spectrum_bin_template)
 print("--> Spectrum df after binning:", spectrum_df_binned)
+
+# test binning
+print(fragmap.bin_spectrum(spectra[0], bin_map=np.round(np.arange(0, 1000, step = 0.1), decimals= 2)))
 #bins = [round(x, 1) for x in list(np.arange(0, 1000 + 0.1, 0.1))]
 #fig = fragmap.generate_fragmap([0,16,17,18,19], spectra, 0.01, 1, 0, 1000, bins, 0, 200)
 
