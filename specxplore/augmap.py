@@ -118,7 +118,7 @@ def generate_augmap_graph(
     
     # Convert string input to integer iloc
     idx_iloc_list = [int(elem) for elem in clust_selection]
-    n_elements = len(idx)
+    n_elements = len(idx_iloc_list)
     
     # Extract similarity matrices for selection
     similarity_matrix_1 = extract_sub_matrix(idx_iloc_list, similarity_matrix_ms2ds)
