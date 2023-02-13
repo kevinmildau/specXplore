@@ -12,7 +12,7 @@ with open("data_import_testing/results/phophe_specxplore.pickle", 'rb') as handl
 spectra = [Spectrum(spec.peaks.mz, max(spec.peaks.mz),idx, spec.peaks.intensities) for idx, spec in enumerate(data)]
 #print(f"Spectrum object 0: {spectra[0]}")
 
-spectrum_bin_template = [round(x, 1) for x in list(np.arange(0, 1000 + 10, 10))]
+spectrum_bin_template = [round(x, 1) for x in list(np.arange(0, 1000 + 0.1, 0.1))]
 
 # test binning
 bin_test = fragmap.bin_spectrum(spectra[0], spectrum_bin_template)

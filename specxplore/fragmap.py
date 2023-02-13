@@ -282,7 +282,7 @@ def get_heatmap(spectra_df: pd.DataFrame):
             fixedrange=True,
             tickmode='array',
             tickvals=np.unique(tmp_df["spec_index"]),
-            ticktext=np.unique(tmp_df["spectrum_identifier"])
+            ticktext=  [f"Spectrum {elem}" for elem in np.unique(tmp_df["spectrum_identifier"])]
         ),
         # relabel the x-axis
         xaxis=dict(
@@ -368,7 +368,8 @@ def generate_fragmap(
         losses_df, mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum)
 
     all_plot_data_df = pd.concat([filtered_spectra_df, filtered_losses_df], axis = 0)
-    all_plot_data_df = generate_prevalence_filtered_binned_spectrum_df(all_plot_data_df, n_min_occurrences=1)
+    all_plot_data_df = generate_prevalence_filtered_binned_spectrum_df(
+        all_plot_data_df, n_min_occurrences=prevalence_threshold)
     
     fragmap = get_heatmap(all_plot_data_df)
 
