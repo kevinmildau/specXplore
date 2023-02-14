@@ -12,7 +12,8 @@ with open("data_import_testing/results/phophe_specxplore.pickle", 'rb') as handl
 spectra = [Spectrum(spec.peaks.mz, max(spec.peaks.mz),idx, spec.peaks.intensities) for idx, spec in enumerate(data)]
 #print(f"Spectrum object 0: {spectra[0]}")
 
-spectrum_bin_template = [round(x, 1) for x in list(np.arange(0, 1000 + 0.1, 0.1))]
+step = 0.1
+spectrum_bin_template = [round(x, 1) for x in list(np.arange(0, 1000 + step, step))]
 
 # test binning
 bin_test = fragmap.bin_spectrum(spectra[0], spectrum_bin_template)
@@ -61,6 +62,13 @@ tmp = fragmap.generate_prevalence_filtered_binned_spectrum_df(tmp, n_min_occurre
 
 
 
-fig = fragmap.generate_fragmap(spectra_subset, 0.0,1,0,1000,spectrum_bin_template,0,200)
+fig = fragmap.generate_fragmap(spectra, 0.0,2,0,1000,spectrum_bin_template,0,200)
 
 fig.show(renderer = "browser")
+
+
+# 3 conditions that should be tested in generate fragmap panel
+# 1 --> empty or too small input; return empty
+# 2 --> input leads to fragmap build, return fragmap
+# 3 --> input is valid, but filtering prevents fragmap built, return empty
+#   --> capture the various error points where this could be a problem
