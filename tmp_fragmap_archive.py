@@ -279,3 +279,40 @@ def filter_binned_fragments_by_prevalence(binned_spectra: pd.DataFrame, n_bin_cu
     binned_spectra.drop(
         labels=binned_spectra.loc[~binned_spectra["bin"].isin(bins_to_keep)].index, inplace=True)
     binned_spectra.reset_index(inplace=True, drop=True)
+
+# TODO: INCORPORATE INTO GENERATE HEATMAP FUNCTION
+# generate_x_axis_labels_for_bins()
+# bins = all_observed_mz_values (binned)
+def get_bin_map(bins: [int]):
+    # Get all unique bins and sort them in ascending order
+    unique_bins = np.unique(bins)
+    unique_bins.sort()
+    # Create mapping of bins to integers based on ascending order
+    integer_map = {bin_id: index for index, bin_id in enumerate(unique_bins)}
+    # Return a list of bins mapped to corresponding integer values
+    return integer_map
+
+# TODO: INCORPORATE INTO GENERATE HEATMAP FUNCTION
+# generate_neutral_loss_shape_list()
+# THIS IS NOT THE BINNED SPECTRA, BUT BINNED NEUTRAL LOSSES NOW CONCATENATED TO A PD.DATAFRAME
+# THE NEUTRAL NEED TO BE BINNED
+def get_binned_neutral_trace(binned_spectra: pd.DataFrame):
+
+    # Radius of Points
+    r = 0.2
+    # TODO: ADD N_ROWS PARAMETER
+
+    # Create Point Scatter of neutral losses
+    # 'line_color':'orange', 'line_width' : 0.5 # --> border lines with
+    # different colors help visual clarity, but introduce border sizing
+    # artefacts
+    kwargs = {'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': 'red', 'opacity' : 1}
+    shapes = [ go.layout.Shape( x0=binned_spectra.iloc[row]["bin"] - r,
+            y0=binned_spectra.iloc[row]["spectrum"] - r,
+            x1=binned_spectra.iloc[row]["bin"] + r,
+            y1=binned_spectra.iloc[row]["spectrum"] + r,
+            **kwargs) 
+        for row in range(0, binned_spectra.shape[0])]
+
+    # Return the points trace
+    return shapes
