@@ -4,6 +4,8 @@ import pandas as pd
 from collections import namedtuple
 import typing
 from typing import List, TypedDict, Tuple, Dict, NamedTuple
+import copy
+
 class specxplore_data:
   def __init__(
     self, ms2deepscore_sim, spec2vec_sim, cosine_sim, 
@@ -29,6 +31,7 @@ class specxplore_data:
 class Spectrum:
     """ Spectrum data class for storing basic spectrum information and neutral loss spectra. 
 
+    Parameters:
     :param mass_to_charge_ratio: np.ndarray of shape(1,n) where n is the number of mass to charge ratios.
     :param precursor_mass_to_charge_ratio: np.double with mass to charge ratio of precursor.
     :param identifier: np.int64 is the spectrum's identifier number.
@@ -38,7 +41,9 @@ class Spectrum:
     :param intensity_aggregate_list: List[List] containing original intensity values merged together during binning.
     :param binned_spectrum: Bool, autodetermined from presence of aggregate lists to specify that the spectrum has been 
         binned.
-    :raises: Error if size shapes of intensities and mass_to_charge_ratio arrays differ.
+    Raises:
+        ValueError: if shapes of intensities and mass_to_charge_ratio arrays differ.
+        ValueError: if length mismatches in List[List] structures for aggregate lists if provided.
     
     Developer Notes: 
     Spectrum identifier should correspond to the iloc of the spectrum in the orginal spectrum list used in specxplore.
@@ -56,7 +61,9 @@ class Spectrum:
     intensity_aggregate_list : field(default_factory=tuple) = ()
     is_binned_spectrum : bool = False
     is_neutral_loss : bool = False
+    
     def __post_init__(self):
+        """ Assert that data provided to constructor is valid. """
         if self.intensities is None:
             self.intensities = np.repeat(np.nan, self.mass_to_charge_ratios.size)
         assert self.intensities.shape == self.mass_to_charge_ratios.shape, (
@@ -71,51 +78,69 @@ class Spectrum:
 
 
 @dataclass(frozen=True)
-class MultiSpectrumDataFrameContainer:
+class SpectraDF:
     """ 
     Dataclass container for long format data frame containing multiple spectra.
-    :param data: A dataframe with columns ("identifier", "mass-to-charge-ratio", "intensity") of types 
-        (np.int64, np.double, np.double).
+
+    Parameters:
+        data: A pandas.DataFrame with columns ("identifier", "mass-to-charge-ratio", "intensity") of types (np.int64, 
+        np.double, np.double).
+    
     Note: 
-        Requires check_columns and check_column_types functions.
-        The data dataframe elements are still mutable, frozen only prevent overwriting the object as a whole.
+        Requires assert_column_set and assert_column_types functions.
+        The data dataframe elements are still mutable, frozen only prevent overwriting the object as a whole. Accidental
+        modification can be prevented by using the get_data() method and avoiding my_SpectraDF._data accessing.
     """
-    data: pd.DataFrame
-    expected_columns : Tuple = field(
+    _data: pd.DataFrame
+    _expected_columns : Tuple = field(
         default=("identifier", "mass-to-charge-ratio", "intensity"), 
         compare = False, hash = False, repr=False)
-    expected_column_types : Tuple = field(
+    _expected_column_types : Tuple = field(
         default=(np.int64, np.double, np.double), 
         compare = False, hash = False, repr=False )    
     def __post_init__(self):
-        # Check whether all provided information is in line with expected values
-        # Note that data frame elements will still be mutable.
-        expected_column_types = dict(zip(self.expected_columns, self.expected_column_types))
-        check_columns(self.data.columns.to_list(), self.expected_columns)
-        check_column_types(self.data.dtypes.to_dict(), expected_column_types)
+        """ Assert that data provided to constructor is valid. """
+        expected_column_types = dict(zip(self._expected_columns, self._expected_column_types))
+        assert_column_set(self._data.columns.to_list(), self._expected_columns)
+        assert_column_types(self._data.dtypes.to_dict(), expected_column_types)
     def get_data(self):
-        return self.data
+        """ Return a copy of the data frame object stored in SpectraDf object. """
+        return copy.deepcopy(self._data)
     def get_column_as_np(self, column_name):
-        assert column_name in self.expected_columns, f"Column {column_name} not a member of MultiSpectrumDataContainer."
-        array = self.data[column_name].to_numpy()
+        """ Return a copy of a specific column from SpectraDF as numpy array. """
+        assert column_name in self._expected_columns, f"Column {column_name} not a member of SpectraDF data frame."
+        array = self._data[column_name].to_numpy(copy=True)
         return array
 
-def check_column_types(type_dict_provided , type_dict_expected ) -> None:
-    print("Checkpoint")
+def assert_column_types(type_dict_provided , type_dict_expected ) -> None:
+    """ 
+    Assert types for keys in type_dict match those for key in expected.
+
+    Parameters:
+        type_dict_provided: Dict with key-value pairs containing derived column name (str) and column type (type).
+        type_dict_expected: Dict with key-value pairs containing expected column name (str) and column type (type).
+    Returns:
+        None
+    Raises:
+        ValueError: if types do not match in provided dictionaries.
+    """
     for key in type_dict_provided:
         assert type_dict_provided[key] == type_dict_expected[key], (
             f"Provided dtype for column {key} is {type_dict_provided[key]},"
             f" but requires {type_dict_expected[key]}")
     return None
 
-def check_columns(columns_provided : List[str], columns_expected : List[str]) -> None:
+def assert_column_set(columns_provided : List[str], columns_expected : List[str]) -> None:
     """
     Check if provided columns match with expected columns.
 
-    :param columns_provided: List[str] of column names (expected derived from pd.DataFrame).
-    :param columns_expected: List[str] of column names (expected columns for pd.DataFrame)
-    
-    :raises: ValueError if column sets provided don't match.
+    Parameters:
+        columns_provided: List[str] of column names (columns derived from pd.DataFrame).
+        columns_expected: List[str] of column names (columns expected for pd.DataFrame).
+    Returns:
+        None.
+    Raises:
+        ValueError: if column sets provided don't match.
     """
     set_provided = set(columns_provided)
     set_expected = set(columns_expected)
