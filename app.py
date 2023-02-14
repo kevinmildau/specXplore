@@ -501,7 +501,7 @@ def generate_mirror_plot(spectrum_id_1, spectrum_id_2):
         return html.P("Select spectrum ids for plotting.")
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port="8999")
 
 
                                                                                
