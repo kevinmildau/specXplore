@@ -412,12 +412,6 @@ def generate_fragmap(
     binned_spectrum_list = [bin_spectrum(spectrum, bin_map) for spectrum in spectrum_list]
     neutral_loss_spectrum_list = [
         bin_spectrum(compute_neutral_loss_spectrum(spectrum), bin_map) for spectrum in spectrum_list]
- 
-    # THIS IS WHERE SPECTRA DF objects start to be used.
-    # both intensity, mz and prevalence filters make use of a joined pandas data frame. 
-    # in all those cases we only need mz, and intensity. is_neutral_loss and spectrum_identifier 
-    # is also necessary through coupling to the final plotting.
-    # constructing the df object with optional is_loss column
 
     # construct spectra df and neutral loss df
     spectra_df = spectrum_list_to_pandas(binned_spectrum_list)
@@ -429,13 +423,14 @@ def generate_fragmap(
         partial(generate_mz_range_filtered_df, 
             mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum))
     
+    # Apply filters for mz and intensity values
     filtered_spectra_df = filter_pipeline_spectra(spectra_df)
     filtered_losses_df = generate_mz_range_filtered_df(
         losses_df, mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum)
 
-    all_plot_data_df = pd.concat([filtered_spectra_df, filtered_losses_df], axis = 0)
-    all_plot_data_df = generate_prevalence_filtered_df(
-        all_plot_data_df, n_min_occurrences=prevalence_threshold)
-    fragmap = get_heatmap(all_plot_data_df)
+    all_plot_data = join_spectradf(filtered_spectra_df, filtered_losses_df)
+    all_plot_data = generate_prevalence_filtered_df(all_plot_data, n_min_occurrences=prevalence_threshold)
+
+    fragmap = get_heatmap(all_plot_data)
 
     return fragmap
