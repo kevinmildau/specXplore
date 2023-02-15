@@ -173,7 +173,7 @@ def compute_neutral_loss_spectrum(spectrum: Spectrum) -> Spectrum:
         is_neutral_loss = True)
     return neutral_loss_spectrum
 
-def generate_prevalence_filtered_binned_spectrum_df(
+def generate_prevalence_filtered_df(
     spectra_df : SpectraDF, n_min_occurrences : int) -> Union[SpectraDF, None]:
     """ 
     Generate copy of spectrum_df with row filtered such that each mz instance occurs at least n_min_occurrences times. 
@@ -414,18 +414,18 @@ def generate_fragmap(
     # Compose filter pipeline function using provided settings
     filter_pipeline_spectra = compose_function(
         partial(generate_intensity_filtered_df, intensity_min=relative_intensity_threshold),
-        partial(generate_mz_range_filtered_binned_spectrum_df, 
+        partial(generate_mz_range_filtered_df, 
             mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum))
     
     filtered_spectra_df = filter_pipeline_spectra(spectra_df)
-    filtered_losses_df = generate_mz_range_filtered_binned_spectrum_df(
+    filtered_losses_df = generate_mz_range_filtered_df(
         losses_df, mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum)
 
     print(filtered_spectra_df.columns)
     print(filtered_losses_df.columns)
     all_plot_data_df = pd.concat([filtered_spectra_df, filtered_losses_df], axis = 0)
     print(all_plot_data_df.columns)
-    all_plot_data_df = generate_prevalence_filtered_binned_spectrum_df(
+    all_plot_data_df = generate_prevalence_filtered_df(
         all_plot_data_df, n_min_occurrences=prevalence_threshold)
     print(all_plot_data_df.columns, all_plot_data_df.dtypes)
     fragmap = get_heatmap(all_plot_data_df)
