@@ -251,7 +251,7 @@ def generate_intensity_filtered_df(
     output_df = output_df.loc[selection_map]
     if output_df.empty: # no data left after filtering, return None
         return None
-    output_df = output_df.reset_index(inplace=True, drop=True)
+    output_df.reset_index(inplace=True, drop=True)
     return SpectraDF(output_df)
 
 
