@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import matchms
-from specxplore.specxplore_data import Spectrum
+from specxplore.specxplore_data import Spectrum, SpectraDF
 from typing import List, Union
 import copy
 from specxplore.compose import compose_function
@@ -182,6 +182,12 @@ def generate_prevalence_filtered_binned_spectrum_df(
         spectrum_df: A pandas.DataFrame with a mass_to_charge_ratio and a spectrum_identifier column
         n_min_occurences: Integer, minimum number of occurrences of the same mass_to_charge_ratio value for it to be
             kept in the dataframe in filtering step.
+
+    Developer Note:
+    Neutral losses and mass to charge ratios are considered equals in this function. That is, if the minumum number of
+    occurrences is set to 2, both unique neutral losses and unique observed fragments will be removed from the data to
+    be visualized. A re-introduction step for any observed fragments could be added via joining the is_loss = False
+    row subset of the dataframe with the filtered set (inner join).
     """
     assert n_min_occurrences >=1 and isinstance(n_min_occurrences,int), (
         "n_min_occurrences must be an integer above or equal to 1.")
@@ -194,6 +200,7 @@ def generate_prevalence_filtered_binned_spectrum_df(
         return None
     output_spectrum_df = copy.deepcopy(spectrum_df)
     output_spectrum_df = output_spectrum_df.groupby('mass_to_charge_ratio').filter(lambda x: len(x) >= n_min_occurrences)
+    # TODO: consider adding optional rejoin of filtered out real spectra with is_loss == False subset inner join.
     if output_spectrum_df.empty: # no data left after filtering, return None
         return None
     output_spectrum_df.reset_index(inplace=True, drop=True)
@@ -330,7 +337,9 @@ def get_heatmap(spectra_df: pd.DataFrame):
 
     # Generate hovertext addon labels with aggregation information.
     hover_text_addon = generate_hovertext_addon_labels(
-        plot_df["mass_to_charge_ratio_aggregate_list"], plot_df["intensity_aggregate_list"], plot_df["is_neutral_loss"])
+        plot_df["mass_to_charge_ratio_aggregate_list"], 
+        plot_df["intensity_aggregate_list"], 
+        plot_df["is_neutral_loss"])
     
     # Generate x and y axis tick values and texts (mapping rank order to meaningful axis values / text)
     y_axis_tickvals = np.unique(plot_df["spec_index"])
@@ -382,9 +391,21 @@ def generate_fragmap(
     neutral_loss_spectrum_list = [
         bin_spectrum(compute_neutral_loss_spectrum(spectrum), bin_map) for spectrum in spectrum_list]
  
+    # THIS IS WHERE SPECTRA DF objects start to be used.
+    # both intensity, mz and prevalence filters make use of a joined pandas data frame. 
+    # in all those cases we only need mz, and intensity. is_neutral_loss and spectrum_identifier 
+    # is also necessary through coupling to the final plotting.
+    # constructing the df object with optional is_loss column
+
     # construct spectra df and neutral loss df
     spectra_df = spectrum_list_to_pandas(binned_spectrum_list)
     losses_df = spectrum_list_to_pandas(neutral_loss_spectrum_list)
+
+    print(spectra_df.columns)
+    print(losses_df.columns)
+
+    test1 = SpectraDF(spectra_df)
+    print(test1)
 
     # Compose filter pipeline function using provided settings
     filter_pipeline_spectra = compose_function(
@@ -396,10 +417,13 @@ def generate_fragmap(
     filtered_losses_df = generate_mz_range_filtered_binned_spectrum_df(
         losses_df, mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum)
 
+    print(filtered_spectra_df.columns)
+    print(filtered_losses_df.columns)
     all_plot_data_df = pd.concat([filtered_spectra_df, filtered_losses_df], axis = 0)
+    print(all_plot_data_df.columns)
     all_plot_data_df = generate_prevalence_filtered_binned_spectrum_df(
         all_plot_data_df, n_min_occurrences=prevalence_threshold)
-    
+    print(all_plot_data_df.columns, all_plot_data_df.dtypes)
     fragmap = get_heatmap(all_plot_data_df)
 
 
