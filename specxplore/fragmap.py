@@ -324,15 +324,18 @@ def generate_fragmap_figure_object(
         shapes=neutral_loss_marker_shapes, template="simple_white", 
         yaxis=dict(fixedrange=True, tickmode='array', tickvals=y_axis_tickvals, ticktext=y_axis_ticktext),
         xaxis=dict(tickmode='array', tickvals=x_axis_tickvals, ticktext=x_axis_ticktext, 
-            spikesnap='hovered data', spikemode='across', spikethickness = 0.5),
+            spikesnap='hovered data', spikemode='across', spikethickness = 1, spikecolor="black"),
+        xaxis_title="Binned mass to charge ratio (value is start of bin)", yaxis_title="Spectrum Identifier",
         margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":10})
     return fragmap_figure
 
-def get_heatmap(spectra_df: pd.DataFrame):
+def get_heatmap(spectra_df: Union[SpectraDF, None]):
     """ 
     Generate Heatmap Trace 
     """
-    plot_df = copy.deepcopy(spectra_df)
+    if SpectraDF is None:
+        return None
+    plot_df = spectra_df.get_data()
 
     
     # Add order indexes for mass-to-charge-ratio bins and spectrum indices.
