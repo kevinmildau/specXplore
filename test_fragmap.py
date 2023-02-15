@@ -29,31 +29,31 @@ spectrum_df = fragmap.spectrum_list_to_pandas(binned_spectra)
 #print("--> Spectrum df generator output\n", spectrum_df)
 
 # test prevalence filter
-#print(all(spectrum_df == fragmap.generate_prevalence_filtered_binned_spectrum_df(spectrum_df, 1)))
-#print(fragmap.generate_prevalence_filtered_binned_spectrum_df(spectrum_df, 2))
+#print(all(spectrum_df == fragmap.generate_prevalence_filtered_df(spectrum_df, 1)))
+#print(fragmap.generate_prevalence_filtered_df(spectrum_df, 2))
 
 # test mz filter
-#print(fragmap.generate_mz_range_filtered_binned_spectrum_df(spectrum_df, 200,1000))
+#print(fragmap.generate_mz_range_filtered_df(spectrum_df, 200,1000))
 
 # test intensity filter
-#print(fragmap.generate_intensity_filtered_binned_spectrum_df(spectrum_df, 0.9))
+#print(fragmap.generate_intensity_filtered_df(spectrum_df, 0.9))
 
 
 #print("Checkpoint 1")
-tmp = fragmap.generate_intensity_filtered_binned_spectrum_df(spectrum_df, intensity_min=0.01)
+tmp = fragmap.generate_intensity_filtered_df(spectrum_df, intensity_min=0.01)
 #print("Checkpoint 2", tmp)
-tmp = fragmap.generate_mz_range_filtered_binned_spectrum_df(tmp, mz_min = 0, mz_max = 1000)
+tmp = fragmap.generate_mz_range_filtered_df(tmp, mz_min = 0, mz_max = 1000)
 #print("Checkpoint 3", tmp)
-tmp = fragmap.generate_prevalence_filtered_binned_spectrum_df(tmp, n_min_occurrences = 2)
+tmp = fragmap.generate_prevalence_filtered_df(tmp, n_min_occurrences = 2)
 #print("Checkpoint 4", tmp)
 
 
 # test composed filter pipeline
 #filter_pipeline = compose_function(
-#    partial(fragmap.generate_intensity_filtered_binned_spectrum_df, intensity_min=0.01),
-#    partial(fragmap.generate_mz_range_filtered_binned_spectrum_df, 
+#    partial(fragmap.generate_intensity_filtered_df, intensity_min=0.01),
+#    partial(fragmap.generate_mz_range_filtered_df, 
 #        mz_min = 0, mz_max = 1000),
-#    partial(fragmap.generate_prevalence_filtered_binned_spectrum_df, n_min_occurrences = 2))
+#    partial(fragmap.generate_prevalence_filtered_df, n_min_occurrences = 2))
 
 ##print(filter_pipeline(None))
 #tmp_df = filter_pipeline(spectrum_df)
