@@ -83,20 +83,26 @@ class SpectraDF:
     Dataclass container for long format data frame containing multiple spectra.
 
     Parameters:
-        data: A pandas.DataFrame with columns ("identifier", "mass-to-charge-ratio", "intensity") of types (np.int64, 
-        np.double, np.double).
-    
-    Note: 
+        data: A pandas.DataFrame with columns ('spectrum_identifier', 'mass_to_charge_ratio', 'intensity', 
+        'mass_to_charge_ratio_aggregate_list', 'intensity_aggregate_list', 'is_neutral_loss', 'is_binned_spectrum') 
+        of types (np.int64, np.double, np.double, object, object, bool, bool). For both aggregate_list columns the 
+        expected input is a List[List[np.double]].
+    Methods:
+        get_data(): Returnsa copy of data frame object stored in SpectraDF instance.
+        get_column_as_np(): Returns a copy of a specific column from SpectraDF as numpy array.
+
+    Developer Note: 
         Requires assert_column_set and assert_column_types functions.
         The data dataframe elements are still mutable, frozen only prevent overwriting the object as a whole. Accidental
         modification can be prevented by using the get_data() method and avoiding my_SpectraDF._data accessing.
     """
     _data: pd.DataFrame
     _expected_columns : Tuple = field(
-        default=("identifier", "mass-to-charge-ratio", "intensity"), 
+        default=('spectrum_identifier', 'mass_to_charge_ratio', 'intensity', 'mass_to_charge_ratio_aggregate_list', 
+            'intensity_aggregate_list', 'is_neutral_loss', 'is_binned_spectrum'), 
         compare = False, hash = False, repr=False)
     _expected_column_types : Tuple = field(
-        default=(np.int64, np.double, np.double), 
+        default=(np.int64, np.double, np.double, object, object, bool, bool), 
         compare = False, hash = False, repr=False )    
     def __post_init__(self):
         """ Assert that data provided to constructor is valid. """
@@ -104,7 +110,7 @@ class SpectraDF:
         assert_column_set(self._data.columns.to_list(), self._expected_columns)
         assert_column_types(self._data.dtypes.to_dict(), expected_column_types)
     def get_data(self):
-        """ Return a copy of the data frame object stored in SpectraDf object. """
+        """ Return a copy of the data frame object stored in SpectraDF instance. """
         return copy.deepcopy(self._data)
     def get_column_as_np(self, column_name):
         """ Return a copy of a specific column from SpectraDF as numpy array. """
@@ -146,7 +152,6 @@ def assert_column_set(columns_provided : List[str], columns_expected : List[str]
     set_expected = set(columns_expected)
     assert set_provided == set_expected, ("Initialization error, provided columns do not match expected set.")
     return None
-
 
 @dataclass(frozen=True)
 class EdgeList:
