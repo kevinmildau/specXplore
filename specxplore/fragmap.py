@@ -229,27 +229,27 @@ def generate_mz_range_filtered_binned_spectrum_df(
     output_spectrum_df.reset_index(inplace=True, drop=True)
     return output_spectrum_df
 
-def generate_intensity_filtered_binned_spectrum_df(
-    spectrum_df : pd.DataFrame, intensity_min : float) -> Union[pd.DataFrame, None]:
+def generate_intensity_filtered_df(
+    spectra_df : Union[SpectraDF, None], intensity_min : float) -> Union[SpectraDF, None]:
     """ 
     Generate copy of spectrum_df with fragments filtered by minimum intensity. 
     
     Parameters:
-        spectrum_df: pandas.DataFrame with a mass_to_charge_ratio and a spectrum_identifier column
+        spectrum_df: SpectraDF object containing pandas.DataFrame.
         intensity_min: Minimum relative intensity a peak needs to exceed. If below, it will be filtered out.
     Returns:
-        pd.DataFrame or None
+        SpectraDF or None
     """
+    output_df = spectra_df.get_data()
+    if output_df is None or output_df.empty: # no data provided, return None
+        return None
+    selection_map = [x >= intensity_min for x in output_df["intensity"]]
+    output_df = output_df.loc[selection_map]
+    if output_df.empty: # no data left after filtering, return None
+        return None
+    output_df = output_df.reset_index(inplace=True, drop=True)
+    return SpectraDF(output_df)
 
-    if spectrum_df is None or spectrum_df.empty: # no data provided, return None
-        return None
-    output_spectrum_df = copy.deepcopy(spectrum_df)
-    selection_map = [x >= intensity_min for x in output_spectrum_df["intensity"]]
-    output_spectrum_df = output_spectrum_df.loc[selection_map]
-    if output_spectrum_df.empty: # no data left after filtering, return None
-        return None
-    output_spectrum_df.reset_index(inplace=True, drop=True)
-    return output_spectrum_df
 
 # TODO: subdivide and make single level of abstraction.
 
@@ -409,7 +409,7 @@ def generate_fragmap(
 
     # Compose filter pipeline function using provided settings
     filter_pipeline_spectra = compose_function(
-        partial(generate_intensity_filtered_binned_spectrum_df, intensity_min=relative_intensity_threshold),
+        partial(generate_intensity_filtered_df, intensity_min=relative_intensity_threshold),
         partial(generate_mz_range_filtered_binned_spectrum_df, 
             mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum))
     
