@@ -146,3 +146,38 @@ def assert_column_set(columns_provided : List[str], columns_expected : List[str]
     set_expected = set(columns_expected)
     assert set_provided == set_expected, ("Initialization error, provided columns do not match expected set.")
     return None
+
+
+@dataclass(frozen=True)
+class EdgeList:
+    """ 
+    Immutable container for edge list data comprised of 3 1D numpy arrays: source, targets and edges.
+
+    Parameters:
+        sources: 1D np.ndarray with dtype int64 containing integer identifiers for target nodes.
+        targets: 1D np.ndarray with dtype int64 containing integer identifiers for target nodes.
+        values: 1D np.ndarray with dtype np.double containing edge weight.
+
+    Developer Notes:
+    This dataclass itself is frozen meaning that member variables cannot be overwritten. In addition, the use of
+    write = False flags for the numpy arrays prevents overwriting of any numpy array elements.
+    """
+    sources: np.ndarray
+    targets: np.ndarray
+    values: np.ndarray
+    def __post_init__(self):
+        """ Check input validity and make numpy arrays immutable. """
+        assert self.sources.size == self.targets.size == self.values.size, "Arrays must be equal size."
+        size = self.sources.size
+        expected_shape_tuple = tuple([size])
+        assert (self.sources.shape == expected_shape_tuple 
+            and self.targets.shape == expected_shape_tuple 
+            and self.values.shape == expected_shape_tuple), (
+            f"All input arrays must shape 1 dimensional with shape {expected_shape_tuple}")
+        assert self.sources.dtype == np.int64, "Targets array must have dtype.int64"
+        assert self.targets.dtype == np.int64, "Sources array must have dtype.int64"
+        assert self.values.dtype == np.double, "Values array must have dtype.double"
+        # Make numpy arrays immutable
+        self.sources.setflags(write=False)
+        self.targets.setflags(write=False)
+        self.values.setflags(write=False)
