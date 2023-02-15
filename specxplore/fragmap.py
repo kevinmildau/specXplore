@@ -369,6 +369,21 @@ def get_heatmap(spectra_df: Union[SpectraDF, None]):
         x_axis_ticktext)
     return fragmap_figure
 
+def join_spectradf(
+    spectrum_df : Union[SpectraDF, None], losses_df : Union[SpectraDF, None]) -> Union[SpectraDF, None]:
+    """ Joins spectra and losses data frames together provided they are not both None. """
+    if spectrum_df is not None:
+        spectrum_pandas = spectrum_df.get_data()
+    else:
+        spectrum_pandas = None
+    if losses_df is not None:
+        losses_pandas = losses_df.get_data()
+    else:
+        losses_pandas = None
+    if losses_pandas is None and spectrum_pandas is None:
+        return None
+    return SpectraDF(pd.concat([spectrum_pandas, losses_pandas]))
+
 def generate_fragmap(
     spectrum_list : List[Spectrum], relative_intensity_threshold : float, prevalence_threshold : int,
     mass_to_charge_ratio_minimum : float, mass_to_charge_ratio_maximum : float, bin_map : List[float],
