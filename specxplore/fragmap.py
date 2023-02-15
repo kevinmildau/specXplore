@@ -206,28 +206,32 @@ def generate_prevalence_filtered_binned_spectrum_df(
     output_df.reset_index(inplace=True, drop=True)
     return SpectraDF(output_df)
 
-def generate_mz_range_filtered_binned_spectrum_df(
-    spectrum_df : pd.DataFrame, mz_min : float, mz_max : float) -> Union[pd.DataFrame, None]:
+def generate_mz_range_filtered_df(
+    spectra_df : Union[SpectraDF, None], mz_min : float, mz_max : float) -> Union[SpectraDF, None]:
     """ 
     Generate copy of spectrum_df with rows filtered to have mz values in specified range.
     
     Parameters:
-        spectrum_df: A pandas.DataFrame with a mass_to_charge_ratio and a spectrum_identifier column
+        spectrum_df: A SpectraDF object with pandas.DataFrame
         mz_min: float, minimum value of mz. All values lower will be removed from df.
         mz_max: flaot, maximum value of mz. All values above will be removed from df.
+    Returns:
+        New SpectraDF object with filtered pandas data frame. 
+        Returns None if data frame input is None or output is empty.
     Raises:
         ValueError: if mz_min > mz_max.    
     """
     assert mz_min < mz_max, "mz_min must be strictly smaller than mz_max"
-    if spectrum_df is None or spectrum_df.empty: # no data provided, return None
+    output_df = spectra_df.get_data()
+
+    if output_df is None or output_df.empty: # no data provided, return None
         return None
-    output_spectrum_df = copy.deepcopy(spectrum_df)
-    selection_map = [x >= mz_min and x <= mz_max for x in output_spectrum_df["mass_to_charge_ratio"]]
-    output_spectrum_df = output_spectrum_df.loc[selection_map]
-    if output_spectrum_df.empty: # no data left after filtering, return None
+    selection_map = [x >= mz_min and x <= mz_max for x in output_df["mass_to_charge_ratio"]]
+    output_df = output_df.loc[selection_map]
+    if output_df.empty: # no data left after filtering, return None
         return None
-    output_spectrum_df.reset_index(inplace=True, drop=True)
-    return output_spectrum_df
+    output_df.reset_index(inplace=True, drop=True)
+    return SpectraDF(output_df)
 
 def generate_intensity_filtered_df(
     spectra_df : Union[SpectraDF, None], intensity_min : float) -> Union[SpectraDF, None]:
