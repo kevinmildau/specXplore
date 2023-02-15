@@ -44,9 +44,9 @@ def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_lis
     return(fragmap_output_panel)
 
 # generates long format data frame with spectral data columns id, mz, intensity
-def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> pd.DataFrame:
+def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> SpectraDF:
     """ 
-    Constructs long format pandas data frame from spectrum list.
+    Constructs SpectraDF with long format pandas data frame from spectrum list.
 
     Parameters:
         spectrum_list: A list of Spectrum objects. The spectrum need to be binned already for aggregate lists to be
@@ -54,7 +54,7 @@ def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> pd.DataFrame:
     Raises: 
         ValueError: if is_binned_spectrum is False for a provided spectrum.
     Returns: 
-        Long format pandas data frame with all data needed for plotting fragmap.
+        SpectraDF object with long format pandas data frame with all data needed for plotting fragmap.
     """
     # Check that all information required for data frame creation is present in spectrum object
     for spectrum in spectrum_list:
@@ -77,8 +77,8 @@ def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> pd.DataFrame:
             "is_binned_spectrum":is_binned_spectrum_repeated})
         spectrum_dataframe_list.append(tmp_df)
     # Concatenate data frame list
-    long_pandas_df = pd.concat(objs=spectrum_dataframe_list, ignore_index=True)
-    return long_pandas_df
+    output_container = SpectraDF(pd.concat(objs=spectrum_dataframe_list, ignore_index=True))
+    return output_container
 
 # Pure Function.
 def bin_spectrum(spectrum : Spectrum, bin_map : np.ndarray) -> Spectrum:
