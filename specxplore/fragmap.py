@@ -174,12 +174,13 @@ def compute_neutral_loss_spectrum(spectrum: Spectrum) -> Spectrum:
     return neutral_loss_spectrum
 
 def generate_prevalence_filtered_df(
-    spectra_df : SpectraDF, n_min_occurrences : int) -> Union[SpectraDF, None]:
+    spectra_df : Union[SpectraDF, None], n_min_occurrences : int) -> Union[SpectraDF, None]:
     """ 
     Generate copy of spectrum_df with row filtered such that each mz instance occurs at least n_min_occurrences times. 
     
     Parameters:
         spectrum_df: A SpectraDF object containing pandas.DataFrame.
+        losses_df: A SpectraDF object containing pandas.DataFrame.
         n_min_occurences: Integer, minimum number of occurrences of the same mass_to_charge_ratio value for it to be
             kept in the dataframe in filtering step.
 
@@ -189,18 +190,17 @@ def generate_prevalence_filtered_df(
     be visualized. A re-introduction step for any observed fragments could be added via joining the is_loss = False
     row subset of the dataframe with the filtered set (inner join).
     """
-    assert n_min_occurrences >=1 and isinstance(n_min_occurrences,int), (
+    assert n_min_occurrences >=1 and isinstance(n_min_occurrences, int), (
         "n_min_occurrences must be an integer above or equal to 1.")
-    if n_min_occurrences == 1: # A single occurence of a fragment is enough for inclusion, return input.
-        return spectra_df
+    if spectra_df == None: 
+        return None
     output_df = spectra_df.get_data()
-    if output_df is None or output_df.empty: # no data provided, return None
-        return None
     if n_min_occurrences > np.unique(output_df["spectrum_identifier"]).size:
-        warn("n_min_occurrences across spectra for fragment exceeds number of spectra. Return None.", UserWarning)
+        warn("n_min_occurrences exceeds number of spectra. Return None.", UserWarning)
         return None
-    output_spectrum_df = output_df.groupby('mass_to_charge_ratio').filter(lambda x: len(x) >= n_min_occurrences)
-    # TODO: consider adding optional rejoin of filtered out real spectra with is_loss == False subset inner join.
+    output_df = output_df.groupby('mass_to_charge_ratio').filter(lambda x: len(x) >= n_min_occurrences)
+    # TODO: Consider adding optional rejoin of filtered out real spectra with is_loss == False subset inner join. 
+    #       Beware of issues empty df issues with this approach however.
     if output_df.empty: # no data left after filtering, return None
         return None
     output_df.reset_index(inplace=True, drop=True)
