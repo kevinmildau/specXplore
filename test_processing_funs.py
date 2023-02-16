@@ -1,8 +1,12 @@
 from specxplore import importing
 import matchms
 import pandas as pd
-spectra_list_raw = list(matchms.importing.load_from_mgf(
-    source = "data_import_testing/data/reference_standards_pos/dummy.mgf"))
+
+mgf_file_name_pos = "data_import_testing/data/reference_standards_pos/dummy.mgf"
+models_and_library_folder_pos = "./data_import_testing/data/ms2query_models_and_library_pos"
+models_and_library_folder_neg = "./data_import_testing/data/ms2query_models_and_library_neg"
+
+spectra_list_raw = list(matchms.importing.load_from_mgf(source = mgf_file_name_pos))
 
 spectra_list = importing.clean_spectra(spectra_list_raw)
 spectra_list = list(filter(lambda item: item is not None, spectra_list))
@@ -22,8 +26,19 @@ if False: # prevent time consuming batch run is testing.
     classification_df = importing.batch_run_get_classes(spectra_list) # GNPS API Based, Takes a whilte to Run 2 seconds per spectrum at least
     print(classification_df)
     classification_df.to_csv("tmp_test_processing_funs_classifications.csv")
-else:
     print(importing.get_classes(spectra_list[0].get("inchi")))
+else:
     classification_dd = pd.read_csv("tmp_test_processing_funs_classifications.csv")
 
 print(importing.get_classes(None))
+
+scores_s2v = importing.compute_similarities_s2v(spectra_list, models_and_library_folder_pos)
+scores_cos = importing.compute_similarities_cosine(spectra_list, cosine_type="ModifiedCosine")
+scores_ms2ds = importing.compute_similarities_ms2ds(spectra_list, models_and_library_folder_pos)
+
+print("Pairwise Similarities Computed")
+print(scores_s2v)
+print(scores_cos)
+print(scores_ms2ds)
+
+print(importing.convert_similarity_to_distance(scores_ms2ds))
