@@ -237,11 +237,11 @@ def _return_model_filepath(path : str, model_suffix:str) -> str:
             for file in files:
                 if file.endswith(model_suffix):
                     filepath.append(os.path.join(root, file))
-        assert filepath is not [], f"No model file found in given path with suffix '{model_suffix}'!"
+        assert len(filepath) > 0, f"No model file found in given path with suffix '{model_suffix}'!"
         assert len(filepath) == 1, (
         "More than one possible model file detected in directory! Please provide non-ambiguous model directory or"
         "filepath!")
-    return filepath
+    return filepath[0]
 
 def compute_similarities_ms2ds(spectrum_list:List[matchms.Spectrum], model_path:str) -> np.ndarray:
     """ Function computes pairwise similarity matrix for list of spectra using pretrained ms2deepscore model.
