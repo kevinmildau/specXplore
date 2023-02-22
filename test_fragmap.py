@@ -62,7 +62,7 @@ tmp = fragmap.generate_prevalence_filtered_df(tmp, n_min_occurrences = 2)
 
 
 
-fig = fragmap.generate_fragmap(spectra, 0.0,2,0,1000,spectrum_bin_template,0,200)
+fig = fragmap.generate_fragmap([spectra[25], spectra[30]], 0.0,2,0,1000,spectrum_bin_template,0,200)
 
 fig.show(renderer = "browser")
 
