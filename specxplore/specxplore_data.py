@@ -57,6 +57,7 @@ class Spectrum:
     precursor_mass_to_charge_ratio : np.double
     identifier : np.int64
     intensities : np.ndarray = None
+    # TDOD fix tuple to list of list
     mass_to_charge_ratio_aggregate_list : field(default_factory=tuple) = ()
     intensity_aggregate_list : field(default_factory=tuple) = ()
     is_binned_spectrum : bool = False
@@ -106,6 +107,7 @@ class SpectraDF:
         compare = False, hash = False, repr=False )    
     def __post_init__(self):
         """ Assert that data provided to constructor is valid. """
+        assert isinstance(self._data, pd.DataFrame), "Data must be a pandas.DataFrame"
         expected_column_types = dict(zip(self._expected_columns, self._expected_column_types))
         assert_column_set(self._data.columns.to_list(), self._expected_columns)
         assert_column_types(self._data.dtypes.to_dict(), expected_column_types)
