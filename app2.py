@@ -397,6 +397,45 @@ def displayTapNodeData(data):
 
         return information_string
 
+########################################################################################################################
+# expand level control setting
+@app.callback(
+    Output("expand_level", "data"),
+    Output("expand_level_input", "placeholder"),
+    Input('expand_level_input', 'n_submit'),
+    Input("expand_level_input", "value"))
+
+def expand_trigger_handler(n_submit, new_expand_level):
+    new_expand_level, new_placeholder=data_transfer.update_expand_level(
+        new_expand_level)
+    return new_expand_level, new_placeholder
+
+########################################################################################################################
+# CLASS SELECTION UPDATE ------------------------------------------------------
+@app.callback(
+    Output("selected_class_level", "data"), 
+    Output("selected_class_data", "data"),
+    Output("color_dict", "data"), 
+    Output('class-filter-dropdown', 'options'), 
+    Output('class-filter-dropdown', 'value'),
+    Input("class-dropdown", "value"))
+def class_update_trigger_handler(selected_class):
+    """ Wrapper Function that construct class dcc.store data. """
+    selected_class_data, color_dict=data_transfer.update_class(selected_class, 
+        CLASS_DICT)
+    print("Checkpoint - new selected class data constructed.")
+    return selected_class, selected_class_data, color_dict, list(set(selected_class_data)), []
+
+########################################################################################################################
+# select filter classes
+@app.callback( 
+    Output('selected-filter-classes', 'data'),
+    Input('class-filter-dropdown', 'value')
+)
+def update_selected_filter_classes(values):
+    return values
+
+
 if __name__ == '__main__':
     app.run_server(debug=True, port="8999")
 
