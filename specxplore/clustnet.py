@@ -3,27 +3,37 @@ import dash_cytoscape as cyto
 from dash import html
 from specxplore import data_transfer_cython, clustnet_cython
 
+
+NODE_SIZE = "10"
+EDGE_SIZE = "1"
+
 SELECTION_STYLE = [{
         "selector": '.edge_within_set', 
         "style":{"line-color":"magenta", "background-color" : "magenta", 'opacity':0.6}}, {
         "selector":'.edge_out_of_set', 
         "style":{
-            "line-color":"black", 'opacity':0.4, "background-color":"black",'border-width':'2', 
+            "line-color":"black", 'opacity':0.4, "background-color":"black",'border-width':EDGE_SIZE, 
             'border-color':'black'}},{
         "selector":'.node_out_of_set', 
         "style":{
-            "line-color":"black", 'opacity':0.2, "background-color":"black",'border-width':'2', 
+            "line-color":"black", 'opacity':0.2, "background-color":"black",'border-width':EDGE_SIZE, 
             'border-color':'black'}}]
 
 GENERAL_STYLE = [{
     'selector':'node', 
     'style': {
         'content':'data(label)','text-halign':'center', 'text-valign':'center', "shape":"circle",
-        'height':"100%", 'width':'100%', "border-color":"black", "border-width":2}}, {
+        'height':NODE_SIZE, 'width':NODE_SIZE, "border-color":"black", "border-width":EDGE_SIZE}}, {
     'selector':'label', 
     'style':{
-        'content':'data(label)','color':'magenta', "font-family": "Ubuntu Mono", "font-size": "16px", "color" : "red",
+        'content':'data(label)','color':'magenta', "font-family": "Ubuntu Mono", "font-size": "1px", "color" : "red",
         "text-wrap": "wrap", "text-max-width": 100,}}]
+
+EDGE_STYLE = [{    
+    'selector': 'edge',
+    'style': {
+        'width': 1  # set edge line width to 3
+    }}]
 
 SELECTED_NODES_STYLE = [{
         'selector': ':selected',
@@ -73,7 +83,7 @@ def generate_cluster_node_link_diagram_cythonized(
         for clust in list(all_classes)]
 
     #all_styles = style_sheet_classes + SELECTION_STYLE
-    all_styles = GENERAL_STYLE + SELECTION_STYLE + style_sheet_classes + SELECTED_NODES_STYLE
+    all_styles = GENERAL_STYLE + SELECTION_STYLE + style_sheet_classes + SELECTED_NODES_STYLE + EDGE_STYLE
     elements = nodes + edges
     #out = html.Div([cyto.Cytoscape(
     #    id='cytoscape-tsne-subnet', layout={'name':'preset'},
