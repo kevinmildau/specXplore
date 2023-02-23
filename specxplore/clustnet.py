@@ -66,8 +66,6 @@ def generate_cluster_node_link_diagram_cythonized(
                 'position':{'x':TSNE_DF["x"].iloc[i], 'y':-TSNE_DF["y"].iloc[i]}, 
                 'classes': node_class}
 
-    nodes = [nodes[i] for i in connected_nodes]                                # <---------- for filtering
-
     all_classes = list(np.unique(selected_class_data))
     style_sheet_classes = [{
         'selector':f".{clust}", 
@@ -75,14 +73,14 @@ def generate_cluster_node_link_diagram_cythonized(
         for clust in list(all_classes)]
 
     #all_styles = style_sheet_classes + SELECTION_STYLE
-    all_styles = GENERAL_STYLE + SELECTION_STYLE + style_sheet_classes
-
-    out = html.Div([cyto.Cytoscape(
-        id='cytoscape-tsne-subnet', layout={'name':'preset'},
-        elements=nodes+edges, stylesheet=all_styles + SELECTED_NODES_STYLE,
-        boxSelectionEnabled=True,
-        style={'width':'100%', 'height':'80vh', 
-            "border":"1px grey solid", "bg":"#feeff4"},)])
-    return out
+    all_styles = GENERAL_STYLE + SELECTION_STYLE + style_sheet_classes + SELECTED_NODES_STYLE
+    elements = nodes + edges
+    #out = html.Div([cyto.Cytoscape(
+    #    id='cytoscape-tsne-subnet', layout={'name':'preset'},
+    #    elements=nodes+edges, stylesheet=all_styles + SELECTED_NODES_STYLE,
+    #    boxSelectionEnabled=True,
+    #    style={'width':'100%', 'height':'80vh', 
+    #        "border":"1px grey solid", "bg":"#feeff4"},)])
+    return elements, all_styles
 
 
