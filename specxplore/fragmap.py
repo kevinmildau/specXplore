@@ -33,14 +33,9 @@ def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_lis
     spectrum_bin_template = [
         round(x, 1) 
         for x in list(np.arange(0, 1000 + mass_to_charge_ratio_step_size, mass_to_charge_ratio_step_size))]
-    # Call fragmap generator # TODO: add control interface for settings to app.py and add settings as input.
-    # TODO: check whether passing actual identifier list works with downstream code indexing; it is unclear whether id_list
-    # is actually a list of spectrum identifiers from all_spectra_list or whether it represents new iloc for the subset.
-    fragmap = generate_fragmap(
-        id_list=list(range(0, len(selected_spectra))), spec_list=selected_spectra, rel_intensity_threshold=0.00000,
-        prevalence_threshold=0, mz_min=0, mz_max=1000, bins=spectrum_bin_template)
+    fragmap = generate_fragmap(selected_spectra, 0, 1, 0, 1000, spectrum_bin_template, 0, 200)
     fragmap_output_panel = [html.Div(dcc.Graph(id = "fragmap-panel", figure=fragmap, style={
-        "width":"100%","height":"60vh", "border":"1px grey solid"}))]
+        "width":"100%","height":"100%", "border":"1px grey solid"}))]
     return(fragmap_output_panel)
 
 # generates long format data frame with spectral data columns id, mz, intensity
