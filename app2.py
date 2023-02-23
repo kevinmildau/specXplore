@@ -40,6 +40,24 @@ SM_SPEC2VEC = GLOBAL_DATA.spec2vec_sim
 TSNE_DF = GLOBAL_DATA.tsne_df
 TSNE_DF["is_standard"] = GLOBAL_DATA.is_standard
 TSNE_DF["id"] = GLOBAL_DATA.specxplore_id
+
+print(TSNE_DF)
+
+def standardize_array(array : np.ndarray):
+    out = (array - np.mean(array)) / np.std(array)
+    return out
+
+def scale_array_to_minus1_plus1(array : np.ndarray):
+    # Normalised [-1,1]
+    out = 2.*(array - np.min(array))/np.ptp(array)-1
+    return out
+#TSNE_DF["x"] = standardize_array(TSNE_DF["x"].to_numpy()) * 1000
+#TSNE_DF["y"] = standardize_array(TSNE_DF["y"].to_numpy()) * 1000
+
+TSNE_DF["x"] = scale_array_to_minus1_plus1(TSNE_DF["x"].to_numpy()) * 100
+TSNE_DF["y"] = scale_array_to_minus1_plus1(TSNE_DF["y"].to_numpy()) * 100
+
+
 # INITIALIZE COLOR_DICT
 selected_class_data=CLASS_DICT[AVAILABLE_CLASSES[0]]
 # INITIALIZE GRAYSCALE COLOUR MAPPING
