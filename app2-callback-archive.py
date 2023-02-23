@@ -1,14 +1,6 @@
 # spectrum_plot_panel
 
-@app.callback(
-    Output("edge_threshold", "data"),
-    Output("edge_threshold_input_id", "placeholder"),
-    Input('edge_threshold_input_id', 'n_submit'),
-    Input("edge_threshold_input_id", "value"))
 
-def update_threshold_trigger_handler(n_submit, new_threshold):
-    new_threshold, new_placeholder=data_transfer.update_threshold(new_threshold)
-    return new_threshold, new_placeholder
 
 @app.callback(
     Output("expand_level", "data"),
@@ -88,37 +80,7 @@ def class_update_trigger_handler(selected_class):
     print("Checkpoint - new selected class data constructed.")
     return selected_class, selected_class_data, color_dict, list(set(selected_class_data)), []
 
-# RIGHT PANEL BUTTON CLICK UPDATES --------------------------------------------
-@app.callback(
-    Output('right-panel-tabs-content', 'children'),
-    Input('btn-run-egonet', 'n_clicks'),
-    Input('btn-run-augmap', 'n_clicks'),
-    Input('btn-run-clustnet', 'n_clicks'),
-    State('specid-selection-dropdown', 'value'), 
-    State("color_dict", "data"),
-    State("selected_class_data", "data"),
-    State("edge_threshold", "data"),
-    State("expand_level", "data"))
-def right_panel_trigger_handler(
-    n_clicks1, n_clicks2, n_clicks3, spec_id_selection, color_dict, 
-    selected_class_data, threshold, expand_level):
-    btn = ctx.triggered_id
-    if btn == "btn-run-clustnet" and spec_id_selection:
-        panel = clustnet.generate_cluster_node_link_diagram_cythonized(
-            TSNE_DF, spec_id_selection, GLOBAL_DATA.ms2deepscore_sim, selected_class_data,
-            color_dict, threshold, SOURCE, TARGET, VALUE, MZ)
-    elif btn == "btn-run-egonet"  and spec_id_selection:
-        panel = egonet.generate_egonet_cythonized(
-            spec_id_selection, SOURCE, TARGET, VALUE, TSNE_DF, MZ, 
-            threshold, expand_level)
-    elif btn == "btn-run-augmap"  and spec_id_selection:
-        panel=augmap.generate_augmap_panel(
-            spec_id_selection, GLOBAL_DATA.ms2deepscore_sim, GLOBAL_DATA.cosine_sim , GLOBAL_DATA.spec2vec_sim, 
-            threshold)
-    else:
-        print("Nothing selected for display in right panel yet.")
-        panel=[html.H6("empty-right-panel")]
-    return panel
+
 
 
 
