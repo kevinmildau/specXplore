@@ -292,9 +292,11 @@ def toggle_offcanvas(n1, is_open):
     Input('btn_push_fragmap', 'n_clicks'), 
     Input('btn_push_meta', 'n_clicks'),
     Input('btn-push-augmap', 'n_clicks'), 
+    Input('btn_push_spectrum', 'n_clicks'),
     State('specid-focus-dropdown', 'value'),
     State("edge_threshold", "data"),)
-def fragmap_trigger(btn_fragmap_n_clicks, btn_meta_n_clicks, btn_augmap_n_clicks, selection_data, threshold):
+def fragmap_trigger(
+    btn_fragmap_n_clicks, btn_meta_n_clicks, btn_augmap_n_clicks, btn_spectrum_n_clicks, selection_data, threshold):
     """ Wrapper function that calls fragmap generation modules. """
     btn = ctx.triggered_id
 
