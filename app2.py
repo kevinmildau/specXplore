@@ -257,6 +257,11 @@ def cytoscape_trigger(
     btn = ctx.triggered_id
     print(spec_id_selection)
 
+    # TODO: add node coloring data passing
+    # TODO: add node styling info; is_standard, multiple node class infor and selectors.
+    # Input("color_dict", "data"), --> should modify node color if not ClustNet or EgoNet; based on 'class-dropdown' value 
+    # Input('class-filter-dropdown', 'value'), --> should color in actual colors the selected classes
+
     elements = initial_node_elements
     styles = initial_style
     if btn == "btn-run-clustnet" and spec_id_selection:
