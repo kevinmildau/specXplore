@@ -3,16 +3,19 @@ from dash import dcc, html, ctx, dash_table, Dash
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
-from specxplore import egonet, augmap, tsne_plotting, clustnet, fragmap, data_transfer, specxplore_data_cython, specxplore_data
+from specxplore import egonet, augmap, tsne_plotting, clustnet, fragmap, data_transfer, specxplore_data_cython, spectrum_plot
 import pickle
 import plotly.graph_objects as go
 import os
+import numpy as np
+from specxplore.specxplore_data import specxplore_data, Spectrum
+
 
 # Load specxplore data object from file
 specxplore_input_file = os.path.join("data_import_testing", "results", "phophe_specxplore.pickle")
 with open(specxplore_input_file, 'rb') as handle:
     GLOBAL_DATA = pickle.load(handle) 
-
+print(GLOBAL_DATA)
 
 
 
