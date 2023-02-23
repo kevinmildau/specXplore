@@ -49,7 +49,7 @@ init_color_dict=data_transfer.create_color_dict(colors, selected_class_data)
 # INITIALIZE ALL SPEC IDS LIST? NDARRAY
 ALL_SPEC_IDS = GLOBAL_DATA.specxplore_id
 # INITIALIZE ALL SPECTRA LIST
-ALL_SPECTRA = [Spectrum(spec.peaks.mz, max(spec.peaks.mz),idx, spec.peaks.intensities) for idx, spec in enumerate(GLOBAL_DATA.spectrum)]
+ALL_SPECTRA = [Spectrum(spec.peaks.mz, max(spec.peaks.mz),idx, spec.peaks.intensities) for idx, spec in enumerate(GLOBAL_DATA.spectra)]
 # CONSTRUCT SOURCE, TARGET AND VALUE ND ARRAYS
 SOURCE, TARGET, VALUE = specxplore_data_cython.construct_long_format_sim_arrays(SM_MS2DEEPSCORE)
 # CONSTRUCT MZ DATA LIST FOR VISUALIZATION
