@@ -306,13 +306,20 @@ def fragmap_trigger(btn_fragmap_n_clicks, btn_meta_n_clicks, btn_augmap_n_clicks
         panel = augmap.generate_augmap_panel(
             selection_data, GLOBAL_DATA.ms2deepscore_sim, GLOBAL_DATA.cosine_sim , GLOBAL_DATA.spec2vec_sim, 
             threshold)
-    elif btn == "btn-push-spectrum" and selection_data:
+    elif btn == "btn_push_spectrum" and selection_data:
         if len(selection_data) == 1:
-            ...
+            panel = dcc.Graph(
+                id="specplot", 
+                figure=spectrum_plot.generate_single_spectrum_plot(ALL_SPECTRA[selection_data[0]]))
         if len(selection_data) == 2:
-            ...
+            panel = dcc.Graph(
+                id="specplot", 
+                figure=spectrum_plot.generate_mirror_plot(
+                    ALL_SPECTRA[selection_data[0]], ALL_SPECTRA[selection_data[1]]))
         if len(selection_data) > 2:
-            ...
+            spectra = [ALL_SPECTRA[i] for i in selection_data]
+            panel = spectrum_plot.generate_multiple_spectra_figure_div_list(spectra)
+            
         ...
     else:
         panel = [html.P((
