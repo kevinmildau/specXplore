@@ -82,12 +82,12 @@ def generate_ego_style_selector(ego_id):
         "selector":'node[id= "{}"]'.format(ego_id), 
         "style":{
             "shape":"diamond",'background-color':'gold',
-            'opacity':0.95, 'height':'250%', 'width':'250%', 
+            'opacity':0.9, 'height':'150%', 'width':'150%', 
             "border-color":"black", "border-width":10}}]
     return ego_style
 
 def construct_ego_net_elements_and_styles(
-    data_frame, precursor_masses,  sources, targets, values, threshold, ego_id, expand_level, filter = True):
+    data_frame, precursor_masses,  sources, targets, values, threshold, ego_id, expand_level, filter = False):
     """ Function constructs elements for EgoNet cytoscape graph. """
     _,selected_sources, selected_targets = data_transfer_cython.extract_edges_above_threshold(
         sources, targets, values, threshold)
@@ -96,7 +96,6 @@ def construct_ego_net_elements_and_styles(
     edge_elems, edge_styles = egonet_cython.generate_edge_elements_and_styles(
         bdict, selected_sources, selected_targets, nodes)
     # Extract only nodes in connected node set; if deactivated, all nodes shown in cytoscape
-    filter = True
     if filter:
         node_ids = set()
         for key in bdict.keys():
@@ -127,14 +126,14 @@ def generate_egonet_cythonized(
     
     # Construct Data for ego net visualization
     elements, edge_styles = construct_ego_net_elements_and_styles(
-        TSNE_DF, MZ, SOURCE, TARGET, VALUE, threshold, ego_id, expand_level, True)
+        TSNE_DF, MZ, SOURCE, TARGET, VALUE, threshold, ego_id, expand_level)
     
     style_sheet = BASIC_NODE_STYLE_SHEET + edge_styles + generate_ego_style_selector(ego_id) + SELECTED_STYLE
 
     # Generate egonet with elements size dependent flexibility
-    if len(elements) <= max_elements:
-        out = html.Div([construct_cytoscape_egonet(elements, style_sheet)])
-    else:
-        out = html.Div([construct_cytoscape_egonet(elements, style_sheet, False, True, True, True, False)])
-    return out
+    #if len(elements) <= max_elements:
+    #    out = html.Div([construct_cytoscape_egonet(elements, style_sheet)])
+    #else:
+    #    out = html.Div([construct_cytoscape_egonet(elements, style_sheet, False, True, True, True, False)])
+    return elements, style_sheet
 
