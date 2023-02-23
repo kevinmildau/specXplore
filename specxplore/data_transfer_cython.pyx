@@ -26,6 +26,8 @@ def extract_selected_above_threshold(
     cdef int index
     cdef int counter = 0
     for index in range(0, max_number_edges):
+        # OR is used to allow for edges out of the selection set to be saved as well. Those will be visualizaed
+        # differently in downstream processing. TODO: improve function name to reflect this.
         if (source[index] in selected_set or target[index] in selected_set) and value[index] > threshold:
             out_value[counter] = value[index]
             out_source[counter] = source[index]
