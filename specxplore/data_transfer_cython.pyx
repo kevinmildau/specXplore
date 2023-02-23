@@ -26,7 +26,7 @@ def extract_selected_above_threshold(
     cdef int index
     cdef int counter = 0
     for index in range(0, max_number_edges):
-        if source[index] in selected_set and target[index] in selected_set and value[index] > threshold:
+        if (source[index] in selected_set or target[index] in selected_set) and value[index] > threshold:
             out_value[counter] = value[index]
             out_source[counter] = source[index]
             out_target[counter] = target[index]
