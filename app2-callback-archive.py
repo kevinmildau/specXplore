@@ -1,25 +1,3 @@
-# spectrum_plot_panel
-
-
-
-@app.callback(
-    Output("expand_level", "data"),
-    Output("expand_level_input", "placeholder"),
-    Input('expand_level_input', 'n_submit'),
-    Input("expand_level_input", "value"))
-
-def expand_trigger_handler(n_submit, new_expand_level):
-    new_expand_level, new_placeholder=data_transfer.update_expand_level(
-        new_expand_level)
-    return new_expand_level, new_placeholder
-
-@app.callback( ##################################################################################
-    Output('selected-filter-classes', 'data'),
-    Input('class-filter-dropdown', 'value')
-)
-def update_selected_filter_classes(values):
-    return values
-
 # GLOBAL OVERVIEW UPDATE TRIGGER
 @app.callback(
     Output("tsne-overview-graph", "figure"), 
@@ -65,25 +43,11 @@ def left_panel_trigger_handler(
         class_filter_set, color_dict, focus_selection)
     return tsne_fig
 
-# CLASS SELECTION UPDATE ------------------------------------------------------
-@app.callback(
-    Output("selected_class_level", "data"), 
-    Output("selected_class_data", "data"),
-    Output("color_dict", "data"), 
-    Output('class-filter-dropdown', 'options'), 
-    Output('class-filter-dropdown', 'value'),
-    Input("class-dropdown", "value"))
-def class_update_trigger_handler(selected_class):
-    """ Wrapper Function that construct class dcc.store data. """
-    selected_class_data, color_dict=data_transfer.update_class(selected_class, 
-        CLASS_DICT)
-    print("Checkpoint - new selected class data constructed.")
-    return selected_class, selected_class_data, color_dict, list(set(selected_class_data)), []
 
 
 
 
-
+# NOT USED ANYMORE
 # tsne-overview selection data trigger ----------------------------------------
 @app.callback(
     Output('specid-selection-dropdown', 'value'),
@@ -97,16 +61,6 @@ def plotly_selected_data_trigger(plotly_selection_data):
         selected_ids = []
     return selected_ids
 
-# Fragmap trigger -------------------------------------------------------------
-@app.callback(
-    Output('fragmap_panel', 'children'),
-    Input('btn_push_fragmap', 'n_clicks'), # trigger only
-    State('specid-focus-dropdown', 'value'))
-def fragmap_trigger(n_clicks, selection_data):
-    """ Wrapper function that calls fragmap generation modules. """
-    # Uses: global variable ALL_SPECTRA
-    fragmap_panel=fragmap.generate_fragmap_panel(selection_data, ALL_SPECTRA)
-    return fragmap_panel
 
 
 
