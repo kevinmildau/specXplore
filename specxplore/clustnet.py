@@ -23,10 +23,10 @@ GENERAL_STYLE = [{
     'selector':'node', 
     'style': {
         'content':'data(label)','text-halign':'center', 'text-valign':'center', "shape":"circle",
-        'height':NODE_SIZE, 'width':NODE_SIZE, "border-color":"black", "border-width":EDGE_SIZE}}, {
+        'height':NODE_SIZE, 'width':NODE_SIZE, "border-width":EDGE_SIZE}}, {
     'selector':'label', 
     'style':{
-        'content':'data(label)','color':'magenta', "font-family": "Ubuntu Mono", "font-size": "1px", "color" : "red",
+        'content':'data(label)','color':'black', "font-family": "Ubuntu Mono", "font-size": "1px",
         "text-wrap": "wrap", "text-max-width": 100,}}]
 
 EDGE_STYLE = [{    
@@ -36,8 +36,10 @@ EDGE_STYLE = [{
     }}]
 
 SELECTED_NODES_STYLE = [{
-        'selector': ':selected',
-        'style': {'background-color': '#30D5C8','label': 'data(label)' }}]
+    'selector': ':selected',
+    'style': {
+        'background-color': 'magenta', 'label': 'data(label)', "border-color":"purple", "border-width": 1,
+        "border-style": "dashed",}}]
 
 def generate_cluster_node_link_diagram_cythonized(
     TSNE_DF, selected_nodes, SM_MS2DEEPSCORE, selected_class_data, color_dict, 
