@@ -161,7 +161,7 @@ selection_focus_panel = dbc.Offcanvas([
 ########################################################################################################################
 # Button array on left side of plot
 height_small = "11vh" # round down of 80vh / 7 components
-height_main = "14vh" # round down of 80vh / 7 components + 80%7 
+height_main = "7vh" # round down of 80vh / 7 components + 80%7 /2 
 button_style_logo = {'width': '25%', 'height': height_small, "fontSize": "20px", "textAlign": "center", }
 button_style_text = {'width': '75%', 'height': height_small, "fontSize": "10px", "textAlign": "center", }
 control_button_group = [
@@ -169,6 +169,8 @@ control_button_group = [
         [
         dbc.Button('⚙', id="btn-open-settings", style = 
                    {'width': '100%', 'height': height_main, "fontSize": "25px"}),
+        dbc.Button('View Selection', id="btn-open-focus", style = 
+                   {'width': '100%', 'height': height_main, "fontSize": "15px"}),
         dbc.ButtonGroup([
             dbc.Button('⚙', id='btn-nclicks1-settings', style = button_style_logo),
             dbc.Button('EgoNet ', id='btn-run-egonet', n_clicks=0, style = button_style_text),
@@ -222,7 +224,7 @@ app.layout=html.Div([
         style={"margin": "0px"}, className="g-0"),
     html.Br(),
     dbc.Button("Open Selection", id="btn-open-selection", n_clicks=0),
-    dbc.Button("Open Focus", id="btn-open-focus", n_clicks=0),
+    #dbc.Button("Open Focus", id="btn-open-focus", n_clicks=0),
     settings_panel,
     selection_panel,
     selection_focus_panel,
@@ -256,8 +258,7 @@ def cytoscape_trigger(
     n_clicks1, n_clicks2, spec_id_selection, color_dict, 
     selected_class_data, threshold, expand_level):
     btn = ctx.triggered_id
-    print(spec_id_selection)
-
+    print("TRIGGERED CYTOSCAPE CALLBACK")
     # TODO: add node coloring data passing
     # TODO: add node styling info; is_standard, multiple node class infor and selectors.
     # Input("color_dict", "data"), --> should modify node color if not ClustNet or EgoNet; based on 'class-dropdown' value 
@@ -358,32 +359,10 @@ def fragmap_trigger(
         if len(selection_data) > 2:
             spectra = [ALL_SPECTRA[i] for i in selection_data]
             panel = spectrum_plot.generate_multiple_spectra_figure_div_list(spectra)
-            
-        ...
     else:
         panel = [html.P((
             "Augmap, Fragmap, Metadata table, and Spectrum plots are shown here"
             " once requested with valid input."))]
-        
-    if False:
-        if selection_data:
-            tmpdf = TSNE_DF.iloc[selection_data]
-            panel = dash_table.DataTable(
-                id="table",
-                columns=[{"name": i, "id": i} for i in tmpdf.columns],
-                data=tmpdf.to_dict("records"),
-                style_cell=dict(textAlign="left"),
-                style_header=dict(backgroundColor="orangered"),
-                #style_data=dict(backgroundColor="white"),
-                sort_action="native",
-                page_size=10,
-                style_table={"overflowX": "auto"},)
-            return panel
-        else:
-            panel = [html.H6((
-                "Select focus data and press " 
-                "'Show Metdata' button for data table."))]
-        return panel
     return panel
 
 
