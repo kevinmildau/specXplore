@@ -330,7 +330,17 @@ def fragmap_trigger(
     if btn == "btn_push_fragmap" and selection_data:
         panel = fragmap.generate_fragmap_panel(selection_data, ALL_SPECTRA)
     elif btn == "btn_push_meta" and selection_data:
-        ...
+        tmpdf = TSNE_DF.iloc[selection_data]
+        panel = dash_table.DataTable(
+            id="table",
+            columns=[{"name": i, "id": i} for i in tmpdf.columns],
+            data=tmpdf.to_dict("records"),
+            style_cell=dict(textAlign="left"),
+            style_header=dict(backgroundColor="orangered"),
+            #style_data=dict(backgroundColor="white"),
+            sort_action="native",
+            page_size=10,
+            style_table={"overflowX": "auto"},)
     elif btn == "btn-push-augmap" and selection_data:
         panel = augmap.generate_augmap_panel(
             selection_data, GLOBAL_DATA.ms2deepscore_sim, GLOBAL_DATA.cosine_sim , GLOBAL_DATA.spec2vec_sim, 
