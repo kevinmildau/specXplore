@@ -250,7 +250,8 @@ app.layout=html.Div([
     State("color_dict", "data"),
     State("selected_class_data", "data"),
     State("edge_threshold", "data"),
-    State("expand_level", "data"))
+    State("expand_level", "data"),
+    prevent_initial_call=True)
 def cytoscape_trigger(
     n_clicks1, n_clicks2, spec_id_selection, color_dict, 
     selected_class_data, threshold, expand_level):
