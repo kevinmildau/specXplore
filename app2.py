@@ -15,7 +15,7 @@ from specxplore.specxplore_data import specxplore_data, Spectrum
 specxplore_input_file = os.path.join("data_import_testing", "results", "phophe_specxplore.pickle")
 with open(specxplore_input_file, 'rb') as handle:
     GLOBAL_DATA = pickle.load(handle) 
-print(GLOBAL_DATA)
+
 
 
 
@@ -33,7 +33,6 @@ global MZ
 tmp = GLOBAL_DATA.class_table
 CLASS_DICT = {elem : list(tmp[elem]) for elem in tmp.columns} 
 AVAILABLE_CLASSES = list(CLASS_DICT.keys())
-print(AVAILABLE_CLASSES)
 
 # Extract pairwise similarity matrices
 SM_MS2DEEPSCORE = GLOBAL_DATA.ms2deepscore_sim
@@ -44,7 +43,6 @@ TSNE_DF = GLOBAL_DATA.tsne_df
 TSNE_DF["is_standard"] = GLOBAL_DATA.is_standard
 TSNE_DF["id"] = GLOBAL_DATA.specxplore_id
 
-print(TSNE_DF)
 
 def standardize_array(array : np.ndarray):
     out = (array - np.mean(array)) / np.std(array)
@@ -283,7 +281,9 @@ def cytoscape_trigger(
 # Set focus ids and open focus menu
 @app.callback(
     Output('specid-focus-dropdown', 'value'),
-    [Input('cytoscape-tsne', 'selectedNodeData')])
+    Input('cytoscape-tsne', 'selectedNodeData'),
+    prevent_initial_call=True
+)
 def displaySelectedNodeData(data):
     if data:
         focus_ids = []
@@ -294,7 +294,8 @@ def displaySelectedNodeData(data):
 @app.callback(
     Output("offcanvas-focus", "is_open"),
     Input("btn-open-focus", "n_clicks"),
-    [State("offcanvas-focus", "is_open")],
+    State("offcanvas-focus", "is_open"),
+    prevent_initial_call=True
 )
 def toggle_offcanvas(n1, is_open):
     if n1:
@@ -306,7 +307,8 @@ def toggle_offcanvas(n1, is_open):
 @app.callback(
     Output("offcanvas-settings", "is_open"),
     Input("btn-open-settings", "n_clicks"),
-    [State("offcanvas-settings", "is_open")],
+    State("offcanvas-settings", "is_open"),
+    prevent_initial_call=True
 )
 def toggle_offcanvas(n1, is_open):
     if n1:
@@ -322,8 +324,10 @@ def toggle_offcanvas(n1, is_open):
     Input('btn-push-augmap', 'n_clicks'), 
     Input('btn_push_spectrum', 'n_clicks'),
     State('specid-focus-dropdown', 'value'),
-    State("edge_threshold", "data"),)
-def fragmap_trigger(
+    State("edge_threshold", "data"),
+    prevent_initial_call=True
+)
+def details_trigger(
     btn_fragmap_n_clicks, btn_meta_n_clicks, btn_augmap_n_clicks, btn_spectrum_n_clicks, selection_data, threshold):
     """ Wrapper function that calls fragmap generation modules. """
     btn = ctx.triggered_id
@@ -372,7 +376,9 @@ def fragmap_trigger(
     Output("edge_threshold", "data"),
     Output("edge_threshold_input_id", "placeholder"),
     Input('edge_threshold_input_id', 'n_submit'),
-    Input("edge_threshold_input_id", "value"))
+    Input("edge_threshold_input_id", "value"),
+    prevent_initial_call=True
+)
 
 def update_threshold_trigger_handler(n_submit, new_threshold):
     new_threshold, new_placeholder=data_transfer.update_threshold(new_threshold)
@@ -381,15 +387,16 @@ def update_threshold_trigger_handler(n_submit, new_threshold):
 ########################################################################################################################
 # mouseover node information display
 # dbc.Col([html.P("Hover Info: placeholder for cyto hover information")], id = "hover-info-panel")
-@app.callback(Output("hover-info-panel", 'children'),
-              Input('cytoscape-tsne', 'mouseoverNodeData'))
+@app.callback(
+    Output("hover-info-panel", 'children'),
+    Input('cytoscape-tsne', 'mouseoverNodeData'),
+    prevent_initial_call=True
+)
 def displayTapNodeData(data):
-    print(data)
     if data:
         spec_id = data['id']
         metdata_information = TSNE_DF.iloc[int(spec_id)].to_dict()
         information_string = (f"spectrum_id: {spec_id}, cluster: {metdata_information['clust']} ")
-
         return information_string
 
 ########################################################################################################################
@@ -413,19 +420,21 @@ def expand_trigger_handler(n_submit, new_expand_level):
     Output("color_dict", "data"), 
     Output('class-filter-dropdown', 'options'), 
     Output('class-filter-dropdown', 'value'),
-    Input("class-dropdown", "value"))
+    Input("class-dropdown", "value"),
+    prevent_initial_call=True
+)
 def class_update_trigger_handler(selected_class):
     """ Wrapper Function that construct class dcc.store data. """
     selected_class_data, color_dict=data_transfer.update_class(selected_class, 
         CLASS_DICT)
-    print("Checkpoint - new selected class data constructed.")
     return selected_class, selected_class_data, color_dict, list(set(selected_class_data)), []
 
 ########################################################################################################################
 # select filter classes
 @app.callback( 
     Output('selected-filter-classes', 'data'),
-    Input('class-filter-dropdown', 'value')
+    Input('class-filter-dropdown', 'value'),
+    prevent_initial_call=True
 )
 def update_selected_filter_classes(values):
     return values
