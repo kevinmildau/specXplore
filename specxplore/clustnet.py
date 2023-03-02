@@ -24,6 +24,9 @@ GENERAL_STYLE = [{
     'style': {
         'content':'data(label)','text-halign':'center', 'text-valign':'center', "shape":"circle",
         'height':NODE_SIZE, 'width':NODE_SIZE, "border-width":EDGE_SIZE}}, {
+    
+    'selector':'.none',
+    'style':{'color' : 'green'},
     'selector':'label', 
     'style':{
         'content':'data(label)','color':'black', "font-family": "Ubuntu Mono", "font-size": "1px",
@@ -79,13 +82,13 @@ def generate_cluster_node_link_diagram_cythonized(
                 'classes': node_class}
 
     all_classes = list(np.unique(selected_class_data))
-    style_sheet_classes = [{
-        'selector':f".{clust}", 
-        'style':{'background-color':f"{color_dict[clust]}", "opacity": 0.8}} 
-        for clust in list(all_classes)]
+    #style_sheet_classes = [{
+    #    'selector':f".{clust}", 
+    #    'style':{'background-color':f"{color_dict[clust]}", "opacity": 0.8}} 
+    #    for clust in list(all_classes)]
 
     #all_styles = style_sheet_classes + SELECTION_STYLE
-    all_styles = GENERAL_STYLE + SELECTION_STYLE + style_sheet_classes + SELECTED_NODES_STYLE + EDGE_STYLE
+    all_styles = GENERAL_STYLE + SELECTION_STYLE + SELECTED_NODES_STYLE + EDGE_STYLE
     elements = nodes + edges
     #out = html.Div([cyto.Cytoscape(
     #    id='cytoscape-tsne-subnet', layout={'name':'preset'},
