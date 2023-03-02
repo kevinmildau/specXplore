@@ -27,7 +27,6 @@ example00-step2-positive.py
 example01-step1-positive.py
 example01-step2-positive.py
 
-specxplore/importing.py
 example_01_gnps_nih-dataset.py
 example_01_gnps_nih-dataset.py
 specxplore/__pycache__/importing.cpython-38.pyc
@@ -57,3 +56,9 @@ __pycache__/template_processing_funs.cpython-38.pyc
 
 # Ignore build directory
 build
+tmp_test_processing_funs_classifications.csv
+
+
+# ignore public libraries
+public_libraries
+tmp.py

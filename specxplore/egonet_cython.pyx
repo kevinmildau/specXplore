@@ -135,8 +135,7 @@ def generate_edge_elements_and_styles(
                 'opacity':opacities[idx], 
                 #'width':widths[idx],
                 "background-color":colors[idx], 
-                'border-width':'2', 
-                'border-color':'black'}}
+                'border-width':'2'}}
         if not limit or idx < 1:
             for edge in branching_dict[key]["edges"]:
                 if limit_count < max_edges:

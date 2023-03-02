@@ -8,17 +8,32 @@ from typing import List, Dict
 import numpy 
 
 # Define Constant: BASIC_NODE_STYLE_SHEET
+NODE_SIZE = "10"
+EDGE_SIZE = "1"
+
 BASIC_NODE_STYLE_SHEET = [{
     'selector':'node', 
-        'style':{
-            'height':"100%", 'width':'100%', 'opacity':0.2, 'content':'data(label)', 'text-halign':'center',
-            'text-valign':'center', "shape":"circle", "border-color":"black", "border-width":2}}]
+    'style': {
+        'content':'data(label)','text-halign':'center', 'text-valign':'center', "shape":"circle",
+        'height':NODE_SIZE, 'width':NODE_SIZE, "border-width":EDGE_SIZE, 'opacity':0.2}}, {
+    'selector':'label', 
+    'style':{
+        'content':'data(label)','color':'black', "font-family": "Ubuntu Mono", "font-size": "1px",
+        "text-wrap": "wrap", "text-max-width": 100,}}]
 
+BASIC_EDGE_STYLE = [{    
+    'selector': 'edge',
+    'style': {
+        'width': 1  # set edge line width to 3
+    }}]
 # Define Constant: SELECTED_STYLE
 SELECTED_STYLE = [{
     'selector': ':selected',
     'style': {
-        'background-color': '#30D5C8', 'label': 'data(label)'}}]
+        'background-color': 'magenta', 'label': 'data(label)', "border-color":"purple",
+        "border-style": "dashed",}}]
+
+
 
 def generate_empty_div_message(plot_type: str) -> html.Div:
     """ Return html container with message specifying that input data is missing for the requested plot.
@@ -82,12 +97,11 @@ def generate_ego_style_selector(ego_id):
         "selector":'node[id= "{}"]'.format(ego_id), 
         "style":{
             "shape":"diamond",'background-color':'gold',
-            'opacity':0.95, 'height':'250%', 'width':'250%', 
-            "border-color":"black", "border-width":10}}]
+            'opacity':0.9, 'height':'20', 'width':'20'}}]
     return ego_style
 
 def construct_ego_net_elements_and_styles(
-    data_frame, precursor_masses,  sources, targets, values, threshold, ego_id, expand_level, filter = True):
+    data_frame, precursor_masses,  sources, targets, values, threshold, ego_id, expand_level, filter = False):
     """ Function constructs elements for EgoNet cytoscape graph. """
     _,selected_sources, selected_targets = data_transfer_cython.extract_edges_above_threshold(
         sources, targets, values, threshold)
@@ -96,7 +110,6 @@ def construct_ego_net_elements_and_styles(
     edge_elems, edge_styles = egonet_cython.generate_edge_elements_and_styles(
         bdict, selected_sources, selected_targets, nodes)
     # Extract only nodes in connected node set; if deactivated, all nodes shown in cytoscape
-    filter = True
     if filter:
         node_ids = set()
         for key in bdict.keys():
@@ -127,14 +140,14 @@ def generate_egonet_cythonized(
     
     # Construct Data for ego net visualization
     elements, edge_styles = construct_ego_net_elements_and_styles(
-        TSNE_DF, MZ, SOURCE, TARGET, VALUE, threshold, ego_id, expand_level, True)
+        TSNE_DF, MZ, SOURCE, TARGET, VALUE, threshold, ego_id, expand_level)
     
-    style_sheet = BASIC_NODE_STYLE_SHEET + edge_styles + generate_ego_style_selector(ego_id) + SELECTED_STYLE
+    style_sheet = SELECTED_STYLE + BASIC_NODE_STYLE_SHEET + edge_styles + generate_ego_style_selector(ego_id) + BASIC_EDGE_STYLE
 
     # Generate egonet with elements size dependent flexibility
-    if len(elements) <= max_elements:
-        out = html.Div([construct_cytoscape_egonet(elements, style_sheet)])
-    else:
-        out = html.Div([construct_cytoscape_egonet(elements, style_sheet, False, True, True, True, False)])
-    return out
+    #if len(elements) <= max_elements:
+    #    out = html.Div([construct_cytoscape_egonet(elements, style_sheet)])
+    #else:
+    #    out = html.Div([construct_cytoscape_egonet(elements, style_sheet, False, True, True, True, False)])
+    return elements, style_sheet
 

@@ -7,6 +7,7 @@ from matchms.typing import SpectrumType
 import os
 import gensim
 from spec2vec import Spec2Vec
+import matchms
 from matchms import calculate_scores
 from matchms.similarity import CosineGreedy, ModifiedCosine, CosineHungarian
 from ms2deepscore import MS2DeepScore
@@ -17,41 +18,73 @@ from functools import reduce, partial
 from matchms.filtering import (default_filters, repair_inchi_inchikey_smiles, derive_inchikey_from_inchi, 
     derive_smiles_from_inchi, derive_inchi_from_smiles, harmonize_undefined_inchi, harmonize_undefined_inchikey,
     harmonize_undefined_smiles, normalize_intensities, select_by_mz, reduce_to_number_of_peaks)
+import pandas as pd
 
-def get_classes(inchi: str):
-    """Function returns cf (classyfire) and npc (natural product classifier) 
-    classes for a provided inchi.
-    
-    Sould no information be available, the output will be a list of 
-    "Not Available" strings of length 9 for 5 cf classes and 4 npc classes for
-    downstream conversion to pandas data frame compatibility.
+from collections import namedtuple
 
-    Context: Effectively fetches and constructs single row of pandas df using
-    a list of dictionaries.
+_ClassificationEntry = namedtuple(
+    "ClassificationEntry", 
+    field_names=['inchi', 'smiles', 'cf_kingdom', 'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent', 
+                 'npc_class', 'npc_superclass', 'npc_pathway', 'npc_isglycoside'],
+    defaults = ["Not Available" for _ in range(0, 11)])
 
-    :param inchi: A valid inchi for which class information should be fetched. An input of "" is handles as an 
-    exception with a dict of "Not Available" data being returned.
+class ClassificationEntry(_ClassificationEntry):
+    """ 
+    Tuple container for classification entries. 
+
+    Parameters:
+        inchi: Compound inchi string.
+        smiles: Compound smiles str
+        cf_kingdom: ClassyFire kingdom classification.
+        cf_superclass: ClassyFire superclass classification.
+        cf_class: ClassyFire class classification.
+        cf_subclass: ClassyFire subclass classification.
+        cf_direct_parent: ClassyFire direct_parent classification.
+        npc_class: NPClassifier class classification.
+        npc_superclass: NPClassifier superclass classification.
+        npc_pathway: NPClassifier pathway classification.
+        npc_isglycoside: NPClassifier isglycoside classification.
     """
-    key_list = ['inchi_key', 'smiles', 'cf_kingdom', 'cf_superclass',
-        'cf_class', 'cf_subclass', 'cf_direct_parent', 'npc_class', 
-        'npc_superclass', 'npc_pathway', 'npc_isglycoside']
-    if inchi == "":
+    _slots_ = ()
+
+def batch_run_get_classes(spectrum_list : List[matchms.Spectrum], verbose : bool = True) -> pd.DataFrame:
+    """ 
+    Function queries GNPS API for classes for all spectra with inchi in spectrum list.
+    
+    Parameters:
+        spectrum_list: List of matchms spectra. These are expected to have an inchi entry available.
+        verbose: Boolean indicator that controls progress prints. Default is true. Deactive prints by setting to False.
+    Returns:
+        A pandas.DataFrame constructed from ClassificationEntry tuples. In addition, the list index is added as 
+        "iloc_spectrum_identifier" column.
+    """
+    classes_list = []
+    for iloc, spectrum in enumerate(spectrum_list):
+        if verbose and (iloc+1) % 10 == 0 and not iloc == 0:
+            print(f"{iloc + 1} spectra done, {len(spectrum_list) - (iloc+1)} spectra remaining.")
+        inchi = spectrum.get("inchi")
+        classes_list.append(get_classes(inchi))
+    classes_df = pd.DataFrame.from_records(classes_list, columns=ClassificationEntry._fields)
+    classes_df["iloc_spectrum_identifier"] = classes_df.index
+    return classes_df
+
+def get_classes(inchi: Union[str, None]) -> ClassificationEntry:
+    """
+    Function returns cf (classyfire) and npc (natural product classifier) classes for a provided inchi.
+    
+    Parameters
+        inchi: A valid inchi for which class information should be fetched. An input of "" or None is handled as an 
+               exception with a dict of "Not Available" data being returned.
+    Returns:
+        ClassificationEntry named tuple with classification information if available. If classification retrieval fails,
+        ClassificationEntry will contain "Not Available" defaults.
+    """
+    if inchi is None or inchi == "":
         print("No inchi, returning Not Available structure.")
-        output = {key:"Not Available" for key in key_list}
-        return output
+        return ClassificationEntry()
     smiles = matchms.utils.convert_inchi_to_smiles(inchi) # OLD matchms syntax
     #smiles = matchms.metadata_utils.convert_inchi_to_smiles(inchi) # NEW matchms syntax
-    print(inchi)
-    print(smiles)
-    # Eval Pending on whether the try except is necessary here.
-    try:
-        smiles = matchms.utils.mol_converter(inchi, "inchi", "smiles") # OLD matchms syntax
-        #smiles = matchms.metadata_utils.mol_converter(inchi, "inchi", "smiles") # NEW matchms syntax
-        #smiles = matchms.metadata_utils.convert_inchi_to_smiles(inchi) # NEW matchms syntax
-        smiles = smiles.strip(' ')
-    except:
-        smiles = ''
-    # Get classyfire results
+    # Get ClassyFire classifications
     safe_smiles = urllib.parse.quote(smiles)  # url encoding
     try:
         cf_result = get_cf_classes(safe_smiles, inchi)
@@ -60,29 +93,26 @@ def get_classes(inchi: str):
     if not cf_result:
         cf_result = [None for _ in range(5)]
     npc_result = get_npc_classes(safe_smiles)
-    # Get npc
+    # Get NPClassifier classifications
     try:
         npc_result = get_npc_classes(safe_smiles)
     except:
         npc_result = None
     if not npc_result:
         npc_result = [None for _ in range(4)]
-    output = {
-        'inchi': inchi, 'smiles':safe_smiles,
-        'cf_kingdom': cf_result[0], 
-        'cf_superclass': cf_result[1], 
-        'cf_class': cf_result[2], 
-        'cf_subclass': cf_result[3], 
-        'cf_direct_parent': cf_result[4], 
-        'npc_class' : npc_result[0],
-        'npc_superclass' : npc_result[1],
-        'npc_pathway' : npc_result[2],
-        'npc_isglycoside' : npc_result[3]}
+    output = ClassificationEntry(
+        inchi= inchi, smiles=safe_smiles, cf_kingdom=cf_result[0], cf_superclass=cf_result[1], cf_class=cf_result[2],
+        cf_subclass=cf_result[3], cf_direct_parent=cf_result[4], npc_class=npc_result[0], npc_superclass=npc_result[1],
+        npc_pathway=npc_result[2], npc_isglycoside=npc_result[3])
     return output
 
-def do_url_request(url: str, sleep_time_seconds = 1) -> [bytes, None]:
-    """ Perform url request and return bytes from .read() or None if HTTPError is raised.
+def do_url_request(url: str, sleep_time_seconds : int = 1) -> Union[bytes, None]:
+    """ 
+    Perform url request and return bytes from .read() or None if HTTPError is raised.
 
+    Parameters:
+        url: url string that should be accessed.
+        sleep_time_seconds: integer value indicating the number of seconds to wait in between API requests.
     :param url: url to access
     :return: open file or None if request failed
     """
@@ -94,9 +124,10 @@ def do_url_request(url: str, sleep_time_seconds = 1) -> [bytes, None]:
         result = None
     return result
 
-# DONE. PURE FUNCTION.
+
 def get_json_cf_results(raw_json: bytes) -> List[str]:
-    """ Extracts ClassyFire classification key data in order from bytes version of json string.
+    """ 
+    Extracts ClassyFire classification key data in order from bytes version of json string.
     
     Names of the keys extracted in order are: ['kingdom', 'superclass', 'class', 'subclass', 'direct_parent']
     List elements are concatenated with '; '.
@@ -115,7 +146,7 @@ def get_json_cf_results(raw_json: bytes) -> List[str]:
         cf_results_list.append(data_string)
     return cf_results_list
 
-# DONE. PURE FUNCTION.
+
 def get_json_npc_results(raw_json: bytes) -> List[str]:
     """ Extracts NPClassifier classification key data in order from bytes version of json string.
     
@@ -186,7 +217,6 @@ def get_npc_classes(smiles: str) -> Union[None, List[str]]:
             classes_list = get_json_npc_results(query_result_json)
     return classes_list
 
-# DONE. PURE FUNCTION.
 def _return_model_filepath(path : str, model_suffix:str) -> str:
     """ Function parses path input into a model filepath. If a model filepath is provided, it is returned unaltered , if 
     a directory path is provided, the model filepath is searched for and returned.
@@ -207,19 +237,20 @@ def _return_model_filepath(path : str, model_suffix:str) -> str:
             for file in files:
                 if file.endswith(model_suffix):
                     filepath.append(os.path.join(root, file))
-        assert filepath is not [], f"No model file found in given path with suffix '{model_suffix}'!"
+        assert len(filepath) > 0, f"No model file found in given path with suffix '{model_suffix}'!"
         assert len(filepath) == 1, (
         "More than one possible model file detected in directory! Please provide non-ambiguous model directory or"
         "filepath!")
-    return filepath
+    return filepath[0]
 
-# DONE. PURE FUNCTION.
 def compute_similarities_ms2ds(spectrum_list:List[matchms.Spectrum], model_path:str) -> np.ndarray:
     """ Function computes pairwise similarity matrix for list of spectra using pretrained ms2deepscore model.
     
-    :param spectrum_list: List of matchms ms/ms spectra. These should be pre-processed and must incldue peaks.
-    :param model_path: Location of ms2deepscore pretrained model file path (filename ending in .hdf5 or file-directory)
-    :returns: ndarray with shape (n, n) where n is the number of spectra (Pairwise similarity matrix).
+    Parameters
+        spectrum_list: List of matchms ms/ms spectra. These should be pre-processed and must incldue peaks.
+        model_path: Location of ms2deepscore pretrained model file path (filename ending in .hdf5 or file-directory)
+    Returns: 
+        ndarray with shape (n, n) where n is the number of spectra (Pairwise similarity matrix).
     """
     filename = _return_model_filepath(model_path, ".hdf5")
     model = load_model(filename) # Load ms2ds model
@@ -228,13 +259,15 @@ def compute_similarities_ms2ds(spectrum_list:List[matchms.Spectrum], model_path:
     scores_ndarray = scores_matchms.scores
     return scores_ndarray
 
-# DONE. PURE FUNCTION.
+
 def compute_similarities_s2v(spectrum_list:List[matchms.Spectrum], model_path:str) -> np.ndarray:
     """ Function computes pairwise similarity matrix for list of spectra using pretrained spec2vec model.
     
-    :param spectrum_list: List of matchms ms/ms spectra. These should be pre-processed and must incldue peaks.
-    :param model_path: Location of spec2vec pretrained model file path (filename ending in .model or file-directory)
-    :returns: ndarray with shape (n, n) where n is the number of spectra (Pairwise similarity matrix).
+    Parameters:
+        spectrum_list: List of matchms ms/ms spectra. These should be pre-processed and must incldue peaks.
+        model_path: Location of spec2vec pretrained model file path (filename ending in .model or file-directory)
+    Returns: 
+        ndarray with shape (n, n) where n is the number of spectra (Pairwise similarity matrix).
     """
     filename = _return_model_filepath(model_path, ".model")
     model = gensim.models.Word2Vec.load(filename) # Load s2v model
@@ -243,14 +276,16 @@ def compute_similarities_s2v(spectrum_list:List[matchms.Spectrum], model_path:st
     scores_ndarray = scores_matchms.scores
     return scores_ndarray
 
-# DONE. PURE FUNCTION.
+
 def compute_similarities_cosine(spectrum_list:List[matchms.Spectrum], cosine_type : str = "ModifiedCosine"):
     """ Function computes pairwise similarity matrix for list of spectra using specified cosine score. 
     
-    :param spectrum_list: List of matchms ms/ms spectra. These should be pre-processed and must incldue peaks.
-    :param cosine_type: String identifier of supported cosine metric, options: ["ModifiedCosine", "CosineHungarian", 
+    Parameters:
+        spectrum_list: List of matchms ms/ms spectra. These should be pre-processed and must incldue peaks.
+        cosine_type: String identifier of supported cosine metric, options: ["ModifiedCosine", "CosineHungarian", 
         "CosineGreedy"]
-    :returns: ndarray with shape (n, n) where n is the number of spectra (Pairwise similarity matrix).
+    Returns:
+        ndarray with shape (n, n) where n is the number of spectra (Pairwise similarity matrix).
     """
     valid_types = ["ModifiedCosine", "CosineHungarian", "CosineGreedy"]
     assert cosine_type in valid_types, f"Cosine type specification invalid. Use one of: {str(valid_types)}"
@@ -264,23 +299,27 @@ def compute_similarities_cosine(spectrum_list:List[matchms.Spectrum], cosine_typ
     scores = extract_similarity_scores_from_matchms_cosine_array(tmp.scores)
     return scores
 
-# DONE. PURE FUNCTION.
-def compose_function(*func): 
+
+def compose_function(*func) -> object: 
     """ Generic function composer making use of functools reduce. 
     
-    :param *func: Any number n of input functions to be composed.
-    :returns: A new function object.
+    Parameters:
+        *func: Any number n of input functions to be composed.
+    Returns: 
+        A new function object.
     """
     def compose(f, g):
         return lambda x : f(g(x))   
     return reduce(compose, func, lambda x : x)
 
-# DONE. PURE FUNCTION.
+
 def harmonize_and_clean_spectrum(spectrum : matchms.Spectrum):
     """ Function harmonizes and cleans spectrum object.
     
-    :param spectrum: A single matchms spectrum object. 
-    :returns: A new cleaned matchms spectrum object.
+    Parameters:
+        spectrum: A single matchms spectrum object. 
+    Returns: 
+        A new cleaned matchms spectrum object.
     """
     processed_spectrum = copy.deepcopy(spectrum)
     # Create partial functions for compose_function()
@@ -295,33 +334,46 @@ def harmonize_and_clean_spectrum(spectrum : matchms.Spectrum):
     processed_spectrum = apply_pipeline(processed_spectrum)
     return processed_spectrum
 
-# DONE. PURE FUNCTION.
-def clean_spectra(input_spectrums : List[matchms.Spectrum]):
-    """ Function harmonizes and cleans spectrum object ()
-    
-    :param spectrum: A single matchms spectrum object.
-    :returns: A single matchms spectrum object.
 
-    note:: pure function.
+def clean_spectra(input_spectrums : List[matchms.Spectrum]):
+    """ 
+    Function harmonizes and cleans spectrum object ()
+    
+    Parameters:
+        spectrum: A single matchms spectrum object.
+    Returns: 
+        A single matchms spectrum object.
     """
     spectrums = copy.deepcopy(input_spectrums) 
     spectrums = [harmonize_and_clean_spectrum(s) for s in spectrums]
     return spectrums
 
-# DONE. PURE FUNCTION.
+
 def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray) -> np.ndarray:
-    """ Function extracts similarity matrix from matchms cosine scores array.
+    """ 
+    Function extracts similarity matrix from matchms cosine scores array.
     
     The cosine score similarity output of matchms stores output in a numpy array of pair-tuples, where each tuple 
     contains (sim, n_frag_overlap). This function extracts the sim scores, and returns a numpy array corresponding to 
     pairwise similarity matrix.
 
-    :param tuple_array: A single matchms spectrum object.
-    :returns: A np.ndarray with shape (n, n) where n is the number of spectra deduced from the dimensions of the input
-    array. Each element of the ndarray contains the pairwise similarity value.
+    Parameters:
+        tuple_array: A single matchms spectrum object.
+    Returns: 
+        A np.ndarray with shape (n, n) where n is the number of spectra deduced from the dimensions of the input
+        array. Each element of the ndarray contains the pairwise similarity value.
     """
     sim_data = [ ]
     for row in tuple_array:
         for elem in row:
             sim_data.append(float(elem[0])) # <- TODO: check float conversion necessary?
     return(np.array(sim_data).reshape(tuple_array.shape[0], tuple_array.shape[1]))
+
+def convert_similarity_to_distance(similarity_matrix : np.ndarray) -> np.ndarray:
+    """ 
+    Converts pairwise similarity matrix to distance matrix with values between 0 and 1 
+    """
+    distance_matrix = 1.- similarity_matrix
+    distance_matrix = np.round(distance_matrix, 6) # Round to deal with floating point issues
+    distance_matrix = np.clip(distance_matrix, a_min = 0, a_max = 1) # Clip to deal with floating point issues
+    return distance_matrix
