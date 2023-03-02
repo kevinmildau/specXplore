@@ -57,3 +57,7 @@ __pycache__/template_processing_funs.cpython-38.pyc
 # Ignore build directory
 build
 tmp_test_processing_funs_classifications.csv
+
+
+# ignore public libraries
+public_libraries
