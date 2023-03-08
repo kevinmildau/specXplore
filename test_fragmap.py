@@ -6,21 +6,21 @@ from specxplore import fragmap
 from specxplore.compose import compose_function
 from functools import partial
 import plotly.graph_objects as go
-with open("data_import_testing/results/phophe_specxplore.pickle", 'rb') as handle:
+with open("data_and_output/npl_out/npl_specxplore.pickle", 'rb') as handle:
     data = pickle.load(handle).spectra
 
-spectra = [Spectrum(spec.peaks.mz, max(spec.peaks.mz),idx, spec.peaks.intensities) for idx, spec in enumerate(data)]
-#print(f"Spectrum object 0: {spectra[0]}")
+spectra = [Spectrum(spec.peaks.mz, spec.get("precursor_mz") ,idx, spec.peaks.intensities) for idx, spec in enumerate(data)]
+print(f"Spectrum object 0: {spectra[0]}, number of spectra: {len(spectra)}")
 
 step = 0.1
 spectrum_bin_template = [round(x, 1) for x in list(np.arange(0, 1000 + step, step))]
 
 # test binning
 bin_test = fragmap.bin_spectrum(spectra[0], spectrum_bin_template)
-#print(f"Binning Output: {bin_test}")
+print(f"Binning Output: {bin_test}")
 
 #
-spectra_subset = [spectra[idx] for idx in [0,16,17,18]]
+spectra_subset = [spectra[idx] for idx in [1289, 1290, 1291, 1292, 1293, 1294, 1295]]
 binned_spectra = [fragmap.bin_spectrum(spectrum, spectrum_bin_template) for spectrum in spectra_subset]
 #print("--> Multiple binning output:", binned_spectra)
 
@@ -40,11 +40,11 @@ spectrum_df = fragmap.spectrum_list_to_pandas(binned_spectra)
 
 
 #print("Checkpoint 1")
-tmp = fragmap.generate_intensity_filtered_df(spectrum_df, intensity_min=0.01)
+tmp = fragmap.generate_intensity_filtered_df(spectrum_df, intensity_min=0.1)
 #print("Checkpoint 2", tmp)
 tmp = fragmap.generate_mz_range_filtered_df(tmp, mz_min = 0, mz_max = 1000)
 #print("Checkpoint 3", tmp)
-tmp = fragmap.generate_prevalence_filtered_df(tmp, n_min_occurrences = 2)
+tmp = fragmap.generate_prevalence_filtered_df(tmp, n_min_occurrences = 1)
 #print("Checkpoint 4", tmp)
 
 
@@ -62,11 +62,16 @@ tmp = fragmap.generate_prevalence_filtered_df(tmp, n_min_occurrences = 2)
 
 
 
-fig = fragmap.generate_fragmap([spectra[25], spectra[30]], 0.0,2,0,1000,spectrum_bin_template,0,200)
+fig = fragmap.generate_fragmap([spectra[25], spectra[30]], 0.0,1,0,1000,spectrum_bin_template,0,200)
 
 fig.show(renderer = "browser")
 
+fig = fragmap.generate_fragmap(spectra_subset, 0.0,1,0,1000,spectrum_bin_template,0,200)
+fig.show(renderer = "browser")
 
+spectra_subset = [spectra[idx] for idx in [0, 100, 200, 300, 400,500,600,800]]
+fig = fragmap.generate_fragmap(spectra_subset, 0.0,1,0,1000,spectrum_bin_template,0,200)
+fig.show(renderer = "browser")
 # 3 conditions that should be tested in generate fragmap panel
 # 1 --> empty or too small input; return empty
 # 2 --> input leads to fragmap build, return fragmap
