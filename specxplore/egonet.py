@@ -101,29 +101,24 @@ def generate_ego_style_selector(ego_id):
     return ego_style
 
 def construct_ego_net_elements_and_styles(
-    data_frame, precursor_masses,  sources, targets, values, threshold, ego_id, expand_level, filter = False):
+    data_frame, precursor_masses,  sources, targets, values, threshold, ego_id, expand_level):
     """ Function constructs elements for EgoNet cytoscape graph. """
     _,selected_sources, selected_targets = data_transfer_cython.extract_edges_above_threshold(
         sources, targets, values, threshold)
     nodes = generate_node_list(data_frame, precursor_masses)
-    bdict = egonet_cython.creating_branching_dict_new(selected_sources, selected_targets, ego_id, int(expand_level))
+    bdict, n_edges_omitted = egonet_cython.creating_branching_dict_new(selected_sources, selected_targets, ego_id, int(expand_level))
+    
     edge_elems, edge_styles = egonet_cython.generate_edge_elements_and_styles(
         bdict, selected_sources, selected_targets, nodes)
-    # Extract only nodes in connected node set; if deactivated, all nodes shown in cytoscape
-    if filter:
-        node_ids = set()
-        for key in bdict.keys():
-            print(bdict[key]["nodes"])
-            node_ids.update(set(bdict[key]["nodes"]))
-        nodes = [nodes[i] for i in node_ids] 
+
     # Construct elements list from nodes and edges.
     elements = nodes + edge_elems
-    return elements, edge_styles
+    return elements, edge_styles, n_edges_omitted
 
 
 def generate_egonet_cythonized(
     clust_selection, SOURCE, TARGET, VALUE, TSNE_DF, MZ, threshold, expand_level):
-    max_elements = 20_000
+    max_edges = 2500
     
     # Check whether a valid cluster selection has been provided, if not return empty div.
     if not clust_selection:
@@ -139,15 +134,10 @@ def generate_egonet_cythonized(
         ego_id = int(clust_selection[0]) # <- DEV NOTE: this always appears as a list. FIX. 
     
     # Construct Data for ego net visualization
-    elements, edge_styles = construct_ego_net_elements_and_styles(
+    elements, edge_styles, n_edges_omitted = construct_ego_net_elements_and_styles(
         TSNE_DF, MZ, SOURCE, TARGET, VALUE, threshold, ego_id, expand_level)
     
     style_sheet = SELECTED_STYLE + BASIC_NODE_STYLE_SHEET + edge_styles + generate_ego_style_selector(ego_id) + BASIC_EDGE_STYLE
 
-    # Generate egonet with elements size dependent flexibility
-    #if len(elements) <= max_elements:
-    #    out = html.Div([construct_cytoscape_egonet(elements, style_sheet)])
-    #else:
-    #    out = html.Div([construct_cytoscape_egonet(elements, style_sheet, False, True, True, True, False)])
-    return elements, style_sheet
+    return elements, style_sheet, n_edges_omitted
 
