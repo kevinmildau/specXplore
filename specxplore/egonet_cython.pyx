@@ -58,7 +58,7 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
     # Expand Branching Dict if possible
     for index in range(1, n_levels):
         if len(tmp_nodes) == zero:
-           # print((f"Stopping edge tracing at level:{index}. No new nodes to expand from"))
+           # Stopping edge tracing at level:{index}. No new nodes to expand from"
             break
         current_level_nodes = list(tmp_nodes)
         tmp_nodes = set()
@@ -76,7 +76,6 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
                     tmp_nodes.add(source[inner_index])
                 if not target[inner_index] in all_nodes:
                     tmp_nodes.add(target[inner_index])
-
         # Update branching dict with tmp edge and node sets  
         if len(tmp_edges) != zero:
             all_edges = all_edges.union(tmp_edges)
@@ -85,16 +84,32 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
                 "nodes": list(current_level_nodes), "edges": list(tmp_edges)}
         else:
             branching_dict[index] = {"nodes": list(current_level_nodes), "edges": list()}
-            #print(f"Stopping edge tracing at level:{index}. No new edges found.")
+            # Stopping edge tracing at level:{index}. No new edges found.
             break
-        #branching_dict[index] = {
-        #    "nodes": list(current_level_nodes), "edges": list(tmp_edges)}
-        #all_edges = all_edges.union(tmp_edges)
-        #all_nodes = all_nodes.union(tmp_nodes)
     # Add nodes added in final level if any
     if len(tmp_nodes) != 0:
         branching_dict[n_levels+1] = {"nodes": list(tmp_nodes), "edges": []}
-    return branching_dict
+    
+    # Post process branching dict to remove any number of edges exceeding the max edge count (
+    # Removal done level by level, within level the implicit weight order of edges is used 
+    cdef int edge_counter = 0
+    cdef int max_edges = 2500
+    cdef int edges_omitted = 0
+    cdef int new_edges
+    cdef int allowed_new_edges
+    for level in branching_dict.keys():
+        new_edges = len(branching_dict[level]["edges"])
+        if edge_counter + len(branching_dict[level]["edges"]) > max_edges:
+            n_new_edges = len(branching_dict[level]["edges"])
+            allowed_new_edges = max_edges - edge_counter
+            if allowed_new_edges >= 1:
+                branching_dict[level]["edges"] = branching_dict[level]["edges"][0:allowed_new_edges]
+            else:
+                branching_dict[level]["edges"] = []
+        edge_counter += new_edges
+    edges_omitted = max(0, edge_counter - max_edges)
+
+    return branching_dict, edges_omitted
 
 
 def generate_edge_elements_and_styles(
