@@ -22,15 +22,17 @@ SELECTION_STYLE = [{
 GENERAL_STYLE = [{
     'selector':'node', 
     'style': {
-        'content':'data(label)','text-halign':'center', 'text-valign':'center', "shape":"circle",
+        'text-halign':'center', 'text-valign':'center', 'background-color': '#E5E4E2',
         'height':NODE_SIZE, 'width':NODE_SIZE, "border-width":EDGE_SIZE}}, {
     
     'selector':'.none',
     'style':{'color' : 'green'},
-    'selector':'label', 
-    'style':{
-        'content':'data(label)','color':'black', "font-family": "Ubuntu Mono", "font-size": "1px",
-        "text-wrap": "wrap", "text-max-width": 100,}}]
+    #'selector':'label', 
+    #'style':{
+    #    'content':'data(label)','color':'black', "font-family": "Ubuntu Mono", "font-size": "1px",
+    #    "text-wrap": "wrap", "text-max-width": 100,},
+    'selector':'.is_standard', 
+    'style': {'shape' : 'diamond'}}]
 
 EDGE_STYLE = [{    
     'selector': 'edge',
@@ -41,12 +43,12 @@ EDGE_STYLE = [{
 SELECTED_NODES_STYLE = [{
     'selector': ':selected',
     'style': {
-        'background-color': 'magenta', 'label': 'data(label)', "border-color":"purple", "border-width": 1,
+        'background-color': 'magenta', "border-color":"purple", "border-width": 1,
         "border-style": "dashed",}}]
 
 def generate_cluster_node_link_diagram_cythonized(
     TSNE_DF, selected_nodes, SM_MS2DEEPSCORE, selected_class_data, color_dict, 
-    threshold, SOURCE, TARGET, VALUE, MZ):
+    threshold, SOURCE, TARGET, VALUE, MZ, is_standard):
     
     # Extract all nodes and edges connected to the selection
     selected_nodes_np = np.array(selected_nodes)
@@ -57,12 +59,14 @@ def generate_cluster_node_link_diagram_cythonized(
     
     connected_nodes = set(list(np.unique(np.concatenate([s, t]))))             # <---------- for filtering
     connected_nodes.update(set(selected_nodes_np))                             # <---------- for filtering
-
+    
+    n_omitted_edges = None
     max_edges = 2500
     if v.size >= max_edges: # limit size to max_edges
-        indices = np.argsort(v)
-        s = s[indices[len(indices)-max_edges:len(indices)]]
-        t = t[indices[len(indices)-max_edges:len(indices)]]
+        s = s[0:max_edges]
+        t = t[0:max_edges]
+        n_omitted_edges = v.size - max_edges
+        print(f"omitted {n_omitted_edges} edges")
 
     # Create Edge list
     edges = clustnet_cython.create_cluster_edge_list(s,t,selected_nodes_np)
@@ -75,27 +79,20 @@ def generate_cluster_node_link_diagram_cythonized(
             node_class = selected_class_data[i]
         else:
             node_class = "node_out_of_set"
+        
+        if is_standard[i] == True:
+            standard_entry = " is_standard"
+        else:
+            standard_entry = ""
         nodes[i] = {
                 'data':{'id':str(i), 
                 'label': str(str(i) + ': ' + str(MZ[i]))},
                 'position':{'x':TSNE_DF["x"].iloc[i], 'y':-TSNE_DF["y"].iloc[i]}, 
-                'classes': node_class}
+                'classes': node_class + standard_entry}
 
-    all_classes = list(np.unique(selected_class_data))
-    #style_sheet_classes = [{
-    #    'selector':f".{clust}", 
-    #    'style':{'background-color':f"{color_dict[clust]}", "opacity": 0.8}} 
-    #    for clust in list(all_classes)]
-
-    #all_styles = style_sheet_classes + SELECTION_STYLE
     all_styles = GENERAL_STYLE + SELECTION_STYLE + SELECTED_NODES_STYLE + EDGE_STYLE
     elements = nodes + edges
-    #out = html.Div([cyto.Cytoscape(
-    #    id='cytoscape-tsne-subnet', layout={'name':'preset'},
-    #    elements=nodes+edges, stylesheet=all_styles + SELECTED_NODES_STYLE,
-    #    boxSelectionEnabled=True,
-    #    style={'width':'100%', 'height':'80vh', 
-    #        "border":"1px grey solid", "bg":"#feeff4"},)])
-    return elements, all_styles
+
+    return elements, all_styles, n_omitted_edges
 
 
