@@ -33,6 +33,8 @@ def extract_selected_above_threshold(
             out_source[counter] = source[index]
             out_target[counter] = target[index]
             counter += 1
+        if value[index] < threshold:
+            break
     return np.array(out_value[0:counter]), np.array(out_source[0:counter]), np.array(out_target[0:counter])
 
 #@cython.boundscheck(False)
@@ -55,4 +57,6 @@ def extract_edges_above_threshold(
             out_source[counter] = source[index]
             out_target[counter] = target[index]
             counter += 1
+        if value[index] < threshold:
+            break
     return np.array(out_value[0:counter]), np.array(out_source[0:counter]), np.array(out_target[0:counter])
