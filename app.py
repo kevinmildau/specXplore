@@ -198,7 +198,7 @@ control_button_group = [
             ]),  
         dbc.ButtonGroup([
             dbc.Button('⚙', id='btn-nclicks2-settings', style = button_style_logo),
-            dbc.Button('NLD for Selection', id="btn-run-clustnet", n_clicks=0, style = button_style_text),  
+            dbc.Button('Show Edges for Selection', id="btn-run-clustnet", n_clicks=0, style = button_style_text),  
         ]),
         dbc.ButtonGroup([
             dbc.Button('⚙', id='btn-nclicks3-settings', style = button_style_logo),  
@@ -235,13 +235,13 @@ app.layout=html.Div([
     html.Br(),
     dbc.Row(
         [
-        dbc.Col(control_button_group, width = 1),
+        dbc.Col(control_button_group, width = 2),
         dbc.Col([cyto.Cytoscape( 
             id='cytoscape-tsne', elements=INITIAL_NODE_ELEMENTS, 
             stylesheet = INITIAL_STYLE,
             layout={'name':'preset', 'animate':False, 'fit': False}, boxSelectionEnabled=True,
             style={'width':'100%', 'height':'80vh', "border":"1px grey solid", "bg":"#feeff4", 'minZoom':0.1, 'maxZoom':2})], 
-            width=11) 
+            width=10) 
         ], 
         style={"margin": "0px"}, className="g-0"),
     #html.Br(),
@@ -292,7 +292,7 @@ app.layout=html.Div([
     State("expand_level", "data"),
     State('cytoscape-tsne', 'zoom'),
     State('cytoscape-tsne', 'pan'),
-    State('cytoscape-tsne', 'elements'), # <-- for persistency
+    State('cytoscape-tsne', 'elements'),   # <-- for persistency
     State('cytoscape-tsne', 'stylesheet'), # <-- for persistency
     prevent_initial_call=True)
 def cytoscape_trigger(
