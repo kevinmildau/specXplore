@@ -149,7 +149,7 @@ def generate_augmap_graph(
     augmap_figure = go.Figure(data = heatmap_trace)
     augmap_figure.update_layout(
         shapes=shapes1+shapes2, yaxis_nticks=n_elements, xaxis_nticks=n_elements,
-        margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":10}, title_x=0.01, title_y=0.01,) 
+        margin = {"autoexpand":True, "b" : 20, "l":20, "r":20, "t":20}, title_x=0.01, title_y=0.01,) 
     return augmap_figure
 
 def generate_augmap_panel(
