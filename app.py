@@ -3,7 +3,14 @@ from dash import dcc, html, ctx, dash_table, Dash
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
-from specxplore import egonet, augmap, tsne_plotting, clustnet, fragmap, data_transfer, specxplore_data_cython, spectrum_plot, degree_visualization
+from specxplore import egonet
+from specxplore import augmap
+from specxplore import clustnet
+from specxplore import fragmap
+from specxplore import data_transfer
+from specxplore import specxplore_data_cython
+from specxplore import spectrum_plot
+from specxplore import degree_visualization
 import pickle
 import plotly.graph_objects as go
 import os
