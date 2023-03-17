@@ -70,3 +70,5 @@ processing_urine_data.ipynb
 processing_wheat_data.ipynb
 .gitignore
 tmp_testing.ipynb
+specxploreImporting/__pycache__/__init__.cpython-38.pyc
+.gitignore
