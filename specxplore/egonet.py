@@ -106,8 +106,9 @@ def construct_ego_net_elements_and_styles(
     _,selected_sources, selected_targets = data_transfer_cython.extract_edges_above_threshold(
         sources, targets, values, threshold)
     nodes = generate_node_list(data_frame, precursor_masses)
-    bdict, n_edges_omitted = egonet_cython.creating_branching_dict_new(selected_sources, selected_targets, ego_id, int(expand_level))
-    
+    bdict, n_edges_omitted = egonet_cython.creating_branching_dict_new(
+        selected_sources, selected_targets, ego_id, int(expand_level), int(2500))
+    print(bdict)
     edge_elems, edge_styles = egonet_cython.generate_edge_elements_and_styles(
         bdict, selected_sources, selected_targets, nodes)
 
@@ -118,7 +119,6 @@ def construct_ego_net_elements_and_styles(
 
 def generate_egonet_cythonized(
     clust_selection, SOURCE, TARGET, VALUE, TSNE_DF, MZ, threshold, expand_level):
-    max_edges = 2500
     
     # Check whether a valid cluster selection has been provided, if not return empty div.
     if not clust_selection:
