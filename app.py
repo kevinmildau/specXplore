@@ -11,6 +11,8 @@ from specxplore import data_transfer
 from specxplore import specxplore_data_cython
 from specxplore import spectrum_plot
 from specxplore import degree_visualization
+from specxplore import other_utils
+from specxplore.clustnet import SELECTED_NODES_STYLE, GENERAL_STYLE, SELECTION_STYLE
 import pickle
 import plotly.graph_objects as go
 import os
@@ -30,84 +32,33 @@ if False:
         GLOBAL_DATA = pickle.load(handle) 
 
 if True:
-    specxplore_input_file = 'data_and_output/test_data/test_case_specxplore.pickle'
+    specxplore_input_file = 'data_and_output/test_data/test_case_specxplore2.pickle'
     #specxplore_input_file = os.path.join("data_and_output", "npl_out", "npl_specxplore.pickle")
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
-
+ 
 # Unpack specXplore input object
-
-global CLASS_DICT # Dictionary with key for each possible classification scheme, and list with class assignments
-global AVAILABLE_CLASSES # List of class strings corresponding to keys in class_dict
-global SM_MS2DEEPSCORE # ndarray - pairwise similarity matrix
-global SM_MODIFIED_COSINE # ndarray - pairwise similarity matrix
-global SM_SPEC2VEC # ndarray - pairwise similarity matrix
-global TSNE_DF # pandas.DataFrame with x, y, is_standard, and id columns
-global ALL_SPEC_IDS
-global ALL_SPECTRA
-global MZ
-
-tmp = GLOBAL_DATA.class_table
-tmp = tmp.astype(str)
-#tmp = tmp.replace("_","", regex = True)
-print(tmp)
-CLASS_DICT = {elem : list(tmp[elem]) for elem in tmp.columns} 
+CLASS_DICT = {elem : list(GLOBAL_DATA.class_table[elem]) for elem in GLOBAL_DATA.class_table.columns} 
 AVAILABLE_CLASSES = list(CLASS_DICT.keys())
+selected_class_data = CLASS_DICT[AVAILABLE_CLASSES[0]]
+print("class dict keys",  CLASS_DICT.keys())
+print("class dict column extract", CLASS_DICT[GLOBAL_DATA.class_table.columns[0]])
+print("available classes", AVAILABLE_CLASSES)
+print("selected class data", selected_class_data)
 
-# Extract pairwise similarity matrices
 SM_MS2DEEPSCORE = GLOBAL_DATA.ms2deepscore_sim
 SM_MODIFIED_COSINE = GLOBAL_DATA.cosine_sim 
 SM_SPEC2VEC = GLOBAL_DATA.spec2vec_sim
-
-
-# Extract and expand t-sne df
 TSNE_DF = GLOBAL_DATA.tsne_df
-TSNE_DF["is_standard"] = GLOBAL_DATA.is_standard
-TSNE_DF["id"] = GLOBAL_DATA.specxplore_id
-
-
-def standardize_array(array : np.ndarray):
-    out = (array - np.mean(array)) / np.std(array)
-    return out
-
-def scale_array_to_minus1_plus1(array : np.ndarray) -> np.ndarray:
-    """ Rescales array to lie between -1 and 1."""
-    # Normalised [-1,1]
-    out = 2.*(array - np.min(array))/np.ptp(array)-1
-    return out
-#TSNE_DF["x"] = standardize_array(TSNE_DF["x"].to_numpy()) * 1000
-#TSNE_DF["y"] = standardize_array(TSNE_DF["y"].to_numpy()) * 1000
-
-TSNE_DF["x"] = scale_array_to_minus1_plus1(TSNE_DF["x"].to_numpy()) * 200
-TSNE_DF["y"] = scale_array_to_minus1_plus1(TSNE_DF["y"].to_numpy()) * 200
-
-
-# INITIALIZE COLOR_DICT # DEPRECATED COLOR DICT
-selected_class_data=CLASS_DICT[AVAILABLE_CLASSES[0]]
-# INITIALIZE GRAYSCALE COLOUR MAPPING
-n_colors=len(set(selected_class_data))
-colors=data_transfer.construct_grey_palette(n_colors, white_buffer=20)
-init_color_dict=data_transfer.create_color_dict(colors, selected_class_data)
-# INITIALIZE ALL SPEC IDS LIST? NDARRAY
+scaler = 200
+TSNE_DF["x"] = other_utils.scale_array_to_minus1_plus1(TSNE_DF["x"].to_numpy()) * scaler
+TSNE_DF["y"] = other_utils.scale_array_to_minus1_plus1(TSNE_DF["y"].to_numpy()) * scaler
 ALL_SPEC_IDS = GLOBAL_DATA.specxplore_id
-# INITIALIZE ALL SPECTRA LIST
-ALL_SPECTRA = [Spectrum(spec.peaks.mz, spec.get("precursor_mz"),idx, spec.peaks.intensities) for idx, spec in enumerate(GLOBAL_DATA.spectra)]
-
-# CONSTRUCT SOURCE, TARGET AND VALUE ND ARRAYS
-SOURCE, TARGET, VALUE = specxplore_data_cython.construct_long_format_sim_arrays(SM_MS2DEEPSCORE)
-
-ordered_index = np.argsort(-VALUE)
-SOURCE = SOURCE[ordered_index]
-TARGET = TARGET[ordered_index]
-VALUE = VALUE[ordered_index]
-
-
-# CONSTRUCT MZ DATA LIST FOR VISUALIZATION
+ALL_SPECTRA = GLOBAL_DATA.spectra
+SOURCE = GLOBAL_DATA.sources
+TARGET = GLOBAL_DATA.targets
+VALUE = GLOBAL_DATA.values
 MZ = GLOBAL_DATA.mz
-
-
-
-from specxplore.clustnet import SELECTED_NODES_STYLE, GENERAL_STYLE, SELECTION_STYLE
 
 def initialize_cytoscape_graph_elements(tsne_df, selected_class_data, mz, is_standard):
     n_nodes = tsne_df.shape[0]
@@ -533,14 +484,19 @@ def expand_trigger_handler(n_submit, new_expand_level):
     Output('node_elements_store', 'data'),
     Input("select_class_level_dropdown", "value")
 )
-def class_update_trigger_handler(selected_class):
+def class_update_trigger_handler(selected_class : str):
     """ Wrapper Function that construct class dcc.store data. """
-    selected_class_level_assignments, _ = data_transfer.update_class(selected_class, CLASS_DICT)
-    print("TRIGGERED SELECTED CLASS LEVEL UPDATE:", np.unique(selected_class_level_assignments))
+    print("TRIGGER: selected class", selected_class, type(selected_class))
+    print("Inside accessor:", CLASS_DICT[selected_class])
+    #selected_class_level_assignments, _ = data_transfer.update_class(selected_class, CLASS_DICT)
+    selected_class_level_assignments = CLASS_DICT[selected_class]
+    unique_assignments = list(np.unique(selected_class_level_assignments))
+    print("TRIGGERED SELECTED CLASS LEVEL UPDATE:",unique_assignments)
+
     node_elements = initialize_cytoscape_graph_elements(TSNE_DF, selected_class_level_assignments, MZ, GLOBAL_DATA.is_standard)
-    for elem in node_elements[0:5]:
+    for elem in node_elements:
         print(elem)
-    return selected_class, selected_class_level_assignments, list(set(selected_class_level_assignments)), [], node_elements
+    return selected_class, selected_class_level_assignments, unique_assignments, [], node_elements
 
 @app.callback(
     Output("edge-histogram-figure", "figure"),

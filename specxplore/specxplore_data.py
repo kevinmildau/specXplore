@@ -5,7 +5,9 @@ from collections import namedtuple
 import typing
 from typing import List, TypedDict, Tuple, Dict, NamedTuple
 import copy
+from specxplore import specxplore_data_cython
 
+@dataclass
 class specxplore_data:
   def __init__(
     self, ms2deepscore_sim, spec2vec_sim, cosine_sim, 
@@ -14,12 +16,33 @@ class specxplore_data:
     self.ms2deepscore_sim = ms2deepscore_sim
     self.spec2vec_sim = spec2vec_sim
     self.cosine_sim = cosine_sim
+    tsne_df["is_standard"] = is_standard
+    tsne_df["id"] = specxplore_id
     self.tsne_df = tsne_df
+    class_table.columns = class_table.columns.astype(str)
+    class_table.astype(str)
+    class_table = class_table.replace(" ","_", regex = True)
     self.class_table = class_table
     self.is_standard = is_standard
-    self.spectra = spectra
+    spectra_converted = [
+        Spectrum(spec.peaks.mz, spec.get("precursor_mz"), idx, spec.peaks.intensities) 
+        for idx, spec in enumerate(spectra)]
+    self.spectra = spectra_converted
     self.mz = mz # precursor mz values for each spectrum
     self.specxplore_id = specxplore_id
+    # CONSTRUCT SOURCE, TARGET AND VALUE ND ARRAYS
+    sources, targets, values = specxplore_data_cython.construct_long_format_sim_arrays(ms2deepscore_sim)
+    ordered_index = np.argsort(-values)
+    sources = sources[ordered_index]
+    targets = targets[ordered_index]
+    values = values[ordered_index]
+    self.sources = sources
+    self.targets = targets
+    self.values = values
+
+    self.metadata = pd.concat([tsne_df, class_table], axis=1)
+
+
 
 @dataclass
 class Spectrum:
