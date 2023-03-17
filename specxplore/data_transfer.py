@@ -109,39 +109,6 @@ def extract_identifiers_from_plotly_selection(plotly_selection_data):
         selected_ids = []
     return selected_ids
 
-if False:
-    def update_class(selected_class, class_dict):
-        """ Function updates selected_class_data and color_dict elements in line
-        with provided selected_class.
-            
-        Args
-        ------
-        selected_class:
-            String identifying the selected class. The string should be a key in 
-            class_dict.
-        class_dict:
-            A dictionary with class_string keys and corresponding class assignment
-            list of each spec_id: {class_string : class_assignment_list}. The class
-            assignment list is ordered to correspond to spec_id idx ordering.
-
-        Returns
-        ------
-        output 0:
-            selected_class_data, a list of class assignments for each spec_id 
-            in original idx ordering.
-        output 1:
-            A color dictionary where each unique cluster is a string key with the
-            corresponding value being a hex code color: {clust_key : color_string}.
-        """
-        white_buffer = 20 # --> see construct_grey_palette() 
-        selected_class_data = class_dict[selected_class]
-        selected_class_data = [
-            re.sub('[^A-Za-z0-9]+', '_', elem) for elem in selected_class_data]
-        n_colors = len(set(selected_class_data))
-        colors = construct_grey_palette(n_colors, white_buffer)
-        color_dict = create_color_dict(colors, selected_class_data)
-        return selected_class_data, color_dict
-
 def update_expand_level(new_expand_level):
     """ Function updates expand level and placeholder in line with input.
 
