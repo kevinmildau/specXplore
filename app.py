@@ -291,60 +291,74 @@ def cytoscape_trigger(
     previous_stylesheet):
 
     btn = ctx.triggered_id
-    print("BUTTON:", btn)
-    print("TRIGGERED CYTOSCAPE CALLBACK")
-    print(selected_class_data[0:10])
     max_colors = 8
-    legend_panel = []
-    warning_messages = ""
-    if classes_to_be_highlighted and len(classes_to_be_highlighted) > max_colors:
+    max_edges_clustnet = 2500
+    max_edges_egonet = 2500
+    legend_panel = [] # initialize to empty list. Only get filled if degree node selected
+    warning_messages = "" # initialize to empty string. Only gets expanded if warnings necessary.
+    styles = INITIAL_STYLE
+
+    if (not btn in ("btn-run-egonet", "btn-run-clustnet") 
+            and classes_to_be_highlighted 
+            and len(classes_to_be_highlighted) > max_colors):
+        # filter classes to be highlighted to be less than or equal to max colors in length. 
         warning_messages += (
             f"  \n❌Number of classes selected = {len(classes_to_be_highlighted)} exceeds available colors = {max_colors}."
             " Selection truncated to first 8 classes in selection dropdown.")
         classes_to_be_highlighted = classes_to_be_highlighted[0:8]
+    
     if classes_to_be_highlighted and btn == 'classes_to_be_highlighted_dropdown':
+        # define style color update if trigger is class highlight dropdown
         tmp_colors = [{
             'selector' : f".{str(elem)}", 'style' : {"background-color" : COLORS[idx]}} 
             for idx, elem in enumerate(classes_to_be_highlighted)]
         styles = INITIAL_STYLE + tmp_colors
-    elif btn == "btn-run-clustnet" and spec_id_selection:
-        elements, styles, n_omitted_edges = clustnet.generate_cluster_node_link_diagram_cythonized(
-            TSNE_DF, spec_id_selection, GLOBAL_DATA.ms2deepscore_sim, all_class_level_assignments,
-            init_color_dict, threshold, SOURCE, TARGET, VALUE, MZ, GLOBAL_DATA.is_standard)
-        if n_omitted_edges is not None:
+    
+    if btn == "btn-run-clustnet":
+        if spec_id_selection:
+            elements, styles, n_omitted_edges = clustnet.generate_cluster_node_link_diagram_cythonized(
+                TSNE_DF, spec_id_selection, GLOBAL_DATA.ms2deepscore_sim, all_class_level_assignments,
+                init_color_dict, threshold, SOURCE, TARGET, VALUE, MZ, GLOBAL_DATA.is_standard,
+                max_edges_clustnet)
+            if spec_id_selection and n_omitted_edges != int(0):
+                warning_messages += (
+                    f"  \n❌Threshold too liberal and leads to number of edges exceeding allowed maximum." 
+                    f" {n_omitted_edges} edges with lowest edge weight removed from visualization.")
+        else:
             warning_messages += (
-                f"  \n❌Threshold too liberal and leads to number of edges exceeding allowed maximum." 
-                f" {n_omitted_edges} edges with lowest edge weight removed from visualization.")
-    elif btn == "btn-run-egonet"  and spec_id_selection:
-        elements, styles, n_omitted_edges = egonet.generate_egonet_cythonized(
-            spec_id_selection, SOURCE, TARGET, VALUE, TSNE_DF, MZ, 
-            threshold, expand_level)
-       
-        if len(spec_id_selection) >1:
+                f"\n❌ No nodes selected, no edges can be rendered."
+            )
+
+    if btn == "btn-run-egonet":
+        if spec_id_selection:
+            elements, styles, n_omitted_edges = egonet.generate_egonet_cythonized(
+                spec_id_selection, SOURCE, TARGET, VALUE, TSNE_DF, MZ, 
+                threshold, expand_level)
+            if n_omitted_edges != int(0):
+                warning_messages += (
+                    f"  \n❌Threshold too liberal and leads to number of edges exceeding allowed maximum. "
+                    f"{n_omitted_edges} edges with lowest edge weight removed from visualization.")
+        else:
+            warning_messages += (f"  \n❌ No nodes selected, no edges can be shown.")
+        if (spec_id_selection and len(spec_id_selection) > 1):
             warning_messages += (
                 f"  \n❌More than one node selected. Selecting spectrum {spec_id_selection[0]} as ego node.")
-        if n_omitted_edges != int(0):
-            warning_messages += (
-                f"  \n❌Threshold too liberal and leads to number of edges exceeding allowed maximum. "
-                f"{n_omitted_edges} edges with lowest edge weight removed from visualization.")
-    elif btn == 'btn-run-degree':
+
+    if btn == 'btn-run-degree':
         styles, legend_plot = degree_visualization.generate_degree_colored_elements(SOURCE, TARGET, VALUE, threshold)
         styles = INITIAL_STYLE + styles
-        legend_panel = [dcc.Graph(id = 'legend', figure = legend_plot, style={"height":"3vh", })]
-    elif btn == 'specid-focus-dropdown' and spec_id_selection:
+        legend_panel = [dcc.Graph(id = 'legend', figure = legend_plot, style={"height":"8vh", })]
+    
+    if (btn == 'specid-focus-dropdown' and spec_id_selection):
         styles = INITIAL_STYLE + previous_stylesheet 
         elements = previous_elements
-    elif classes_to_be_highlighted:
+    
+    if (not btn in ("btn-run-egonet", "btn-run-clustnet") and classes_to_be_highlighted and not spec_id_selection):
         tmp_colors = [{
             'selector' : f".{str(elem)}", 'style' : {"background-color" : COLORS[idx]}} 
             for idx, elem in enumerate(classes_to_be_highlighted)]
         styles = INITIAL_STYLE + tmp_colors
-    else:
-        styles = INITIAL_STYLE
-    for elem in styles:
-        print (elem)
-    for elem in elements[0:3]:
-        print(elem)
+
     #warning_messages = f"❌Warnings Panel: this is where warnings live. What have you done (ಠ_ಠ)! 1234567890 (ಥ_ಥ)."
 
     return elements, styles, zoom_level, pan_location, legend_panel, warning_messages
