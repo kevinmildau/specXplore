@@ -58,6 +58,8 @@ AVAILABLE_CLASSES = list(CLASS_DICT.keys())
 SM_MS2DEEPSCORE = GLOBAL_DATA.ms2deepscore_sim
 SM_MODIFIED_COSINE = GLOBAL_DATA.cosine_sim 
 SM_SPEC2VEC = GLOBAL_DATA.spec2vec_sim
+
+
 # Extract and expand t-sne df
 TSNE_DF = GLOBAL_DATA.tsne_df
 TSNE_DF["is_standard"] = GLOBAL_DATA.is_standard
@@ -68,15 +70,16 @@ def standardize_array(array : np.ndarray):
     out = (array - np.mean(array)) / np.std(array)
     return out
 
-def scale_array_to_minus1_plus1(array : np.ndarray):
+def scale_array_to_minus1_plus1(array : np.ndarray) -> np.ndarray:
+    """ Rescales array to lie between -1 and 1."""
     # Normalised [-1,1]
     out = 2.*(array - np.min(array))/np.ptp(array)-1
     return out
 #TSNE_DF["x"] = standardize_array(TSNE_DF["x"].to_numpy()) * 1000
 #TSNE_DF["y"] = standardize_array(TSNE_DF["y"].to_numpy()) * 1000
 
-TSNE_DF["x"] = scale_array_to_minus1_plus1(TSNE_DF["x"].to_numpy()) * 1000
-TSNE_DF["y"] = scale_array_to_minus1_plus1(TSNE_DF["y"].to_numpy()) * 1000
+TSNE_DF["x"] = scale_array_to_minus1_plus1(TSNE_DF["x"].to_numpy()) * 200
+TSNE_DF["y"] = scale_array_to_minus1_plus1(TSNE_DF["y"].to_numpy()) * 200
 
 
 # INITIALIZE COLOR_DICT # DEPRECATED COLOR DICT
