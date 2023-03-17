@@ -48,7 +48,7 @@ SELECTED_NODES_STYLE = [{
 
 def generate_cluster_node_link_diagram_cythonized(
     TSNE_DF, selected_nodes, SM_MS2DEEPSCORE, selected_class_data, color_dict, 
-    threshold, SOURCE, TARGET, VALUE, MZ, is_standard):
+    threshold, SOURCE, TARGET, VALUE, MZ, is_standard, max_edges):
     
     # Extract all nodes and edges connected to the selection
     selected_nodes_np = np.array(selected_nodes)
@@ -60,8 +60,7 @@ def generate_cluster_node_link_diagram_cythonized(
     connected_nodes = set(list(np.unique(np.concatenate([s, t]))))             # <---------- for filtering
     connected_nodes.update(set(selected_nodes_np))                             # <---------- for filtering
     
-    n_omitted_edges = None
-    max_edges = 2500
+    n_omitted_edges = int(0)
     if v.size >= max_edges: # limit size to max_edges
         s = s[0:max_edges]
         t = t[0:max_edges]
