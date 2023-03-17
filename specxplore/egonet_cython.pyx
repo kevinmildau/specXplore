@@ -9,7 +9,7 @@ import plotly.express as px
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-def creating_branching_dict_new(long[:] source, long[:] target, long root, long n_levels):
+def creating_branching_dict_new(long[:] source, long[:] target, long root, long n_levels, int max_edges):
     """Function creates edge branching edge lists.
     
     Assumes all edges defined by source and target pairs are already above threshold!
@@ -93,7 +93,6 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
     # Post process branching dict to remove any number of edges exceeding the max edge count (
     # Removal done level by level, within level the implicit weight order of edges is used 
     cdef int edge_counter = 0
-    cdef int max_edges = 2500
     cdef int edges_omitted = 0
     cdef int new_edges
     cdef int allowed_new_edges
@@ -117,8 +116,7 @@ def generate_edge_elements_and_styles(
     """Generates an edge list and style list for a given branching dict. """
     n_colors = max(2, len(branching_dict) + 1)
     # "ice" might be a good alternative color
-    colors = px.colors.sample_colorscale(
-        "Viridis", [n/(n_colors -1) for n in range(n_colors)])
+    colors = px.colors.sample_colorscale("Viridis", [n/(n_colors -1) for n in range(n_colors)])
     opacities = np.arange(0.8, 0.4, step = -(0.8 - 0.4) / n_colors)
     # widths = np.arange(5, 0.5, step = -(5 - 0.5) / n_colors)
     cdef long idx, key, edge
@@ -126,22 +124,13 @@ def generate_edge_elements_and_styles(
     cdef long node_counter = 0
     cdef long edge_count = 0
     cdef long edge_counter = 0
-    cdef long max_edges = 2500
-    cdef long limit_count = 0
+    
     for idx, key in enumerate(branching_dict):
         edge_count += len(branching_dict[key]['edges'])
         node_count += len(branching_dict[key]['nodes'])
-    
-    edge_elems = [{}] * min(edge_count, max_edges)
+    edge_elems = [{}] * edge_count
     styles = [{}] * (len(branching_dict.keys()))
     
-    limit = False
-    if edge_count > max_edges:
-        print("Branching tree involves more than", str(max_edges), "edges.", 
-            "Edges only shown for first level to avoid dash-cytoscape overload.")
-        limit = True
-        
-
     for idx, key in enumerate(branching_dict):
         styles[idx] = {
             "selector":'.{}'.format(key), 
@@ -151,17 +140,13 @@ def generate_edge_elements_and_styles(
                 #'width':widths[idx],
                 "background-color":colors[idx], 
                 'border-width':'2'}}
-        if not limit or idx < 1:
-            for edge in branching_dict[key]["edges"]:
-                if limit_count < max_edges:
-                    edge_elems[edge_counter] = {'data': {
-                            'id':str(100000 + edge), # TODO: CHECK WHETHER STRING PREFIX WOULD WORK HERE.
-                            'source':str(source[edge]) ,
-                            'target':str(target[edge])},
-                            'classes':str(key)}
-                    edge_counter += 1
-                    limit_count += 1
+        for edge in branching_dict[key]["edges"]:
+            edge_elems[edge_counter] = {'data': {
+                    'id':"edge_number_" + str(edge),
+                    'source':str(source[edge]) ,
+                    'target':str(target[edge])},
+                    'classes':str(key)}
+            edge_counter += 1
         for node in branching_dict[key]["nodes"]:
             nodes[node]['classes'] = str(key)
-    #print("FROM CYTHON", styles)
     return (edge_elems, styles)
