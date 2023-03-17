@@ -140,6 +140,8 @@ settings_panel = dbc.Offcanvas([
         id="edge_threshold_input_id", type="number", 
         debounce=True, placeholder="Threshold 0 < thr < 1, def. 0.9", 
         style={"width" : "100%"}),
+    html.Div([dcc.Graph(
+        id = "edge-histogram-figure", figure = [],  style={"width":"100%","height":"30vh"})]),
     html.B("Set expand level:"),
     html.P("A value between 1 and 5. Controls connection branching in EgoNet."),
     dcc.Input( id="expand_level_input", type="number", 
@@ -540,7 +542,25 @@ def class_update_trigger_handler(selected_class):
         print(elem)
     return selected_class, selected_class_level_assignments, list(set(selected_class_level_assignments)), [], node_elements
 
-
+@app.callback(
+    Output("edge-histogram-figure", "figure"),
+    Input("edge_threshold", "data")
+)
+def update_histogram(threshold):
+    fig = go.Figure()
+    fig.add_trace(go.Histogram(
+        y=VALUE, opacity = 0.6, 
+        ybins=dict(start=0, end=1,size=0.05), marker_color = "grey")) #, histnorm="percent"
+    fig.add_hline(y=threshold, line_dash = 'dash', line_color = 'magenta', line_width = 5)
+    fig.update_traces(marker_line_width=1,marker_line_color="black")
+    fig.update_layout(
+        barmode='group', bargap=0, bargroupgap=0.0, yaxis = {'range' :[-0.01,1.01]})
+    fig.update_layout(
+        template="simple_white", 
+        title= "Edge Weight Distibution with Threshold",
+        xaxis_title="Count", yaxis_title="Edge Weight Bins",
+        margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":40})
+    return fig
 
 if __name__ == '__main__':
     app.run_server(debug=True, port="8999")
