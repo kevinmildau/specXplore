@@ -23,12 +23,20 @@ if False:
     specxplore_input_file = os.path.join("data_import_testing", "results", "phophe_specxplore.pickle")
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
-if True:
-    specxplore_input_file = os.path.join("data_and_output", "npl_out", "npl_specxplore.pickle")
+if False:
+    specxplore_input_file = 'data_and_output/wheat_data/wheat_data_specxplore.pickle'
+    #specxplore_input_file = os.path.join("data_and_output", "npl_out", "npl_specxplore.pickle")
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
 
-# Define global variables
+if True:
+    specxplore_input_file = 'data_and_output/test_data/test_case_specxplore.pickle'
+    #specxplore_input_file = os.path.join("data_and_output", "npl_out", "npl_specxplore.pickle")
+    with open(specxplore_input_file, 'rb') as handle:
+        GLOBAL_DATA = pickle.load(handle) 
+
+# Unpack specXplore input object
+
 global CLASS_DICT # Dictionary with key for each possible classification scheme, and list with class assignments
 global AVAILABLE_CLASSES # List of class strings corresponding to keys in class_dict
 global SM_MS2DEEPSCORE # ndarray - pairwise similarity matrix
