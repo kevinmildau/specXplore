@@ -64,3 +64,8 @@ public_libraries
 tmp.py
 
 data_and_output
+processing_nlp_v2.ipynb
+.gitignore
+processing_urine_data.ipynb
+processing_wheat_data.ipynb
+.gitignore
