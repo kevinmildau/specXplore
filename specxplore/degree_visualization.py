@@ -74,7 +74,7 @@ def generate_plotly_bar_legend_for_colorscale(degrees_binned, colors):
         #    "tickvals" : degrees_binned, #[min] + list(tickvals) + [max] 
         #},
         height = 100,
-        margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":10}
+        margin = {"autoexpand":True, "b" : 30, "l":10, "r":10, "t":10}
     )
     fig.update_coloraxes(showscale=False)
     return fig
