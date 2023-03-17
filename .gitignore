@@ -72,3 +72,4 @@ processing_wheat_data.ipynb
 tmp_testing.ipynb
 specxploreImporting/__pycache__/__init__.cpython-38.pyc
 .gitignore
+specxploreImporting/__pycache__/importing.cpython-38.pyc
