@@ -47,7 +47,7 @@ SELECTED_NODES_STYLE = [{
         "border-style": "dashed",}}]
 
 def generate_cluster_node_link_diagram_cythonized(
-    TSNE_DF, selected_nodes, SM_MS2DEEPSCORE, selected_class_data, color_dict, 
+    TSNE_DF, selected_nodes, SM_MS2DEEPSCORE, selected_class_data, 
     threshold, SOURCE, TARGET, VALUE, MZ, is_standard, max_edges):
     
     # Extract all nodes and edges connected to the selection
@@ -87,7 +87,7 @@ def generate_cluster_node_link_diagram_cythonized(
                 'data':{'id':str(i), 
                 'label': str(str(i) + ': ' + str(MZ[i]))},
                 'position':{'x':TSNE_DF["x"].iloc[i], 'y':-TSNE_DF["y"].iloc[i]}, 
-                'classes': node_class + standard_entry}
+                'classes': str(node_class) + str(standard_entry)}
 
     all_styles = GENERAL_STYLE + SELECTION_STYLE + SELECTED_NODES_STYLE + EDGE_STYLE
     elements = nodes + edges
