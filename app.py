@@ -17,6 +17,7 @@ import pickle
 import plotly.graph_objects as go
 import os
 import numpy as np
+import pandas as pd # tmp import
 from specxplore.specxplore_data import specxplore_data, Spectrum
 from specxplore.constants import COLORS
 
@@ -25,19 +26,20 @@ if False:
     specxplore_input_file = os.path.join("data_import_testing", "results", "phophe_specxplore.pickle")
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
-if False:
-    specxplore_input_file = 'data_and_output/wheat_data/wheat_data_specxplore.pickle'
+if True:
+    specxplore_input_file = 'data_and_output/wheat_data/wheat_data_specxplore_v2.pickle'
     #specxplore_input_file = os.path.join("data_and_output", "npl_out", "npl_specxplore.pickle")
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
 
-if True:
+if False:
     specxplore_input_file = 'data_and_output/test_data/test_case_specxplore2.pickle'
     #specxplore_input_file = os.path.join("data_and_output", "npl_out", "npl_specxplore.pickle")
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
  
 # Unpack specXplore input object
+GLOBAL_DATA.class_table["is_standard"] = pd.Series(GLOBAL_DATA.is_standard, dtype = str) # tmp modification
 CLASS_DICT = {elem : list(GLOBAL_DATA.class_table[elem]) for elem in GLOBAL_DATA.class_table.columns} 
 AVAILABLE_CLASSES = list(CLASS_DICT.keys())
 selected_class_data = CLASS_DICT[AVAILABLE_CLASSES[0]]
@@ -50,7 +52,7 @@ SM_MS2DEEPSCORE = GLOBAL_DATA.ms2deepscore_sim
 SM_MODIFIED_COSINE = GLOBAL_DATA.cosine_sim 
 SM_SPEC2VEC = GLOBAL_DATA.spec2vec_sim
 TSNE_DF = GLOBAL_DATA.tsne_df
-scaler = 200
+scaler = 1000
 TSNE_DF["x"] = other_utils.scale_array_to_minus1_plus1(TSNE_DF["x"].to_numpy()) * scaler
 TSNE_DF["y"] = other_utils.scale_array_to_minus1_plus1(TSNE_DF["y"].to_numpy()) * scaler
 ALL_SPEC_IDS = GLOBAL_DATA.specxplore_id
@@ -289,7 +291,7 @@ def cytoscape_trigger(
         if spec_id_selection:
             elements, styles, n_omitted_edges = clustnet.generate_cluster_node_link_diagram_cythonized(
                 TSNE_DF, spec_id_selection, GLOBAL_DATA.ms2deepscore_sim, all_class_level_assignments,
-                init_color_dict, threshold, SOURCE, TARGET, VALUE, MZ, GLOBAL_DATA.is_standard,
+                threshold, SOURCE, TARGET, VALUE, MZ, GLOBAL_DATA.is_standard,
                 max_edges_clustnet)
             if spec_id_selection and n_omitted_edges != int(0):
                 warning_messages += (
