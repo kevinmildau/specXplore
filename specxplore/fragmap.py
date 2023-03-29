@@ -33,7 +33,7 @@ def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_lis
     spectrum_bin_template = [
         round(x, 1) 
         for x in list(np.arange(0, 1000 + mass_to_charge_ratio_step_size, mass_to_charge_ratio_step_size))]
-    fragmap = generate_fragmap(selected_spectra, 0.1, 1, 0, 1000, spectrum_bin_template, 0, 200)
+    fragmap = generate_fragmap(selected_spectra, 0.01, 1, 0, 1000, spectrum_bin_template, 0, 200)
     fragmap_output_panel = [dcc.Graph(id = "fragmap-panel", figure=fragmap, style={
         "width":"100%","height":"100%", "border":"1px grey solid"})]
     return(fragmap_output_panel)
