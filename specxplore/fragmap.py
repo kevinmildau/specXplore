@@ -303,8 +303,8 @@ def generate_hovertext_addon_labels(
 
 def generate_neutral_loss_marker_shapes(mz_bin_index : pd.Series, spec_index : pd.Series) -> List[go.layout.Shape]:
     """ Helper Function for get_heatmap. Generate maker shapes for neutral loss visualization in Fragmap. """
-    radius = 0.1 # Fixed value, must be below 0.5 to guarantee circle marker is contained within heatmap cell
-    static_shape_setting_kwargs = {'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': 'red', 'opacity' : 1}
+    radius = 0.25 # Fixed value, must be below 0.5 to guarantee circle marker is contained within heatmap cell
+    static_shape_setting_kwargs = {'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': '#882255', 'opacity' : 0.5}
     neutral_loss_marker_shapes = [go.layout.Shape(
         x0= x - radius, y0= y - radius, x1= x + radius, y1= y + radius, **static_shape_setting_kwargs) 
         for x,y in  zip(mz_bin_index.to_list(), spec_index.to_list())]
@@ -320,7 +320,7 @@ def generate_fragmap_figure_object(
         yaxis=dict(fixedrange=True, tickmode='array', tickvals=y_axis_tickvals, ticktext=y_axis_ticktext),
         xaxis=dict(tickmode='array', tickvals=x_axis_tickvals, ticktext=x_axis_ticktext, 
             spikesnap='hovered data', spikemode='across', spikethickness = 1, spikecolor="black"),
-        xaxis_title="Binned mass to charge ratio (value is start of bin)", yaxis_title="Spectrum Identifier",
+        xaxis_title="Binned mass to charge ratio (value is end of bin)", yaxis_title="Spectrum Identifier",
         margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":10})
     return fragmap_figure
 

@@ -43,10 +43,7 @@ GLOBAL_DATA.class_table["is_standard"] = pd.Series(GLOBAL_DATA.is_standard, dtyp
 CLASS_DICT = {elem : list(GLOBAL_DATA.class_table[elem]) for elem in GLOBAL_DATA.class_table.columns} 
 AVAILABLE_CLASSES = list(CLASS_DICT.keys())
 selected_class_data = CLASS_DICT[AVAILABLE_CLASSES[0]]
-print("class dict keys",  CLASS_DICT.keys())
-print("class dict column extract", CLASS_DICT[GLOBAL_DATA.class_table.columns[0]])
-print("available classes", AVAILABLE_CLASSES)
-print("selected class data", selected_class_data)
+
 
 SM_MS2DEEPSCORE = GLOBAL_DATA.ms2deepscore_sim
 SM_MODIFIED_COSINE = GLOBAL_DATA.cosine_sim 
@@ -62,7 +59,7 @@ TARGET = GLOBAL_DATA.targets
 VALUE = GLOBAL_DATA.values
 MZ = GLOBAL_DATA.mz
 
-def initialize_cytoscape_graph_elements(tsne_df, selected_class_data, mz, is_standard):
+def initialize_cytoscape_graph_elements(tsne_df, selected_class_data, is_standard):
     n_nodes = tsne_df.shape[0]
     nodes = [{}] * n_nodes 
     for i in range(0, n_nodes):
@@ -71,15 +68,13 @@ def initialize_cytoscape_graph_elements(tsne_df, selected_class_data, mz, is_sta
         else:
             standard_entry = ""
         nodes[i] = {
-            'data':{
-                'id':str(i), 
-                'label': str(str(i) + ': ' + str(mz[i]))},
+            'data':{'id':str(i)},
             'classes': str(selected_class_data[i]) + standard_entry, #.replace('_',''), #  color_class[i],
             'position':{'x':TSNE_DF["x"].iloc[i], 'y':-TSNE_DF["y"].iloc[i]}        
         }
     return nodes
 
-INITIAL_NODE_ELEMENTS = initialize_cytoscape_graph_elements(TSNE_DF, selected_class_data, MZ, GLOBAL_DATA.is_standard)
+INITIAL_NODE_ELEMENTS = initialize_cytoscape_graph_elements(TSNE_DF, selected_class_data, GLOBAL_DATA.is_standard)
 INITIAL_STYLE = SELECTED_NODES_STYLE + GENERAL_STYLE + SELECTION_STYLE
 
 
@@ -255,7 +250,7 @@ def cytoscape_trigger(
     spec_id_selection, 
     classes_to_be_highlighted,
     all_class_level_assignments, 
-    elements,
+    node_elements_from_store,
     threshold, 
     expand_level, 
     zoom_level, 
@@ -270,6 +265,8 @@ def cytoscape_trigger(
     legend_panel = [] # initialize to empty list. Only get filled if degree node selected
     warning_messages = "" # initialize to empty string. Only gets expanded if warnings necessary.
     styles = INITIAL_STYLE
+
+    elements = node_elements_from_store
 
     if (not btn in ("btn-run-egonet", "btn-run-clustnet") 
             and classes_to_be_highlighted 
@@ -319,9 +316,12 @@ def cytoscape_trigger(
 
     if btn == 'btn-run-degree':
         styles, legend_plot = degree_visualization.generate_degree_colored_elements(SOURCE, TARGET, VALUE, threshold)
-        styles = INITIAL_STYLE + styles
-        legend_panel = [dcc.Graph(id = 'legend', figure = legend_plot, style={"height":"8vh", })]
-    
+        if styles and legend_plot:
+            styles = INITIAL_STYLE + styles
+            legend_panel = [dcc.Graph(id = 'legend', figure = legend_plot, style={"height":"8vh", })]
+        else:
+            styles = INITIAL_STYLE
+            warning_messages += (f"  \n❌ Threshold too stringent. All node degrees are zero.")
     if (btn == 'specid-focus-dropdown' and spec_id_selection):
         styles = INITIAL_STYLE + previous_stylesheet 
         elements = previous_elements
@@ -398,6 +398,7 @@ def details_trigger(
     if btn == "btn_push_fragmap" and selection_data and len(selection_data) >= 2 and len(selection_data) <= max_number_fragmap:
         panel = fragmap.generate_fragmap_panel(selection_data, ALL_SPECTRA)
     elif btn == "btn_push_meta" and selection_data:
+        
         tmpdf = TSNE_DF.iloc[selection_data]
         panel = dash_table.DataTable(
             id="table",
@@ -488,16 +489,13 @@ def expand_trigger_handler(n_submit, new_expand_level):
 )
 def class_update_trigger_handler(selected_class : str):
     """ Wrapper Function that construct class dcc.store data. """
-    print("TRIGGER: selected class", selected_class, type(selected_class))
-    print("Inside accessor:", CLASS_DICT[selected_class])
-    #selected_class_level_assignments, _ = data_transfer.update_class(selected_class, CLASS_DICT)
     selected_class_level_assignments = CLASS_DICT[selected_class]
     unique_assignments = list(np.unique(selected_class_level_assignments))
-    print("TRIGGERED SELECTED CLASS LEVEL UPDATE:",unique_assignments)
 
-    node_elements = initialize_cytoscape_graph_elements(TSNE_DF, selected_class_level_assignments, MZ, GLOBAL_DATA.is_standard)
-    for elem in node_elements:
-        print(elem)
+    node_elements = initialize_cytoscape_graph_elements(
+        TSNE_DF, selected_class_level_assignments, GLOBAL_DATA.is_standard)
+    
+    
     return selected_class, selected_class_level_assignments, unique_assignments, [], node_elements
 
 @app.callback(

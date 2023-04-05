@@ -23,7 +23,7 @@ GENERAL_STYLE = [{
     'selector':'node', 
     'style': {
         'text-halign':'center', 'text-valign':'center', 'background-color': '#E5E4E2',
-        'height':NODE_SIZE, 'width':NODE_SIZE, "border-width":EDGE_SIZE}}, {
+        'height':NODE_SIZE, 'width':NODE_SIZE, "border-width":EDGE_SIZE, "opacity":0.7}}, {
     
     'selector':'.none',
     'style':{'color' : 'green'},
@@ -32,7 +32,7 @@ GENERAL_STYLE = [{
     #    'content':'data(label)','color':'black', "font-family": "Ubuntu Mono", "font-size": "1px",
     #    "text-wrap": "wrap", "text-max-width": 100,},
     'selector':'.is_standard', 
-    'style': {'shape' : 'diamond'}}]
+    'style': {'shape' : 'diamond', 'opacity':1, 'background-color': '#757573'}}]
 
 EDGE_STYLE = [{    
     'selector': 'edge',
