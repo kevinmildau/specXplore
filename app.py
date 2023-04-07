@@ -26,18 +26,24 @@ if False:
     specxplore_input_file = os.path.join("data_import_testing", "results", "phophe_specxplore.pickle")
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
-if True:
-    specxplore_input_file = 'data_and_output/wheat_data/wheat_data_specxplore_v2.pickle'
-    #specxplore_input_file = os.path.join("data_and_output", "npl_out", "npl_specxplore.pickle")
-    with open(specxplore_input_file, 'rb') as handle:
-        GLOBAL_DATA = pickle.load(handle) 
+#if True:
+#    specxplore_input_file = 'data_and_output/wheat_data/wheat_data_specxplore_v2.pickle'
+#    #specxplore_input_file = os.path.join("data_and_output", "npl_out", "npl_specxplore.pickle")
+#    with open(specxplore_input_file, 'rb') as handle:
+#        GLOBAL_DATA = pickle.load(handle) 
 
 if False:
     specxplore_input_file = 'data_and_output/test_data/test_case_specxplore2.pickle'
     #specxplore_input_file = os.path.join("data_and_output", "npl_out", "npl_specxplore.pickle")
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
- 
+
+if True:
+    specxplore_input_file = 'data_and_output/urine_data/urine_data_specxplore.pickle'
+    #specxplore_input_file = os.path.join("data_and_output", "npl_out", "npl_specxplore.pickle")
+    with open(specxplore_input_file, 'rb') as handle:
+        GLOBAL_DATA = pickle.load(handle) 
+
 # Unpack specXplore input object
 GLOBAL_DATA.class_table["is_standard"] = pd.Series(GLOBAL_DATA.is_standard, dtype = str) # tmp modification
 CLASS_DICT = {elem : list(GLOBAL_DATA.class_table[elem]) for elem in GLOBAL_DATA.class_table.columns} 
@@ -49,7 +55,7 @@ SM_MS2DEEPSCORE = GLOBAL_DATA.ms2deepscore_sim
 SM_MODIFIED_COSINE = GLOBAL_DATA.cosine_sim 
 SM_SPEC2VEC = GLOBAL_DATA.spec2vec_sim
 TSNE_DF = GLOBAL_DATA.tsne_df
-scaler = 1000
+scaler = 1200
 TSNE_DF["x"] = other_utils.scale_array_to_minus1_plus1(TSNE_DF["x"].to_numpy()) * scaler
 TSNE_DF["y"] = other_utils.scale_array_to_minus1_plus1(TSNE_DF["y"].to_numpy()) * scaler
 ALL_SPEC_IDS = GLOBAL_DATA.specxplore_id
