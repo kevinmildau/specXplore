@@ -54,9 +54,13 @@ def generate_cluster_node_link_diagram_cythonized(
     selected_nodes_np = np.array(selected_nodes)
     
     # Get source and target identifier arrays
-    v,s,t = data_transfer_cython.extract_selected_above_threshold(
-        SOURCE, TARGET, VALUE, selected_nodes_np, threshold)
+    #v,s,t = data_transfer_cython.extract_selected_above_threshold(
+    #    SOURCE, TARGET, VALUE, selected_nodes_np, threshold)
     
+    # Get source and target identifier arrays
+    v,s,t = data_transfer_cython.extract_selected_above_threshold_top_k(
+        SOURCE, TARGET, VALUE, selected_nodes_np, threshold)
+
     connected_nodes = set(list(np.unique(np.concatenate([s, t]))))             # <---------- for filtering
     connected_nodes.update(set(selected_nodes_np))                             # <---------- for filtering
     
