@@ -83,6 +83,9 @@ def initialize_cytoscape_graph_elements(tsne_df, selected_class_data, is_standar
 INITIAL_NODE_ELEMENTS = initialize_cytoscape_graph_elements(TSNE_DF, selected_class_data, GLOBAL_DATA.is_standard)
 INITIAL_STYLE = SELECTED_NODES_STYLE + GENERAL_STYLE + SELECTION_STYLE
 
+########################################################################################################################
+# All settings panel
+upload_element = html.Div([dcc.Input(id="upload-data", type="text", placeholder=None, debounce=True)])
 
 ########################################################################################################################
 # All settings panel
@@ -96,6 +99,12 @@ settings_panel = dbc.Offcanvas([
         style={"width" : "100%"}),
     html.Div([dcc.Graph(
         id = "edge-histogram-figure", figure = [],  style={"width":"100%","height":"30vh"})]),
+    html.B("Set Visal Scale:"),
+    html.P("A value between 0 exclded and 2000. This value is used to expand the t-SNE layout to be larger or smaller."),
+    dcc.Input(
+        id="scaler_id", type="number", 
+        debounce=True, value=100, placeholder = "100",
+        style={"width" : "100%"}),
     html.B("Set expand level:"),
     html.P("A value between 1 and 5. Controls connection branching in EgoNet."),
     dcc.Input( id="expand_level_input", type="number", 
@@ -179,6 +188,7 @@ control_button_group = [
 app=Dash(external_stylesheets=[dbc.themes.UNITED])
 app.layout=html.Div([
     # ROW 1: Title & hover response
+    upload_element,
     dbc.Row(
         [
         dbc.Col([html.H1([html.B("specXplore prototype")], style={"margin-bottom": "0em"})], width=6),
@@ -202,6 +212,7 @@ app.layout=html.Div([
     #dbc.Button("Open Focus", id="btn-open-focus", n_clicks=0),
     settings_panel,
     selection_focus_panel,
+    dcc.Store(id='specxplore_object', data = None),
     dcc.Store(id="edge_threshold", data=0.9),
     dcc.Store(id="expand_level", data=int(1)),
     dcc.Store(id="selected_class_level_store", data=AVAILABLE_CLASSES[0]),
@@ -242,6 +253,7 @@ app.layout=html.Div([
     Input('classes_to_be_highlighted_dropdown', 'value'),
     Input('selected_class_level_assignments_store', "data"),
     Input('node_elements_store', 'data'),
+    Input('specxplore_object', 'data'),
     State("edge_threshold", "data"),
     State("expand_level", "data"),
     State('cytoscape-tsne', 'zoom'),
@@ -257,6 +269,7 @@ def cytoscape_trigger(
     classes_to_be_highlighted,
     all_class_level_assignments, 
     node_elements_from_store,
+    none_data_trigger, 
     threshold, 
     expand_level, 
     zoom_level, 
@@ -491,9 +504,10 @@ def expand_trigger_handler(n_submit, new_expand_level):
     Output('classes_to_be_highlighted_dropdown', 'options'), 
     Output('classes_to_be_highlighted_dropdown', 'value'),
     Output('node_elements_store', 'data'),
-    Input("select_class_level_dropdown", "value")
+    Input("select_class_level_dropdown", "value"),
+    Input('specxplore_object', 'data') # empty, global data strctures updated which require selected_class_level_assignments_store to update
 )
-def class_update_trigger_handler(selected_class : str):
+def class_update_trigger_handler(selected_class : str, _ : None):
     """ Wrapper Function that construct class dcc.store data. """
     selected_class_level_assignments = CLASS_DICT[selected_class]
     unique_assignments = list(np.unique(selected_class_level_assignments))
@@ -523,6 +537,59 @@ def update_histogram(threshold):
         xaxis_title="Count", yaxis_title="Edge Weight Bins",
         margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":40})
     return fig
+
+@app.callback(Output('specxplore_object', 'data'),
+              Input('upload-data', 'value'),
+              State('scaler_id', 'value'))
+def update_output(filename, scaler):
+    print(scaler, type(scaler))
+    if filename is not None:
+        # check for valid and existing file
+        # load file
+        with open(filename, 'rb') as handle:
+            specxplore_object = pickle.load(handle) 
+        # assess compatibility of output
+        assert type(specxplore_object) == specxplore_data
+        # Unpack specXplore input object
+        global ALL_SPEC_IDS
+        global ALL_SPECTRA
+        global SOURCE
+        global TARGET
+        global VALUE
+        global MZ
+        global INITIAL_NODE_ELEMENTS
+        global INITIAL_STYLE
+        global TSNE_DF
+        global SM_MODIFIED_COSINE
+        global SM_MS2DEEPSCORE
+        global SM_SPEC2VEC
+        global AVAILABLE_CLASSES
+        global CLASS_DICT
+        GLOBAL_DATA = specxplore_object
+        GLOBAL_DATA.class_table["is_standard"] = pd.Series(GLOBAL_DATA.is_standard, dtype = str) # tmp modification
+        CLASS_DICT = {elem : list(GLOBAL_DATA.class_table[elem]) for elem in GLOBAL_DATA.class_table.columns} 
+        AVAILABLE_CLASSES = list(CLASS_DICT.keys())
+        selected_class_data = CLASS_DICT[AVAILABLE_CLASSES[0]]
+        SM_MS2DEEPSCORE = GLOBAL_DATA.ms2deepscore_sim
+        SM_MODIFIED_COSINE = GLOBAL_DATA.cosine_sim 
+        SM_SPEC2VEC = GLOBAL_DATA.spec2vec_sim
+        TSNE_DF = GLOBAL_DATA.tsne_df
+        TSNE_DF["x"] = other_utils.scale_array_to_minus1_plus1(TSNE_DF["x"].to_numpy()) * scaler
+        TSNE_DF["y"] = other_utils.scale_array_to_minus1_plus1(TSNE_DF["y"].to_numpy()) * scaler
+        ALL_SPEC_IDS = GLOBAL_DATA.specxplore_id
+        ALL_SPECTRA = GLOBAL_DATA.spectra
+        SOURCE = GLOBAL_DATA.sources
+        TARGET = GLOBAL_DATA.targets
+        VALUE = GLOBAL_DATA.values
+        MZ = GLOBAL_DATA.mz
+        INITIAL_NODE_ELEMENTS = initialize_cytoscape_graph_elements(TSNE_DF, selected_class_data, GLOBAL_DATA.is_standard)
+        INITIAL_STYLE = SELECTED_NODES_STYLE + GENERAL_STYLE + SELECTION_STYLE
+        print("specXplore data sccessfully updated")
+        return {"None": None}
+
+    
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True, port="8999")
