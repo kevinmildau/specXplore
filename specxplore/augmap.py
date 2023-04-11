@@ -45,7 +45,7 @@ def generate_shape_list(edges, size_modifier, shape_kwargs):
 
 def construct_circle_marker_shapes(idx, color, all_possible_edges, threshold, similarity_matrix):
     """ Constructs circle marker shape list for provided similarity matrix. """
-    kwargs_circle_shape = {'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': color}
+    kwargs_circle_shape = {'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': color, 'line_color' : color}
     radius_circles = 0.1
     edges = generate_edge_list(idx, all_possible_edges, similarity_matrix, threshold)
     shapes_circles = generate_shape_list(edges, radius_circles, kwargs_circle_shape)
@@ -63,9 +63,9 @@ def generate_overlay_markers(idx, similarity_matrix_1, similarity_matrix_2, thre
     """ Generates circle and rectangle shape lists for AugMap. """
     # Determine marker color with color or black and white for colorblind friendlier representation.
     if colorblind:
-        color = "black"
+        color = "magenta"
     else:
-        color = '#39FF14'
+        color = '#27fa00'
     all_possible_edges = list(itertools.combinations(np.arange(0, similarity_matrix_1.shape[1]), 2))
     # Construct circle markers for similarity matrix 1
     shapes_circles = construct_circle_marker_shapes(
@@ -94,7 +94,7 @@ def generate_heatmap_colorscale(threshold, colorblind = False):
     """ Creates colorscale for heatmap in range 0 to 1, either grayscale or diverging around threshold."""
     if colorblind:
         # 100 for increments of 1 across 0 to 1
-        colorscale = px.colors.sample_colorscale("greys_r", [n/(100 -1) for n in range(100)]) 
+        colorscale = px.colors.sample_colorscale("greys", [n/(100 -1) for n in range(100)]) 
     else:
         colorscale = construct_redblue_diverging_coloscale(threshold)
     return(colorscale)
@@ -138,7 +138,7 @@ def generate_augmap_graph(
     ids_string_list  = [str(e) for e in idx_iloc_array]
     
     # Generate heathmap and joint hover trace
-    colorscale = generate_heatmap_colorscale(threshold)
+    colorscale = generate_heatmap_colorscale(threshold, colorblind)
     heatmap_trace = generate_heatmap_trace(
         ids_string_list, similarity_matrix_1, similarity_matrix_2, similarity_matrix_3, colorscale)
     
@@ -153,15 +153,17 @@ def generate_augmap_graph(
     return augmap_figure
 
 def generate_augmap_panel(
-    spectrum_ids, similarity_matrix_ms2ds, similarity_matrix_modified_cosine, similarity_matrix_s2v, threshold):
+    spectrum_ids, similarity_matrix_ms2ds, similarity_matrix_modified_cosine, similarity_matrix_s2v, threshold, 
+    colorblind_boolean):
     """ Class generators for augmap and places augmap figure into dash compatible container."""
     
     # Check whether spectrum_ids input is compatible with AugMap (not none, at least 2 ids)
     if not spectrum_ids or len(spectrum_ids) == 1:
         return [html.H6("Provide at least 2 spec_ids for AugMap.")]
     augmap_figure = generate_augmap_graph(
-        spectrum_ids, similarity_matrix_ms2ds, similarity_matrix_modified_cosine, similarity_matrix_s2v, threshold)
+        spectrum_ids, similarity_matrix_ms2ds, similarity_matrix_modified_cosine, similarity_matrix_s2v, threshold,
+        colorblind_boolean)
     augmap_panel = html.Div([dcc.Graph(
             id="augmented_heatmap", figure=augmap_figure, 
-            style={"width":"100%","height":"80vh", "border":"1px grey solid"})])
+            style={"width":"95vh","height":"90vh", "border":"1px grey solid"})])
     return augmap_panel
