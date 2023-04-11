@@ -140,48 +140,23 @@ selection_focus_panel = dbc.Offcanvas([
     is_open=False)
 ########################################################################################################################
 # Button array on left side of plot
-height_small = "9vh" # round down of 80vh / 7 components
-height_main = "9vh" # round down of 80vh / 7 components + 80%7 /2 
-button_style_logo = {'width': '25%', 'height': height_small, "fontSize": "20px", "textAlign": "center", }
-button_style_text = {'width': '75%', 'height': height_small, "fontSize": "10px", "textAlign": "center", }
+
+button_height = "9vh"
+button_style_text = {
+    'width': '98%', 'height': button_height, "fontSize": "11px", "textAlign": "center", "border":"1px black solid",
+    'backgroundColor' : '#8B008B'}
 control_button_group = [
-    dbc.ButtonGroup(
-        [
-        dbc.Button('⚙', id="btn-open-settings", style = 
-                   {'width': '100%', 'height': height_main, "fontSize": "25px"}),
-        dbc.Button('View Selection', id="btn-open-focus", style = 
-                   {'width': '100%', 'height': height_main, "fontSize": "15px"}),
-        dbc.ButtonGroup([
-            dbc.Button('👁', id='btn-nclicks0-settings', style = button_style_logo),
-            dbc.Button('Show Node Degree ', id='btn-run-degree', n_clicks=0, style = button_style_text),
-            ]),  
-        dbc.ButtonGroup([
-            dbc.Button('⚙', id='btn-nclicks1-settings', style = button_style_logo),
-            dbc.Button('EgoNet ', id='btn-run-egonet', n_clicks=0, style = button_style_text),
-            ]),  
-        dbc.ButtonGroup([
-            dbc.Button('⚙', id='btn-nclicks2-settings', style = button_style_logo),
-            dbc.Button('Show Edges for Selection', id="btn-run-clustnet", n_clicks=0, style = button_style_text),  
-        ]),
-        dbc.ButtonGroup([
-            dbc.Button('⚙', id='btn-nclicks3-settings', style = button_style_logo),  
-            dbc.Button('Augmap', id="btn-push-augmap", n_clicks=0, style = button_style_text)
-        ]),
-        dbc.ButtonGroup([
-            dbc.Button('⚙', id='btn-nclicks4-settings', style = button_style_logo),  
-            dbc.Button('Spectrum Plot(s)', id='btn_push_spectrum', n_clicks=0, style = button_style_text)
-        ]),
-        dbc.ButtonGroup([
-            dbc.Button('⚙', id='btn-fragmap-settings', style = button_style_logo),  
-            dbc.Button('Fragmap', id="btn_push_fragmap", n_clicks=0, style = button_style_text)
-        ]),
-        dbc.ButtonGroup([
-            dbc.Button('⚙', id='btn-meta-settings', style = button_style_logo),  
-            dbc.Button('Metadata Table', id="btn_push_meta", n_clicks=0, style = button_style_text)
-        ]),
-        ],
-        vertical=True,
-    )]
+    dbc.ButtonGroup([
+        dbc.Button('⚙ Settings', id="btn-open-settings", style = button_style_text),
+        dbc.Button('View Selection', id="btn-open-focus", style = button_style_text),
+        dbc.Button('Show Node Degree ', id='btn-run-degree', n_clicks=0, style = button_style_text),
+        dbc.Button('EgoNet ', id='btn-run-egonet', n_clicks=0, style = button_style_text),
+        dbc.Button('Show Edges for Selection', id="btn-run-clustnet", n_clicks=0, style = button_style_text),  
+        dbc.Button('Augmap', id="btn-push-augmap", n_clicks=0, style = button_style_text),
+        dbc.Button('Spectrum Plot(s)', id='btn_push_spectrum', n_clicks=0, style = button_style_text),
+        dbc.Button('Fragmap', id="btn_push_fragmap", n_clicks=0, style = button_style_text),
+        dbc.Button('Metadata Table', id="btn_push_meta", n_clicks=0, style = button_style_text)
+        ],vertical=True, style = {"width" : "100%"})]
 
 ########################################################################################################################
 # good themes: VAPOR, UNITED ; see more:  https://bootswatch.com/
