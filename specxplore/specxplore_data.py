@@ -6,41 +6,54 @@ import typing
 from typing import List, TypedDict, Tuple, Dict, NamedTuple
 import copy
 from specxplore import specxplore_data_cython
-
+from specxplore import other_utils
+from specxplore.clustnet import SELECTED_NODES_STYLE, GENERAL_STYLE, SELECTION_STYLE
 @dataclass
 class specxplore_data:
-  def __init__(
-    self, ms2deepscore_sim, spec2vec_sim, cosine_sim, 
-    tsne_df, class_table, is_standard, spectra, mz, specxplore_id
-    ):
-    self.ms2deepscore_sim = ms2deepscore_sim
-    self.spec2vec_sim = spec2vec_sim
-    self.cosine_sim = cosine_sim
-    tsne_df["is_standard"] = is_standard
-    tsne_df["id"] = specxplore_id
-    self.tsne_df = tsne_df
-    class_table.columns = class_table.columns.astype(str)
-    class_table.astype(str)
-    class_table = class_table.replace(" ","_", regex = True)
-    self.class_table = class_table
-    self.is_standard = is_standard
-    spectra_converted = [
-        Spectrum(spec.peaks.mz, spec.get("precursor_mz"), idx, spec.peaks.intensities) 
-        for idx, spec in enumerate(spectra)]
-    self.spectra = spectra_converted
-    self.mz = mz # precursor mz values for each spectrum
-    self.specxplore_id = specxplore_id
-    # CONSTRUCT SOURCE, TARGET AND VALUE ND ARRAYS
-    sources, targets, values = specxplore_data_cython.construct_long_format_sim_arrays(ms2deepscore_sim)
-    ordered_index = np.argsort(-values)
-    sources = sources[ordered_index]
-    targets = targets[ordered_index]
-    values = values[ordered_index]
-    self.sources = sources
-    self.targets = targets
-    self.values = values
+    def __init__(
+        self, ms2deepscore_sim, spec2vec_sim, cosine_sim, 
+        tsne_df, class_table, is_standard, spectra, mz, specxplore_id
+        ):
+        self.ms2deepscore_sim = ms2deepscore_sim
+        self.spec2vec_sim = spec2vec_sim
+        self.cosine_sim = cosine_sim
+        tsne_df["is_standard"] = is_standard
+        tsne_df["id"] = specxplore_id
+        self.tsne_df = tsne_df
+        class_table.columns = class_table.columns.astype(str)
+        class_table.astype(str)
+        class_table = class_table.replace(" ","_", regex = True)
+        class_table["is_standard"] = pd.Series(is_standard, dtype = str) # tmp modification
+        self.class_table = class_table
+        self.class_dict = {elem : list(class_table[elem]) for elem in class_table.columns} 
+        self.available_classes = list(self.class_dict.keys())
+        self.selected_class_data = self.class_dict[self.available_classes[0]] # initialize default
+        self.is_standard = is_standard
+        spectra_converted = [
+            Spectrum(spec.peaks.mz, float(spec.get("precursor_mz")), idx, spec.peaks.intensities) 
+            for idx, spec in enumerate(spectra)]
+        self.spectra = spectra_converted
+        self.mz = mz # precursor mz values for each spectrum
+        self.specxplore_ids = specxplore_id
+        # CONSTRUCT SOURCE, TARGET AND VALUE ND ARRAYS
+        sources, targets, values = specxplore_data_cython.construct_long_format_sim_arrays(ms2deepscore_sim)
+        ordered_index = np.argsort(-values)
+        sources = sources[ordered_index]
+        targets = targets[ordered_index]
+        values = values[ordered_index]
+        self.sources = sources
+        self.targets = targets
+        self.values = values
 
-    self.metadata = pd.concat([tsne_df, class_table], axis=1)
+        self.metadata = pd.concat([tsne_df, class_table], axis=1)
+        self.initial_node_elements = other_utils.initialize_cytoscape_graph_elements(
+            self.tsne_df, self.selected_class_data, self.is_standard)
+        self.initial_style = SELECTED_NODES_STYLE + GENERAL_STYLE + SELECTION_STYLE
+
+    def scale_coordinate_system(self, scaler : float):
+        """ Applies scaling to coordinate system """
+        self.tsne_df["x"] = other_utils.scale_array_to_minus1_plus1(self.tsne_df["x"].to_numpy()) * scaler
+        self.tsne_df["y"] = other_utils.scale_array_to_minus1_plus1(self.tsne_df["y"].to_numpy()) * scaler
 
 
 
