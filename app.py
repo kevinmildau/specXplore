@@ -1,6 +1,7 @@
 # Main specXplore prototype
 from dash import dcc, html, ctx, dash_table, Dash
 from dash.dependencies import Input, Output, State
+import dash_daq as daq
 import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
 from specxplore import egonet
@@ -71,6 +72,8 @@ settings_panel = dbc.Offcanvas([
     dcc.Dropdown(
         id='classes_to_be_highlighted_dropdown' , multi=True, clearable=False, options=[],
         value=[]),
+    html.B("Toggle colorblind friendly for Augmap:"),
+    daq.BooleanSwitch(id='augmap_colorblind_friendly_switch', on=False),
     ],
     id="offcanvas-settings",
     title="specXplore settings",
@@ -142,6 +145,7 @@ app.layout=html.Div([
     dcc.Store(id="selected_class_level_store", data= GLOBAL_DATA.available_classes[0]),
     dcc.Store(id='selected_class_level_assignments_store', data=[GLOBAL_DATA.available_classes[0]]),
     dcc.Store(id='node_elements_store', data = GLOBAL_DATA.initial_node_elements),
+    dcc.Store(id='colorblind_friendly_boolean_store', data = False),
     #html.Br(),
     dbc.Row(
         [
@@ -329,10 +333,12 @@ def toggle_offcanvas(n1, is_open):
     Input('btn_push_spectrum', 'n_clicks'),
     State('specid-focus-dropdown', 'value'),
     State("edge_threshold", "data"),
+    State('colorblind_friendly_boolean_store', 'data'),
     prevent_initial_call=True
 )
 def details_trigger(
-    btn_fragmap_n_clicks, btn_meta_n_clicks, btn_augmap_n_clicks, btn_spectrum_n_clicks, selection_data, threshold):
+    btn_fragmap_n_clicks, btn_meta_n_clicks, btn_augmap_n_clicks, btn_spectrum_n_clicks, selection_data, threshold,
+    colorblind_boolean):
     """ Wrapper function that calls fragmap generation modules. """
     warning_message = ""
     btn = ctx.triggered_id
@@ -357,7 +363,7 @@ def details_trigger(
     elif btn == "btn-push-augmap" and selection_data and len(selection_data) >= 2 and len(selection_data) <= max_number_augmap:
         panel = augmap.generate_augmap_panel(
             selection_data, GLOBAL_DATA.ms2deepscore_sim, GLOBAL_DATA.cosine_sim , GLOBAL_DATA.spec2vec_sim, 
-            threshold)
+            threshold, colorblind_boolean)
     elif btn == "btn_push_spectrum" and selection_data and len(selection_data) <=max_number_specplot:
         if len(selection_data) == 1:
             panel = dcc.Graph(
@@ -508,6 +514,14 @@ def update_session_data(filename : str, scaler : Union[int, float]):
     else:
         ...
     return {"None": None}
+
+
+@app.callback(
+    Output('colorblind_friendly_boolean_store', 'data'),
+    Input('augmap_colorblind_friendly_switch', 'on')
+)
+def update_output(on_off_state):
+    return on_off_state
 
 if __name__ == '__main__':
     app.run_server(debug=True, port="8999")
