@@ -1,20 +1,31 @@
-
 body {
     font-family: "Ubuntu";
     margin-left: 5pt;
     margin-right: 5pt;
 }
 h1 {
-    color:  magenta
+    color:  #8B008B
 }
 
 .app-header {
-    height: 60px;
-    line-height: 60px;
+    height: 30px;
+    line-height: 30px;
     border-bottom: thin lightgrey solid;
 }
 
 .app-header .app-header--title {
     font-size: 22px;
     padding-left: 5px;
+}
+
+
+
+*[data-dash-is-loading="true"]{
+    visibility: hidden;
+}
+*[data-dash-is-loading="true"]::before{
+    content: "Loading...";
+    display: inline-block;
+    color: magenta;
+    visibility: visible;
 }
