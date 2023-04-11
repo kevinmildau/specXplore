@@ -20,8 +20,8 @@ def initialize_cytoscape_graph_elements(tsne_df, selected_class_data, is_standar
         else:
             standard_entry = ""
         nodes[i] = {
-            'data':{'id':str(i)},
+            'data':  dict(id = str(i)),
             'classes': str(selected_class_data[i]) + standard_entry, #.replace('_',''), #  color_class[i],
-            'position':{'x':tsne_df["x"].iloc[i], 'y':-tsne_df["y"].iloc[i]}        
+            'position':{'x':tsne_df["x"].iloc[i], 'y':-tsne_df["y"].iloc[i]},   
         }
     return nodes
