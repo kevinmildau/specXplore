@@ -342,14 +342,14 @@ def details_trigger(
     if btn == "btn_push_fragmap" and selection_data and len(selection_data) >= 2 and len(selection_data) <= max_number_fragmap:
         panel = fragmap.generate_fragmap_panel(selection_data, GLOBAL_DATA.spectra)
     elif btn == "btn_push_meta" and selection_data:
-        
-        tmpdf = GLOBAL_DATA.tsne_df.iloc[selection_data]
+        tmpdf = GLOBAL_DATA.metadata.iloc[selection_data]
+        #tmpdf = GLOBAL_DATA.tsne_df.iloc[selection_data]
         panel = dash_table.DataTable(
             id="table",
             columns=[{"name": i, "id": i} for i in tmpdf.columns],
             data=tmpdf.to_dict("records"),
             style_cell=dict(textAlign="left"),
-            style_header=dict(backgroundColor="#8B008B"),
+            style_header=dict(backgroundColor="#8B008B", color="white", border = '1px solid black' ),
             #style_data=dict(backgroundColor="white"),
             sort_action="native",
             page_size=10,
