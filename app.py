@@ -146,7 +146,7 @@ app.layout=html.Div([
     dbc.Row(
         [
         dbc.Col([html.Tbody("Hover Info: placeholder for cyto hover information")], id = "hover-info-panel",
-            style={"font-size" : "10pt", "border":"1px black solid"}),
+            style={"font-size" : "6pt", "border":"1px black solid"}),
         dbc.Col(
             [
             dcc.Markdown(id="warning-messages-panel1", style={"font-size" : "8pt", "border":"1px black solid"}),
@@ -156,7 +156,7 @@ app.layout=html.Div([
         ], className="g-0"), 
     dbc.Row(
         [
-        dbc.Col([html.Div(id="details_panel", style={"width":"100%", "height":"80vh", "border":"1px black solid"})], width=12)
+        dbc.Col([html.Div(id="details_panel", style={"width":"100%", "height":"90vh", "border":"1px black solid"})], width=12)
         ], className="g-0"),
     ], 
     style={"width" : "100%"},
@@ -509,12 +509,5 @@ def update_session_data(filename : str, scaler : Union[int, float]):
         ...
     return {"None": None}
 
-    
-
-
-
 if __name__ == '__main__':
     app.run_server(debug=True, port="8999")
-
-
-                                                                               
