@@ -398,14 +398,22 @@ def update_threshold_trigger_handler(n_submit, new_threshold):
 @app.callback(
     Output("hover-info-panel", 'children'),
     Input('cytoscape-tsne', 'mouseoverNodeData'),
-    State('selected_class_level_assignments_store', "data"),
     prevent_initial_call=True
 )
-def displaymouseoverData(data, class_assignment_list):
+def displaymouseoverData(data):
+    """ Callback Function renders class table information and id for hovered over node in text panel."""
     if data:
         spec_id = data['id']
-        metdata_information = GLOBAL_DATA.tsne_df.iloc[int(spec_id)].to_dict()
-        information_string = (f"spectrum_id: {spec_id}, class: {class_assignment_list[int(spec_id)]} ")
+        print(data)
+        node_class_info = GLOBAL_DATA.class_table.iloc[int(spec_id)].to_dict()
+        class_string_list = []
+        for key in node_class_info:
+            print(key)
+            print(node_class_info[key])
+            class_string_list.append(f"{key} : {node_class_info[key]} ")
+        class_string = ", ".join(class_string_list)
+        print(class_string_list)
+        information_string = (f"spectrum_id: {spec_id}, classification: {class_string}")
         return information_string
 
 ########################################################################################################################
