@@ -45,7 +45,7 @@ class specxplore_data:
         self.targets = targets
         self.values = values
 
-        self.metadata = pd.concat([tsne_df, class_table], axis=1)
+        self.metadata = pd.concat([class_table, tsne_df], axis=1)
         self.initial_node_elements = other_utils.initialize_cytoscape_graph_elements(
             self.tsne_df, self.selected_class_data, self.is_standard)
         self.initial_style = SELECTED_NODES_STYLE + GENERAL_STYLE + SELECTION_STYLE
