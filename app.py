@@ -142,6 +142,7 @@ app.layout=html.Div([
     dcc.Store(id='session_data_update_trigger', data = None),
     dcc.Store(id="edge_threshold", data=0.9),
     dcc.Store(id="expand_level", data=int(1)),
+    dcc.Store(id='maximum-number-of-nodes', data = int(9999)),
     dcc.Store(id="selected_class_level_store", data= GLOBAL_DATA.available_classes[0]),
     dcc.Store(id='selected_class_level_assignments_store', data=[GLOBAL_DATA.available_classes[0]]),
     dcc.Store(id='node_elements_store', data = GLOBAL_DATA.initial_node_elements),
@@ -184,6 +185,7 @@ app.layout=html.Div([
     Input('selected_class_level_assignments_store', "data"),
     Input('node_elements_store', 'data'),
     Input('session_data_update_trigger', 'data'),
+    State("maximum-number-of-nodes", "data"),
     State("edge_threshold", "data"),
     State("expand_level", "data"),
     State('cytoscape-tsne', 'zoom'),
@@ -200,6 +202,7 @@ def cytoscape_trigger(
     all_class_level_assignments, 
     node_elements_from_store,
     none_data_trigger, 
+    max_edges_per_node,
     threshold, 
     expand_level, 
     zoom_level, 
@@ -239,10 +242,10 @@ def cytoscape_trigger(
                 GLOBAL_DATA.tsne_df, spec_id_selection, GLOBAL_DATA.ms2deepscore_sim, all_class_level_assignments,
                 threshold, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.mz, 
                 GLOBAL_DATA.is_standard,
-                max_edges_clustnet)
+                max_edges_clustnet, max_edges_per_node)
             if spec_id_selection and n_omitted_edges != int(0):
                 warning_messages += (
-                    f"  \n❌Threshold too liberal and leads to number of edges exceeding allowed maximum." 
+                    f"  \n❌Current settings (threshold, maximum node degree) lead to edge omission." 
                     f" {n_omitted_edges} edges with lowest edge weight removed from visualization.")
         else:
             warning_messages += (
@@ -434,6 +437,19 @@ def expand_trigger_handler(n_submit, new_expand_level):
     new_expand_level, new_placeholder=data_transfer.update_expand_level(
         new_expand_level)
     return new_expand_level, new_placeholder
+
+# expand level control setting
+@app.callback(
+    Output("maximum-number-of-nodes", "data"),
+    Output("input-maximum-number-of-nodes", "placeholder"),
+    Input("input-maximum-number-of-nodes", 'n_submit'),
+    Input("input-maximum-number-of-nodes", "value"))
+
+def max_degree_trigger_handler(n_submit, new_max_degree):
+    new_max_degree, new_placeholder=data_transfer.update_max_degree(new_max_degree)
+    return new_max_degree, new_placeholder
+"input-maximum-number-of-nodes"
+
 
 ########################################################################################################################
 # CLASS SELECTION UPDATE ------------------------------------------------------
