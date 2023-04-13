@@ -357,7 +357,7 @@ def get_heatmap(spectra_df: Union[SpectraDF, None]):
         y=plot_df["spec_index"].to_list(), 
         z=plot_df["intensity"].to_list(),
         text = hover_text_addon, 
-        xgap=5, ygap=5, colorscale = "purp")
+        xgap=1, ygap=1, colorscale = "purp")
 
     # generates a neutral loss list of intensities with actual intensities set to NaN.
     # neutral loss traces and fragment traces must be equal length lists for the tick alignment to work
@@ -366,7 +366,7 @@ def get_heatmap(spectra_df: Union[SpectraDF, None]):
         x=plot_df["bin_index"].to_list(), 
         y=plot_df["spec_index"].to_list(), 
         z=  neutral_z,
-        text = hover_text_addon, xgap=5, ygap=5, 
+        text = hover_text_addon, xgap=1, ygap=1, 
         colorscale = ["#C0C0C0", "#C0C0C0"], showscale=False, showlegend=False)
 
     #neutral_loss_marker_shapes = generate_neutral_loss_marker_shapes(
