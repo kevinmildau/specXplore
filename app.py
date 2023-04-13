@@ -27,7 +27,7 @@ from typing import List, Union
 # A small default dataset is loaded here. The actual dataset can be loaded from path.
 global GLOBAL_DATA
 if True:
-    specxplore_input_file = 'data_and_output/test_data/test_case_specxplore4.pickle'
+    specxplore_input_file = 'data_and_output/test_data/test_case_specxplore5.pickle'
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
 
@@ -40,40 +40,73 @@ if True:
 ########################################################################################################################
 # All settings panel
 settings_panel = dbc.Offcanvas([
-    html.B("Session Data Location"),
-    html.P("Provide path to a valid specXplore.pickle object."),
-    html.Div([dcc.Input(id="upload-data", type="text", placeholder=None, debounce=True)]),
+
     html.B("Set Edge Threshold:"),
     html.P("A value between 0 and 1 (excluded)"),
     dcc.Input(
         id="edge_threshold_input_id", type="number", 
         debounce=True, placeholder="Threshold 0 < thr < 1, def. 0.9", 
         style={"width" : "100%"}),
+    html.Br(),
+    html.Br(),
+
     html.Div([dcc.Graph(
         id = "edge-histogram-figure", figure = [],  style={"width":"100%","height":"30vh"})]),
+    html.Br(),
+
+    html.B("Set maximum node degree:"),
+    html.P("A value between 1 and 9999. The lower, the fewer edges are allowed for each node."),
+    dcc.Input( id="input-maximum-number-of-nodes", type="number", 
+        debounce=True, 
+        placeholder="1 <= Value <= 9999, def. 9999", 
+        style={"width" : "100%"}),
+    html.Br(),
+
+    html.B("Higlight Class(es) by color:"),
+    dcc.Dropdown(
+        id='classes_to_be_highlighted_dropdown' , multi=True, clearable=False, options=[],
+        value=[]),
+    html.Br(),
+
+    html.B("Set Hop Distance for EgoNet:"),
+    html.P("A value between 1 and 5. Controls connection branching in EgoNet."),
+    dcc.Input( id="expand_level_input", type="number", 
+        debounce=True, 
+        placeholder="Value between 1 < exp.lvl. < 5, def. 1", 
+        style={"width" : "100%"}),
+    html.Br(),
+
+    html.B("Select Class Level:"),
+    dcc.Dropdown( 
+        id='select_class_level_dropdown' , multi=False, 
+        clearable=False, options= GLOBAL_DATA.available_classes, 
+        value=GLOBAL_DATA.available_classes[0]),
+    html.Br(),
+
+    html.B("Toggle colorblind friendly for Augmap:"),
+    daq.BooleanSwitch(id='augmap_colorblind_friendly_switch', on=False),
+    html.Br(),
+
     html.B("Set Visal Scale:"),
     html.P("A value between 0 exclded and 2000. This value is used to expand the t-SNE layout to be larger or smaller."),
     dcc.Input(
         id="scaler_id", type="number", 
         debounce=True, value=100, placeholder = "100",
         style={"width" : "100%"}),
-    html.B("Set expand level:"),
-    html.P("A value between 1 and 5. Controls connection branching in EgoNet."),
-    dcc.Input( id="expand_level_input", type="number", 
-        debounce=True, 
-        placeholder="Value between 1 < exp.lvl. < 5, def. 1", 
-        style={"width" : "100%"}),
-    html.B("Select Class Level:"),
-    dcc.Dropdown(
-        id='select_class_level_dropdown' , multi=False, 
-        clearable=False, options= GLOBAL_DATA.available_classes, 
-        value=GLOBAL_DATA.available_classes[0]),
-    html.B("Filter by Class(es):"),
-    dcc.Dropdown(
-        id='classes_to_be_highlighted_dropdown' , multi=True, clearable=False, options=[],
-        value=[]),
-    html.B("Toggle colorblind friendly for Augmap:"),
-    daq.BooleanSwitch(id='augmap_colorblind_friendly_switch', on=False),
+    html.Br(),
+
+    html.B("Session Data Location"),
+    html.P("Provide path to a valid specXplore.pickle object."),
+    html.Div([dcc.Input(id="upload-data", type="text", placeholder=None, debounce=True)]),
+    html.Br(),
+    html.Br(),
+    html.Br(),
+    html.Br(),
+    html.Br(),
+    html.Br(),
+    html.Br(),
+    html.Br(),
+    html.Br(),
     ],
     id="offcanvas-settings",
     title="specXplore settings",
@@ -151,7 +184,7 @@ app.layout=html.Div([
     dbc.Row(
         [
         dbc.Col([html.Tbody("Hover Info: placeholder for cyto hover information")], id = "hover-info-panel",
-            style={"font-size" : "6pt", "border":"1px black solid"}),
+            style={"font-size" : "8pt", "border":"1px black solid"}),
         dbc.Col(
             [
             dcc.Markdown(id="warning-messages-panel1", style={"font-size" : "8pt", "border":"1px black solid"}),
@@ -209,7 +242,6 @@ def cytoscape_trigger(
     pan_location,
     previous_elements,
     previous_stylesheet):
-
     btn = ctx.triggered_id
     max_colors = 8
     max_edges_clustnet = 2500
