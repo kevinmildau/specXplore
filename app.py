@@ -256,11 +256,11 @@ def cytoscape_trigger(
         if spec_id_selection:
             elements, styles, n_omitted_edges = egonet.generate_egonet_cythonized(
                 spec_id_selection, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.tsne_df, 
-                GLOBAL_DATA.mz, threshold, expand_level)
+                GLOBAL_DATA.mz, threshold, expand_level, max_edges_per_node)
             if n_omitted_edges != int(0):
                 warning_messages += (
-                    f"  \n❌Threshold too liberal and leads to number of edges exceeding allowed maximum. "
-                    f"{n_omitted_edges} edges with lowest edge weight removed from visualization.")
+                    f"  \n❌Current settings (threshold, maximum node degree, hop distance) lead to edge omission."
+                    f"{n_omitted_edges} edges removed from visualization. These either exceeded maximum node degrees in branching tree or were low similarity edges removed to avoid exceeding maximum edge numbers.")
         else:
             warning_messages += (f"  \n❌ No nodes selected, no edges can be shown.")
         if (spec_id_selection and len(spec_id_selection) > 1):
