@@ -3,13 +3,26 @@ import numpy as np
 import pandas as pd
 from collections import namedtuple
 import typing
-from typing import List, TypedDict, Tuple, Dict, NamedTuple
+from typing import List, TypedDict, Tuple, Dict, NamedTuple, Union
 import copy
 from specxplore import specxplore_data_cython
 from specxplore import other_utils
 from specxplore.clustnet import SELECTED_NODES_STYLE, GENERAL_STYLE, SELECTION_STYLE
+import os
+import json 
+import pickle
 @dataclass
 class specxplore_data:
+    """ specxplore data container that supplies all the data needed by the specxplore dashboard.
+    
+    
+    Developer Notes:
+    loading and saving specxplore objects is done using pickle. This is because many of the structures in specxplore
+    are not json serializable, and would require elaborate conversions and parsing to work:
+        pandas df
+        numpy arrays
+        Spectrum object (including numpy arrays)
+    """
     def __init__(
         self, ms2deepscore_sim, spec2vec_sim, cosine_sim, 
         tsne_df, class_table, is_standard, spectra, mz, specxplore_id
@@ -19,20 +32,21 @@ class specxplore_data:
         self.cosine_sim = cosine_sim
         tsne_df["is_standard"] = is_standard
         tsne_df["id"] = specxplore_id
+
         self.tsne_df = tsne_df
         class_table.columns = class_table.columns.astype(str)
         class_table.astype(str)
         class_table = class_table.replace(" ","_", regex = True)
         class_table["is_standard"] = pd.Series(is_standard, dtype = str) # tmp modification
         self.class_table = class_table
+        
         self.class_dict = {elem : list(class_table[elem]) for elem in class_table.columns} 
         self.available_classes = list(self.class_dict.keys())
         self.selected_class_data = self.class_dict[self.available_classes[0]] # initialize default
         self.is_standard = is_standard
-        spectra_converted = [
-            Spectrum(spec.peaks.mz, float(spec.get("precursor_mz")), idx, spec.peaks.intensities) 
-            for idx, spec in enumerate(spectra)]
-        self.spectra = spectra_converted
+
+
+        self.spectra = spectra
         self.mz = mz # precursor mz values for each spectrum
         self.specxplore_ids = specxplore_id
         # CONSTRUCT SOURCE, TARGET AND VALUE ND ARRAYS
@@ -55,6 +69,55 @@ class specxplore_data:
         self.tsne_df["x"] = other_utils.scale_array_to_minus1_plus1(self.tsne_df["x"].to_numpy()) * scaler
         self.tsne_df["y"] = other_utils.scale_array_to_minus1_plus1(self.tsne_df["y"].to_numpy()) * scaler
 
+
+    def save_to_file(self, filepath : str) -> None:
+        """ Saves specxplore data object as json string. """
+        with open(filepath, 'wb') as file:
+            pickle.dump(self, file)
+        return None
+
+    def save_selection_to_file(self, filepath : str, selection_idx : List[int]) -> None:
+        # extract selections from matrices and numpy arrays. 
+        # reindex selections using new specXplore ids
+        # keep a data_origin id somewhere (from original feature table)
+        assert len(selection_idx) >= 2, "specXplore object requires at least 2 spectra to be selected."
+        assert set(selection_idx).issubset(set(self.specxplore_ids)), "selection set must be contained within current specxplore set"
+        # subset data structures
+        ms2deepscore_sim = self.ms2deepscore_sim[selection_idx, :][:, selection_idx].copy()
+        spec2vec_sim = self.spec2vec_sim[selection_idx, :][:, selection_idx].copy()
+        cosine_sim = self.cosine_sim[selection_idx, :][:, selection_idx].copy()
+        tsne_df = self.tsne_df.iloc[selection_idx].copy()
+        tsne_df.reset_index(drop=True, inplace=True)
+        class_table = self.class_table.iloc[selection_idx].copy()
+        class_table.reset_index(drop=True, inplace=True)
+        is_standard = [self.is_standard[idx] for idx in selection_idx]
+        spectra = [self.spectra[idx] for idx in selection_idx]
+        mz = [self.mz[idx] for idx in selection_idx]
+
+        # update t-sne df ids and construct new specxplore id list
+        n_spectra = len(selection_idx)
+        specxplore_ids = [idx for idx in range(0, len(selection_idx))]
+
+        feature_id_mapping_old_vs_new = {selection_idx[idx] : idx for idx in range(0, n_spectra)}
+        old_id_array = tsne_df["id"].to_numpy().copy()
+
+        new_ids = np.array([feature_id_mapping_old_vs_new[x] for x in old_id_array])
+        tsne_df = tsne_df.assign(id=new_ids)
+
+
+        specxplore_object = specxplore_data(
+            ms2deepscore_sim, spec2vec_sim, cosine_sim, tsne_df, class_table, is_standard, spectra, mz, specxplore_ids)
+        
+        with open(filepath, "wb") as file:
+            pickle.dump(specxplore_object, file)
+        return None
+
+
+def load_specxplore_object_from_pickle(filepath : str) -> specxplore_data:
+    with open(filepath, 'rb') as file:
+        specxplore_object = pickle.load(file) 
+    assert isinstance(specxplore_object, specxplore_data)
+    return specxplore_object
 
 
 @dataclass
