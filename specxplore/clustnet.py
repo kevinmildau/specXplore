@@ -48,25 +48,30 @@ SELECTED_NODES_STYLE = [{
 
 def generate_cluster_node_link_diagram_cythonized(
     TSNE_DF, selected_nodes, SM_MS2DEEPSCORE, selected_class_data, 
-    threshold, SOURCE, TARGET, VALUE, MZ, is_standard, max_edges):
+    threshold, SOURCE, TARGET, VALUE, MZ, is_standard, max_edges, max_edges_per_node):
     
     # Extract all nodes and edges connected to the selection
     selected_nodes_np = np.array(selected_nodes)
     
     # Get source and target identifier arrays
-    v,s,t = data_transfer_cython.extract_selected_above_threshold(
-        SOURCE, TARGET, VALUE, selected_nodes_np, threshold)
+    #v,s,t = data_transfer_cython.extract_selected_above_threshold(
+    #    SOURCE, TARGET, VALUE, selected_nodes_np, threshold)
     
+    # Get source and target identifier arrays
+    v,s,t, n_omitted_edges_topk = data_transfer_cython.extract_selected_above_threshold_top_k(
+        SOURCE, TARGET, VALUE, selected_nodes_np, threshold, max_edges_per_node)
+
     connected_nodes = set(list(np.unique(np.concatenate([s, t]))))             # <---------- for filtering
     connected_nodes.update(set(selected_nodes_np))                             # <---------- for filtering
     
-    n_omitted_edges = int(0)
+    n_omitted_edges_max_limit = int(0)
     if v.size >= max_edges: # limit size to max_edges
         s = s[0:max_edges]
         t = t[0:max_edges]
-        n_omitted_edges = v.size - max_edges
-        print(f"omitted {n_omitted_edges} edges")
+        n_omitted_edges_max_limit = v.size - max_edges
+        print(f"omitted {n_omitted_edges_max_limit} edges")
 
+    n_omitted_edges = n_omitted_edges_topk + n_omitted_edges_max_limit
     # Create Edge list
     edges = clustnet_cython.create_cluster_edge_list(s,t,selected_nodes_np)
 

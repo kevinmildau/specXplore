@@ -56,6 +56,8 @@ class ClassificationEntry(_ClassificationEntry):
     """
     _slots_ = ()
 
+
+
 @dataclass
 class KmedoidGridEntry():
     """ 
@@ -376,7 +378,13 @@ def compose_function(*func) -> object:
     return reduce(compose, func, lambda x : x)
 
 
-def harmonize_and_clean_spectrum(spectrum : matchms.Spectrum):
+def harmonize_and_clean_spectrum(
+        spectrum : matchms.Spectrum,
+        minimum_number_of_required_peaks_per_spectrum = 4,
+        maximum_number_of_peaks_allowed_per_spectrum = 200,
+        minimum_mz_for_fragment_in_spectrum = 0,
+        maximum_mz_for_fragment_in_spectrum = 1000,
+        minimum_relative_intensity_for_fragments = 0.01):
     """ Function harmonizes and cleans spectrum object.
     
     Parameters:
@@ -384,29 +392,25 @@ def harmonize_and_clean_spectrum(spectrum : matchms.Spectrum):
     Returns: 
         A new cleaned matchms spectrum object.
     """
-    minimum_number_of_required_peaks_per_spectrum = 4
-    maximum_number_of_peaks_allowed_per_spectrum = 200
-    minimum_mz_for_fragment_in_spectrum = 0
-    maximum_mz_for_fragment_in_spectrum = 1000
-
     processed_spectrum = copy.deepcopy(spectrum)
-    # Create partial functions for compose_function()
-    select_by_mz_custom = partial(
-        select_by_mz, 
-        mz_from = minimum_mz_for_fragment_in_spectrum, 
-        mz_to = maximum_mz_for_fragment_in_spectrum)
-    reduce_to_number_of_peaks_custom = partial(
-        reduce_to_number_of_peaks, 
-        n_required = minimum_number_of_required_peaks_per_spectrum, 
-        n_max = maximum_number_of_peaks_allowed_per_spectrum)
-    reduce_to_intensity_range = partial(matchms.filtering.select_by_relative_intensity, intensity_from=0.01, intensity_to=1)
-    # Create pipeline function through compositions
-    apply_pipeline = compose_function(
-        default_filters, normalize_intensities, reduce_to_intensity_range, repair_inchi_inchikey_smiles, derive_inchi_from_smiles, 
-        derive_inchikey_from_inchi, harmonize_undefined_smiles, harmonize_undefined_inchi, harmonize_undefined_inchikey,
-        select_by_mz_custom, reduce_to_number_of_peaks_custom)
-    # Apply pipeline
-    processed_spectrum = apply_pipeline(processed_spectrum)
+    processed_spectrum = matchms.filtering.default_filters(processed_spectrum)
+    processed_spectrum = matchms.filtering.normalize_intensities(processed_spectrum)
+    processed_spectrum = matchms.filtering.select_by_mz(
+        processed_spectrum, 
+        minimum_mz_for_fragment_in_spectrum, 
+        maximum_mz_for_fragment_in_spectrum)
+    processed_spectrum = matchms.filtering.select_by_relative_intensity(
+        processed_spectrum, 
+        intensity_from = minimum_relative_intensity_for_fragments, 
+        intensity_to = 1)
+    processed_spectrum = matchms.filtering.reduce_to_number_of_peaks(
+        processed_spectrum, 
+        n_required=minimum_number_of_required_peaks_per_spectrum, 
+        n_max=maximum_number_of_peaks_allowed_per_spectrum)
+    processed_spectrum = matchms.filtering.repair_inchi_inchikey_smiles(processed_spectrum)
+    processed_spectrum = matchms.filtering.harmonize_undefined_inchi(processed_spectrum)
+    processed_spectrum = matchms.filtering.harmonize_undefined_inchikey(processed_spectrum)
+    processed_spectrum = matchms.filtering.harmonize_undefined_smiles(processed_spectrum)
     return processed_spectrum
 
 
@@ -593,8 +597,5 @@ def run_single_file(
     # Go through spectra files in directory
     spectra = load_matchms_spectrum_objects_from_file(spectra_filename)
     ms2library.analog_search_store_in_csv(
-        spectra, results_filename, nr_of_top_analogs_to_save=nr_of_analogs_to_store,
-        minimal_ms2query_metascore=minimal_ms2query_score,
-        additional_metadata_columns=additional_metadata_columns,
-        additional_ms2query_score_columns=additional_ms2query_score_columns)
+        spectra, results_filename, None)
     return None

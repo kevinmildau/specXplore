@@ -6,10 +6,12 @@ from libcpp.vector cimport vector
 import numpy as np
 from cython cimport boundscheck, wraparound
 import plotly.express as px
+from collections import Counter
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-def creating_branching_dict_new(long[:] source, long[:] target, long root, long n_levels, int max_edges):
+def creating_branching_dict_new(
+    long[:] source, long[:] target, long root, long n_levels, int max_edges, int top_k):
     """Function creates edge branching edge lists.
     
     Assumes all edges defined by source and target pairs are already above threshold!
@@ -36,14 +38,23 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
     all_nodes.add(root)
     cdef dict branching_dict = dict()
 
+    cdef int n_edges_omitted_topk = 0
+    cdef max_edge_counter = Counter()
+
     # Extract node and edge sets for root node connections
     tmp_nodes = set()
     tmp_edges = set()
     for index in range(zero, n_edges):
         if source[index] == root or target[index] == root:
+            if max_edge_counter[source[index]] >= top_k or max_edge_counter[target[index]] >= top_k:
+                # omitt edge and skip adding edge to 
+                n_edges_omitted_topk += 1
+                continue
             tmp_nodes.add(source[index])
             tmp_nodes.add(target[index])
             tmp_edges.add(edge_ids[index]) # or simply j
+            max_edge_counter.update([source[index]])
+            max_edge_counter.update([target[index]])
     
     # Initialize branching dictionary
     if len(tmp_edges) != 0:
@@ -54,6 +65,7 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
     # Update already covered node and edge sets
     all_edges = all_edges.union(tmp_edges)
     all_nodes = all_nodes.union(tmp_nodes)
+
 
     # Expand Branching Dict if possible
     for index in range(1, n_levels):
@@ -69,6 +81,13 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
             # if the edge connects to any previous nodes, but edge_id isn't captured yet.
             # BEWARE OF LONG AND INT TYPING!
             if (source[inner_index] in all_nodes or target[inner_index] in all_nodes) and not (edge_ids[inner_index] in all_edges): 
+                # Check whether max connections for member nodes of edge is exceeded
+                if max_edge_counter[source[index]] >= top_k or max_edge_counter[target[index]] >= top_k:
+                    # omitt edge and skip adding edge to 
+                    n_edges_omitted_topk += 1
+                    continue
+                max_edge_counter.update([source[index]])
+                max_edge_counter.update([target[index]])
                 # add edge
                 tmp_edges.add(edge_ids[inner_index])
                 # add nodes if not yet covered.
@@ -106,7 +125,7 @@ def creating_branching_dict_new(long[:] source, long[:] target, long root, long 
             else:
                 branching_dict[level]["edges"] = []
         edge_counter += new_edges
-    edges_omitted = max(0, edge_counter - max_edges)
+    edges_omitted = max(0, edge_counter - max_edges) + n_edges_omitted_topk
 
     return branching_dict, edges_omitted
 

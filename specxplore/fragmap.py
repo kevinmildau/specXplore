@@ -349,19 +349,51 @@ def get_heatmap(spectra_df: Union[SpectraDF, None]):
     x_axis_tickvals = np.unique(plot_df["bin_index"])
     x_axis_ticktext = np.unique(plot_df["mass_to_charge_ratio"])
 
+    
+
     # Generate fragment heatmap trace
     fragment_heatmap_trace = go.Heatmap(
-        x=plot_df["bin_index"].to_list(), y=plot_df["spec_index"].to_list(), z=plot_df["intensity"].to_list(),
-        text = hover_text_addon, xgap=5, ygap=5, colorscale = "blugrn")
+        x=plot_df["bin_index"].to_list(), 
+        y=plot_df["spec_index"].to_list(), 
+        z=plot_df["intensity"].to_list(),
+        text = hover_text_addon, 
+        xgap=1, ygap=1, colorscale = "purp")
 
-    # Subset plot_df to neutral losses & generate neutral loss marker shapes
-    plot_df_neutral_losses = plot_df.loc[plot_df["is_neutral_loss"]]
-    neutral_loss_marker_shapes = generate_neutral_loss_marker_shapes(
-        plot_df_neutral_losses["bin_index"], plot_df_neutral_losses["spec_index"])
+    # generates a neutral loss list of intensities with actual intensities set to NaN.
+    # neutral loss traces and fragment traces must be equal length lists for the tick alignment to work
+    neutral_z = [-1 if neutral_loss_bool else np.nan for neutral_loss_bool in plot_df["is_neutral_loss"]]
+    neutral_loss_trace = go.Heatmap(
+        x=plot_df["bin_index"].to_list(), 
+        y=plot_df["spec_index"].to_list(), 
+        z=  neutral_z,
+        text = hover_text_addon, xgap=1, ygap=1, 
+        colorscale = ["#C0C0C0", "#C0C0C0"], showscale=False, showlegend=False)
 
-    fragmap_figure = generate_fragmap_figure_object(
-        fragment_heatmap_trace, neutral_loss_marker_shapes, y_axis_tickvals, y_axis_ticktext, x_axis_tickvals, 
-        x_axis_ticktext)
+    #neutral_loss_marker_shapes = generate_neutral_loss_marker_shapes(
+    #    plot_df_neutral_losses["bin_index"], plot_df_neutral_losses["spec_index"])
+
+    fragmap_figure = go.Figure(data=[fragment_heatmap_trace])
+    fragmap_figure.add_trace(neutral_loss_trace)
+    #fragmap_figure = go.Figure(data=[fragment_heatmap_trace, neutral_loss_trace])
+    #fragmap_figure.update_yaxes(
+    #    fixedrange=True, tickmode='array', tickvals=y_axis_tickvals, ticktext=y_axis_ticktext)
+    #fragmap_figure.update_xaxes(
+    #    tickmode='array', tickvals=x_axis_tickvals, ticktext=x_axis_ticktext, 
+    #    spikesnap='hovered data', spikemode='across', spikethickness = 1, spikecolor="black")
+    fragmap_figure.update_layout(
+        template="simple_white", 
+        yaxis=dict(fixedrange=True, tickmode='array', tickvals=y_axis_tickvals, ticktext=y_axis_ticktext),
+        xaxis=dict(tickmode='array', tickvals=x_axis_tickvals, ticktext=x_axis_ticktext, 
+            spikesnap='hovered data', spikemode='across', spikethickness = 1, spikecolor="black"),
+        yaxis2=dict(fixedrange=True, tickmode='array', tickvals=y_axis_tickvals, ticktext=y_axis_ticktext),
+        xaxis2=dict(tickmode='array', tickvals=x_axis_tickvals, ticktext=x_axis_ticktext, 
+            spikesnap='hovered data', spikemode='across', spikethickness = 1, spikecolor="black"),
+        xaxis_title="Binned mass to charge ratio (value is end of bin)", yaxis_title="Spectrum Identifier",
+        margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":10})
+
+    #fragmap_figure = generate_fragmap_figure_object(
+    #    fragment_heatmap_trace, neutral_loss_marker_shapes, y_axis_tickvals, y_axis_ticktext, x_axis_tickvals, 
+    #    x_axis_ticktext)
     return fragmap_figure
 
 def join_spectradf(

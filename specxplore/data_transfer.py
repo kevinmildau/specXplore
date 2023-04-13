@@ -174,3 +174,34 @@ def update_threshold(new_threshold):
         default_threshold = 0.9
         default_placeholder = "Threshold 0 < thr < 1, def. 0.9"
         return default_threshold,  default_placeholder
+    
+def update_max_degree(new_max_degree):
+    """ Function updates maximum node degree and placeholder in line with input.
+    
+    Args / Parameters
+    ------
+    new_max_degree: 
+        New maximum node degree; integer >=1 and <= 9999
+
+    Returns
+    ------
+    output 0:
+        A new expand level setting as integer.
+    output 1:
+        A new placeholder text for expand level text input box.
+    """
+    lower_limit = 1
+    upper_limit = 9999
+    if (new_max_degree 
+        and new_max_degree >= lower_limit 
+        and new_max_degree <= upper_limit
+        and isinstance(new_max_degree, int)):
+        new_placeholder = (
+            f'Maximum Node Degree {lower_limit} =< thr <= {upper_limit},'
+            f'current: {new_max_degree}')
+        return new_max_degree, new_placeholder
+    else:
+        default_expand_level = 9999
+        default_placeholder = (
+            f'Maximum Node Degree {lower_limit} =< thr <= {upper_limit},')
+        return default_expand_level,  default_placeholder
