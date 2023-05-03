@@ -30,6 +30,10 @@ from scipy.spatial.distance import pdist, squareform
 from scipy.stats import pearsonr, spearmanr  
 from sklearn.manifold import TSNE
 import plotly.graph_objects as go
+from specxplore.specxplore_data import Spectrum
+from networkx import read_graphml
+from networkx.readwrite import json_graph
+
 
 _ClassificationEntry = namedtuple(
     "ClassificationEntry", 
@@ -599,3 +603,48 @@ def run_single_file(
     ms2library.analog_search_store_in_csv(
         spectra, results_filename, None)
     return None
+
+def convert_matchms_spectra_to_specxplore_spectrum(spectra = List[matchms.Spectrum]) -> List[Spectrum]:
+  spectra_converted = [
+      Spectrum(spec.peaks.mz, float(spec.get("precursor_mz")), idx, spec.peaks.intensities) 
+      for idx, spec in enumerate(spectra)]
+  return spectra_converted
+
+
+def extract_molecular_family_assignment_from_graphml(filepath : str) -> pd.DataFrame:
+    """ Function extracts molecular family componentindex for each node in gnps mgf export. Expects that each
+    spectrum is a feature, hence the clustering option in mgf must be deactivated. """
+    graph = read_graphml(filepath)
+    data = json_graph.node_link_data(graph)
+    entries = []
+    for node in data['nodes']:
+        entry = {"id" : node['id'], "spectrum_id" : node['SpectrumID'], 'molecular_family' : node['componentindex']}
+        entries.append(entry)
+    df = pd.DataFrame.from_records(entries)
+    df['id'] = df['id'].astype(int)
+    df['idx'] = df['id'] -1
+    df.sort_values(by = "id", inplace=True)
+    df.reset_index(drop = True, inplace=True)
+    return df
+
+def construct_metadata(spectra : List[matchms.Spectrum], identifier_key = "feature_id") -> pd.DataFrame:
+    feature_ids = [spectrum.metadata[identifier_key] for spectrum in spectra]
+    assert len(feature_ids) == len(set(feature_ids)), (
+        "Non-unique feature ids provided! Most likely causes are non-unique feature ids in input data, or duplicate"
+        " feature ids introduced by similar feature ids used in experimental and standard spectra joined."
+        )
+    feature_idx = np.arange(0, len(feature_ids), 1).tolist()
+    basic_metadata = pd.DataFrame({"feature_id" : feature_ids, "feature_idx" : feature_idx})
+    #basic_metadata['feature_id'] = basic_metadata['feature_id'].astype(str)
+    #basic_metadata['feature_idx'] = basic_metadata['feature_idx'].astype(int)
+    return basic_metadata
+
+def attach_metadata(
+        metadata : pd.DataFrame, addon_data : pd.DataFrame, 
+        identifier_left = "feature_id", identifier_right = "feature_id") -> pd.DataFrame:
+    """ Attaches addon_data to metadata via joins based on identifier_key """
+    extended_metadata = copy.deepcopy(metadata)
+    extended_metadata = extended_metadata.merge(
+        addon_data, left_on = identifier_left, right_on = identifier_left, how = "left")
+    extended_metadata.reset_index(inplace=True, drop=True)
+    return extended_metadata
