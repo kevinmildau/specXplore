@@ -24,6 +24,7 @@ jobs:
           pip install cython
           pip install -e .[dev]
           python setup.py build_ext --inplace
+          pip setup.py install
       - name: Test with pytest
         run: |
           pytest
