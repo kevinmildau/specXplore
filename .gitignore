@@ -77,3 +77,4 @@ custom_python_annotation_script.py
 custom_python_annotation.ipynb
 tmp_read_graphml_gnps.ipynb
 tmp.pickle
+testing/test_importing_metadata.py
