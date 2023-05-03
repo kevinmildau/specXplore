@@ -22,7 +22,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest
           pip install cython
-          python setup.py install
-      - name: Test with pytest
+      - name: Python info
+        run: |
+          which python
+          python --version
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+      - name: Show pip list
+        run: |
+          pip list
+
+      - name: Run tests with pytest
         run: |
           pytest
