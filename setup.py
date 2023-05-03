@@ -11,7 +11,7 @@ module_name_list = [
 module_paths = [os.path.join(directory_name, name) for name in module_name_list]
 setup(
     name="specXplore setup",
-    ext_modules=cythonize(module_paths)
+    ext_modules=cythonize(module_paths),
     python_requires='>=3.7',
     install_requires=[
         "dash",
