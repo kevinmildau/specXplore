@@ -9,6 +9,7 @@ directory_name = "./specxplore"
 module_name_list = [
     "egonet_cython.pyx", "clustnet_cython.pyx", "data_transfer_cython.pyx", "specxplore_data_cython.pyx"]
 module_paths = [os.path.join(directory_name, name) for name in module_name_list]
+
 setup(
     name="specXplore setup",
     ext_modules=cythonize(module_paths),
