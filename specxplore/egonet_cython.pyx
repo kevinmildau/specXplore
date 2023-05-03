@@ -34,6 +34,7 @@ def creating_branching_dict_new(
     cdef int n_edges = source.shape[0]
     cdef set tmp_nodes
     cdef set tmp_edges
+    cdef set edges_skipped_because_top_k = set()
     cdef long zero = int(0)
     all_nodes.add(root)
     cdef dict branching_dict = dict()
@@ -49,6 +50,7 @@ def creating_branching_dict_new(
             if max_edge_counter[source[index]] >= top_k or max_edge_counter[target[index]] >= top_k:
                 # omitt edge and skip adding edge to 
                 n_edges_omitted_topk += 1
+                edges_skipped_because_top_k.add(edge_ids[index])
                 continue
             tmp_nodes.add(source[index])
             tmp_nodes.add(target[index])
@@ -80,11 +82,12 @@ def creating_branching_dict_new(
         for inner_index in range(0, n_edges):
             # if the edge connects to any previous nodes, but edge_id isn't captured yet.
             # BEWARE OF LONG AND INT TYPING!
-            if (source[inner_index] in all_nodes or target[inner_index] in all_nodes) and not (edge_ids[inner_index] in all_edges): 
+            if (source[inner_index] in all_nodes or target[inner_index] in all_nodes) and not (edge_ids[inner_index] in all_edges) and not (edge_ids[inner_index] in edges_skipped_because_top_k): 
                 # Check whether max connections for member nodes of edge is exceeded
                 if max_edge_counter[source[index]] >= top_k or max_edge_counter[target[index]] >= top_k:
                     # omitt edge and skip adding edge to 
                     n_edges_omitted_topk += 1
+                    edges_skipped_because_top_k.add(edge_ids[index])
                     continue
                 max_edge_counter.update([source[index]])
                 max_edge_counter.update([target[index]])
