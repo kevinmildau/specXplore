@@ -73,3 +73,7 @@ tmp_testing.ipynb
 specxploreImporting/__pycache__/__init__.cpython-38.pyc
 .gitignore
 specxploreImporting/__pycache__/importing.cpython-38.pyc
+custom_python_annotation_script.py
+custom_python_annotation.ipynb
+tmp_read_graphml_gnps.ipynb
+tmp.pickle
