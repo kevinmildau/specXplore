@@ -91,7 +91,9 @@ class specxplore_data:
         class_table = self.class_table.iloc[selection_idx].copy()
         class_table.reset_index(drop=True, inplace=True)
         is_standard = [self.is_standard[idx] for idx in selection_idx]
-        spectra = [self.spectra[idx] for idx in selection_idx]
+        
+
+
         mz = [self.mz[idx] for idx in selection_idx]
 
         # update t-sne df ids and construct new specxplore id list
@@ -104,6 +106,14 @@ class specxplore_data:
         new_ids = np.array([feature_id_mapping_old_vs_new[x] for x in old_id_array])
         tsne_df = tsne_df.assign(id=new_ids)
 
+        # update spectrum identifier to appropriate specxplore_id
+        # needs new ids
+        # needs old ids
+        # or id mapping
+        spectra = copy.deepcopy(self.spectra) # make a deep copy to detach from actual spectrum list
+        spectra = [self.spectra[idx] for idx in selection_idx] # subset spectrum list
+        for spectrum in spectra:
+            spectrum.identifier = feature_id_mapping_old_vs_new[spectrum.identifier] # gets the id corresponding to old id
 
         specxplore_object = specxplore_data(
             ms2deepscore_sim, spec2vec_sim, cosine_sim, tsne_df, class_table, is_standard, spectra, mz, specxplore_ids)
