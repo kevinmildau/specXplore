@@ -23,7 +23,7 @@ jobs:
           pip install pytest
           pip install cython
           python setup.py build_ext --inplace
-          pip setup.py install
+          python setup.py install
       - name: Test with pytest
         run: |
           pytest
