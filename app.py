@@ -27,7 +27,7 @@ from typing import List, Union
 # A small default dataset is loaded here. The actual dataset can be loaded from path.
 global GLOBAL_DATA
 if True:
-    specxplore_input_file = 'data_and_output/test_data/test_case_specxplore5.pickle'
+    specxplore_input_file = '/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specXplore-prototype/data_and_output/wheat_data/wheat_data_specxplore_v4.pickle'
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
 
@@ -91,7 +91,7 @@ settings_panel = dbc.Offcanvas([
     html.P("A value between 0 exclded and 2000. This value is used to expand the t-SNE layout to be larger or smaller."),
     dcc.Input(
         id="scaler_id", type="number", 
-        debounce=True, value=100, placeholder = "100",
+        debounce=True, value=400, placeholder = "400",
         style={"width" : "100%"}),
     html.Br(),
 
@@ -495,6 +495,7 @@ def max_degree_trigger_handler(n_submit, new_max_degree):
 # CLASS SELECTION UPDATE ------------------------------------------------------
 @app.callback(
     Output("selected_class_level_store", "data"), 
+    Output("select_class_level_dropdown", "options"), 
     Output('selected_class_level_assignments_store', "data"),
     Output('classes_to_be_highlighted_dropdown', 'options'), 
     Output('classes_to_be_highlighted_dropdown', 'value'),
@@ -502,19 +503,21 @@ def max_degree_trigger_handler(n_submit, new_max_degree):
     Input("select_class_level_dropdown", "value"),
     Input('session_data_update_trigger', 'data') # empty, global data strctures updated which require selected_class_level_assignments_store to update
 )
-def class_update_trigger_handler(selected_class : str, _ : None):
+def class_update_trigger_handler(selected_class : str, empty_trigger : None):
     """ Wrapper Function that construct class dcc.store data. """
+    class_levels = list(GLOBAL_DATA.class_dict.keys())
     selected_class_level_assignments = GLOBAL_DATA.class_dict[selected_class]
     unique_assignments = list(np.unique(selected_class_level_assignments))
     node_elements = other_utils.initialize_cytoscape_graph_elements(
         GLOBAL_DATA.tsne_df, selected_class_level_assignments, GLOBAL_DATA.is_standard)
-    return selected_class, selected_class_level_assignments, unique_assignments, [], node_elements
+    return selected_class, class_levels, selected_class_level_assignments, unique_assignments, [], node_elements
 
 @app.callback(
     Output("edge-histogram-figure", "figure"),
-    Input("edge_threshold", "data")
+    Input("edge_threshold", "data"),
+    Input('session_data_update_trigger', 'data')
 )
-def update_histogram(threshold):
+def update_histogram(threshold, empty_trigger):
     fig = go.Figure()
     fig.add_trace(go.Histogram(
         y=GLOBAL_DATA.values, opacity = 0.6, 
@@ -529,6 +532,8 @@ def update_histogram(threshold):
         xaxis_title="Count", yaxis_title="Edge Weight Bins",
         margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":40})
     return fig
+
+
 
 @app.callback(Output('session_data_update_trigger', 'data'),
               Input('upload-data', 'value'),
