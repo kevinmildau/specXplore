@@ -17,7 +17,7 @@ setup(
         "dash",
         "cython",
         "plotly",
-        "dash-cytoscape",
+        "dash_cytoscape",
         "numpy",
         "pandas"
     ]
