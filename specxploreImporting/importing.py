@@ -396,26 +396,21 @@ def harmonize_and_clean_spectrum(
     Returns: 
         A new cleaned matchms spectrum object.
     """
-    processed_spectrum = copy.deepcopy(spectrum)
-    processed_spectrum = matchms.filtering.default_filters(processed_spectrum)
-    processed_spectrum = matchms.filtering.normalize_intensities(processed_spectrum)
-    processed_spectrum = matchms.filtering.select_by_mz(
-        processed_spectrum, 
-        minimum_mz_for_fragment_in_spectrum, 
-        maximum_mz_for_fragment_in_spectrum)
-    processed_spectrum = matchms.filtering.select_by_relative_intensity(
-        processed_spectrum, 
-        intensity_from = minimum_relative_intensity_for_fragments, 
-        intensity_to = 1)
-    processed_spectrum = matchms.filtering.reduce_to_number_of_peaks(
-        processed_spectrum, 
+    spec = copy.deepcopy(spectrum)
+    spec = matchms.filtering.default_filters(spec)
+    spec = matchms.filtering.add_precursor_mz(spec)
+    spec = matchms.filtering.normalize_intensities(spec)
+    spec = matchms.filtering.select_by_mz(spec, 0, 1000)
+    spec = matchms.filtering.select_by_relative_intensity(spec, minimum_relative_intensity_for_fragments, 1)
+    spec = matchms.filtering.reduce_to_number_of_peaks(
+        spec, 
         n_required=minimum_number_of_required_peaks_per_spectrum, 
         n_max=maximum_number_of_peaks_allowed_per_spectrum)
-    processed_spectrum = matchms.filtering.repair_inchi_inchikey_smiles(processed_spectrum)
-    processed_spectrum = matchms.filtering.harmonize_undefined_inchi(processed_spectrum)
-    processed_spectrum = matchms.filtering.harmonize_undefined_inchikey(processed_spectrum)
-    processed_spectrum = matchms.filtering.harmonize_undefined_smiles(processed_spectrum)
-    return processed_spectrum
+    spec = matchms.filtering.repair_inchi_inchikey_smiles(spec)
+    spec = matchms.filtering.harmonize_undefined_inchi(spec)
+    spec = matchms.filtering.harmonize_undefined_inchikey(spec)
+    spec = matchms.filtering.harmonize_undefined_smiles(spec)
+    return spec
 
 
 def clean_spectra(input_spectrums : List[matchms.Spectrum]):
@@ -648,3 +643,9 @@ def attach_metadata(
         addon_data, left_on = identifier_left, right_on = identifier_left, how = "left")
     extended_metadata.reset_index(inplace=True, drop=True)
     return extended_metadata
+
+def convert_matchms_spectra_to_specxplore_spectrum(spectra = List[matchms.Spectrum]) -> List[Spectrum]:
+  spectra_converted = [
+      Spectrum(spec.peaks.mz, float(spec.get("precursor_mz")), idx, spec.peaks.intensities) 
+      for idx, spec in enumerate(spectra)]
+  return spectra_converted
