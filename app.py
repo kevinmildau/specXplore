@@ -500,17 +500,23 @@ def max_degree_trigger_handler(n_submit, new_max_degree):
     Output('classes_to_be_highlighted_dropdown', 'options'), 
     Output('classes_to_be_highlighted_dropdown', 'value'),
     Output('node_elements_store', 'data'),
+    Output("select_class_level_dropdown", "value"),
     Input("select_class_level_dropdown", "value"),
     Input('session_data_update_trigger', 'data') # empty, global data strctures updated which require selected_class_level_assignments_store to update
 )
 def class_update_trigger_handler(selected_class : str, empty_trigger : None):
     """ Wrapper Function that construct class dcc.store data. """
     class_levels = list(GLOBAL_DATA.class_dict.keys())
+    btn = ctx.triggered_id
+    
+    # Update selected_class if the trigger for class updating is a new session data.
+    if btn == 'session_data_update_trigger':
+        selected_class = list(GLOBAL_DATA.class_dict.keys())[0]
     selected_class_level_assignments = GLOBAL_DATA.class_dict[selected_class]
     unique_assignments = list(np.unique(selected_class_level_assignments))
     node_elements = other_utils.initialize_cytoscape_graph_elements(
         GLOBAL_DATA.tsne_df, selected_class_level_assignments, GLOBAL_DATA.is_standard)
-    return selected_class, class_levels, selected_class_level_assignments, unique_assignments, [], node_elements
+    return selected_class, class_levels, selected_class_level_assignments, unique_assignments, [], node_elements, selected_class
 
 @app.callback(
     Output("edge-histogram-figure", "figure"),
