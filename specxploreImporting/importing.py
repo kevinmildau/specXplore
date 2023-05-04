@@ -623,6 +623,9 @@ def extract_molecular_family_assignment_from_graphml(filepath : str) -> pd.DataF
     return df
 
 def construct_metadata(spectra : List[matchms.Spectrum], identifier_key = "feature_id") -> pd.DataFrame:
+    """ 
+    Creates barebones metadata data frame with feature_id and feature_idx columns on basis of list of matchms spectra. 
+    """
     feature_ids = [spectrum.metadata[identifier_key] for spectrum in spectra]
     assert len(feature_ids) == len(set(feature_ids)), (
         "Non-unique feature ids provided! Most likely causes are non-unique feature ids in input data, or duplicate"
@@ -630,14 +633,17 @@ def construct_metadata(spectra : List[matchms.Spectrum], identifier_key = "featu
         )
     feature_idx = np.arange(0, len(feature_ids), 1).tolist()
     basic_metadata = pd.DataFrame({"feature_id" : feature_ids, "feature_idx" : feature_idx})
-    #basic_metadata['feature_id'] = basic_metadata['feature_id'].astype(str)
-    #basic_metadata['feature_idx'] = basic_metadata['feature_idx'].astype(int)
     return basic_metadata
 
 def attach_metadata(
         metadata : pd.DataFrame, addon_data : pd.DataFrame, 
         identifier_left = "feature_id", identifier_right = "feature_id") -> pd.DataFrame:
-    """ Attaches addon_data to metadata via joins based on identifier_key """
+    """ Attaches addon_data to metadata via joins based on identifier_key 
+    
+    Metadata is assumed to be a barebones metadata data frame containing feature_id and feature_idx columns. addon_data
+    is assumed to have a matching feature_id column unless otherwise specified using identifier_left and identifier_right. 
+    A left join is performed, with any available information from addon_data being included into the output data frame.
+    """
     extended_metadata = copy.deepcopy(metadata)
     extended_metadata = extended_metadata.merge(
         addon_data, left_on = identifier_left, right_on = identifier_left, how = "left")
@@ -645,6 +651,7 @@ def attach_metadata(
     return extended_metadata
 
 def convert_matchms_spectra_to_specxplore_spectrum(spectra = List[matchms.Spectrum]) -> List[Spectrum]:
+  """ Converts list of matchms.Spectrum objects to list of specxplore_data.Spectrum objects. """
   spectra_converted = [
       Spectrum(spec.peaks.mz, float(spec.get("precursor_mz")), idx, spec.peaks.intensities) 
       for idx, spec in enumerate(spectra)]
