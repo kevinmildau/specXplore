@@ -11,7 +11,7 @@ from collections import Counter
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 def creating_branching_dict_new(
-    long[:] source, long[:] target, long root, long n_levels, int max_edges, int top_k):
+    long[:] source, long[:] target, long root, long n_levels, int max_edges):
     """Function creates edge branching edge lists.
     
     Assumes all edges defined by source and target pairs are already above threshold!
@@ -34,12 +34,9 @@ def creating_branching_dict_new(
     cdef int n_edges = source.shape[0]
     cdef set tmp_nodes
     cdef set tmp_edges
-    cdef set edges_skipped_because_top_k = set()
     cdef long zero = int(0)
     all_nodes.add(root)
     cdef dict branching_dict = dict()
-
-    cdef int n_edges_omitted_topk = 0
     cdef max_edge_counter = Counter()
 
     # Extract node and edge sets for root node connections
@@ -47,11 +44,6 @@ def creating_branching_dict_new(
     tmp_edges = set()
     for index in range(zero, n_edges):
         if source[index] == root or target[index] == root:
-            if max_edge_counter[source[index]] >= top_k or max_edge_counter[target[index]] >= top_k:
-                # omitt edge and skip adding edge to 
-                n_edges_omitted_topk += 1
-                edges_skipped_because_top_k.add(edge_ids[index])
-                continue
             tmp_nodes.add(source[index])
             tmp_nodes.add(target[index])
             tmp_edges.add(edge_ids[index]) # or simply j
@@ -82,13 +74,7 @@ def creating_branching_dict_new(
         for inner_index in range(0, n_edges):
             # if the edge connects to any previous nodes, but edge_id isn't captured yet.
             # BEWARE OF LONG AND INT TYPING!
-            if (source[inner_index] in all_nodes or target[inner_index] in all_nodes) and not (edge_ids[inner_index] in all_edges) and not (edge_ids[inner_index] in edges_skipped_because_top_k): 
-                # Check whether max connections for member nodes of edge is exceeded
-                if max_edge_counter[source[index]] >= top_k or max_edge_counter[target[index]] >= top_k:
-                    # omitt edge and skip adding edge to 
-                    n_edges_omitted_topk += 1
-                    edges_skipped_because_top_k.add(edge_ids[index])
-                    continue
+            if (source[inner_index] in all_nodes or target[inner_index] in all_nodes) and not (edge_ids[inner_index] in all_edges): 
                 max_edge_counter.update([source[index]])
                 max_edge_counter.update([target[index]])
                 # add edge
@@ -128,7 +114,7 @@ def creating_branching_dict_new(
             else:
                 branching_dict[level]["edges"] = []
         edge_counter += new_edges
-    edges_omitted = max(0, edge_counter - max_edges) + n_edges_omitted_topk
+    edges_omitted = max(0, edge_counter - max_edges)
 
     return branching_dict, edges_omitted
 

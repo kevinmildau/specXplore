@@ -288,7 +288,7 @@ def cytoscape_trigger(
         if spec_id_selection:
             elements, styles, n_omitted_edges = egonet.generate_egonet_cythonized(
                 spec_id_selection, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.tsne_df, 
-                GLOBAL_DATA.mz, threshold, expand_level, max_edges_per_node)
+                GLOBAL_DATA.mz, threshold, expand_level)
             if n_omitted_edges != int(0):
                 warning_messages += (
                     f"  \n❌Current settings (threshold, maximum node degree, hop distance) lead to edge omission."
