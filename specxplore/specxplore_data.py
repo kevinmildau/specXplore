@@ -25,7 +25,7 @@ class specxplore_data:
     """
     def __init__(
         self, ms2deepscore_sim, spec2vec_sim, cosine_sim, 
-        tsne_df, class_table, is_standard, spectra, mz, specxplore_id
+        tsne_df, class_table, is_standard, spectra, mz, specxplore_id, metadata
         ):
         self.ms2deepscore_sim = ms2deepscore_sim
         self.spec2vec_sim = spec2vec_sim
@@ -59,7 +59,7 @@ class specxplore_data:
         self.targets = targets
         self.values = values
 
-        self.metadata = pd.concat([class_table, tsne_df], axis=1)
+        self.metadata = metadata
         self.initial_node_elements = other_utils.initialize_cytoscape_graph_elements(
             self.tsne_df, self.selected_class_data, self.is_standard)
         self.initial_style = SELECTED_NODES_STYLE + GENERAL_STYLE + SELECTION_STYLE
@@ -90,6 +90,8 @@ class specxplore_data:
         tsne_df.reset_index(drop=True, inplace=True)
         class_table = self.class_table.iloc[selection_idx].copy()
         class_table.reset_index(drop=True, inplace=True)
+        metadata = self.metadata.iloc[selection_idx].copy()
+        metadata.reset_index(drop=True, inplace=True)
         is_standard = [self.is_standard[idx] for idx in selection_idx]
         
 
@@ -116,7 +118,7 @@ class specxplore_data:
             spectrum.identifier = feature_id_mapping_old_vs_new[spectrum.identifier] # gets the id corresponding to old id
 
         specxplore_object = specxplore_data(
-            ms2deepscore_sim, spec2vec_sim, cosine_sim, tsne_df, class_table, is_standard, spectra, mz, specxplore_ids)
+            ms2deepscore_sim, spec2vec_sim, cosine_sim, tsne_df, class_table, is_standard, spectra, mz, specxplore_ids, metadata)
         
         with open(filepath, "wb") as file:
             pickle.dump(specxplore_object, file)
