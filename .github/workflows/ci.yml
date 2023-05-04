@@ -1,6 +1,8 @@
 name: automatic testing & dependency evaluation
 
 on: [push]
+branches:
+      - master
 
 jobs:
   build:
