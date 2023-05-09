@@ -1,41 +1,28 @@
 # Mac files to ignore.
 .DS_Store
 
+__pycache__
 specxplore/__pycache__
 
-./model-files
-model-files
-
-./data-input
-data-input
-./data-output
-data-output
-
+models
 archive
-./archive
+data_and_output
+data_npl
+data_phophe
+data_urine
+data_wheat
 
-example-00-dummy-ms2query
-example-00-dummy-ms2query-negative
-example-00-dummy-ms2query-positive
-ms2query-lib-positive
 
-example00-step1-negative.py
-example00-step1-positive.py
-example00-step2-negative.py
-example00-step2-positive.py
+data_monoindolealkaloid
+processing_monoindole.ipynb
 
-example01-step1-positive.py
-example01-step2-positive.py
-
-example_01_gnps_nih-dataset.py
-example_01_gnps_nih-dataset.py
 specxplore/__pycache__/importing.cpython-38.pyc
 cython_utils.cpython-38-darwin.so
 
 ./specxplore/cython_utils.cpp
 
 .ipynb_checkpoints
-./build
+build
 
 build/temp.macosx-11.1-arm64-cpython-38/specxplore/cython_utils.o
 
@@ -43,38 +30,7 @@ build/temp.macosx-11.1-arm64-cpython-38/specxplore/cython_utils.o
 
 __pycache__/specxplore_settings.cpython-38.pyc
 
-data_import_testing
-tmp.ipynb
-todo.md
-specxplore/cython_utils.cpp
-__pycache__/template_processing_funs.cpython-38.pyc
-
-
 
 # Ignore so objects that are constructed by setup.py and platform specific
 *.so
 
-# Ignore build directory
-build
-tmp_test_processing_funs_classifications.csv
-
-
-# ignore public libraries
-public_libraries
-tmp.py
-
-data_and_output
-processing_nlp_v2.ipynb
-.gitignore
-processing_urine_data.ipynb
-processing_wheat_data.ipynb
-.gitignore
-tmp_testing.ipynb
-specxploreImporting/__pycache__/__init__.cpython-38.pyc
-.gitignore
-specxploreImporting/__pycache__/importing.cpython-38.pyc
-custom_python_annotation_script.py
-custom_python_annotation.ipynb
-tmp_read_graphml_gnps.ipynb
-tmp.pickle
-testing/test_importing_metadata.py

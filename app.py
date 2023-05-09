@@ -87,8 +87,18 @@ settings_panel = dbc.Offcanvas([
     daq.BooleanSwitch(id='augmap_colorblind_friendly_switch', on=False),
     html.Br(),
 
+    html.B("Set top-K for fragmap"),
+    html.P(("A value between 1 and 9999. This value is used to restrict the number of fragments displayed in fragmap. "
+            "If the number of fragments exceeds top-K, only the top-K highest intensity fragments are displayed " 
+            "alongside the corresponding neutral losses.")),
+    dcc.Input(
+        id="top_k_fragments", type="number", 
+        debounce=True, value=25, placeholder = "25",
+        style={"width" : "100%"}),
+    html.Br(),
+
     html.B("Set Visal Scale:"),
-    html.P("A value between 0 exclded and 2000. This value is used to expand the t-SNE layout to be larger or smaller."),
+    html.P("A value between 0 excluded and 2000. This value is used to expand the t-SNE layout to be larger or smaller."),
     dcc.Input(
         id="scaler_id", type="number", 
         debounce=True, value=400, placeholder = "400",
@@ -288,7 +298,7 @@ def cytoscape_trigger(
         if spec_id_selection:
             elements, styles, n_omitted_edges = egonet.generate_egonet_cythonized(
                 spec_id_selection, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.tsne_df, 
-                GLOBAL_DATA.mz, threshold, expand_level, max_edges_per_node)
+                GLOBAL_DATA.mz, threshold, expand_level)
             if n_omitted_edges != int(0):
                 warning_messages += (
                     f"  \n❌Current settings (threshold, maximum node degree, hop distance) lead to edge omission."
@@ -369,11 +379,12 @@ def toggle_offcanvas(n1, is_open):
     State('specid-focus-dropdown', 'value'),
     State("edge_threshold", "data"),
     State('colorblind_friendly_boolean_store', 'data'),
+    State('top_k_fragments', 'value'),
     prevent_initial_call=True
 )
 def details_trigger(
     btn_fragmap_n_clicks, btn_meta_n_clicks, btn_augmap_n_clicks, btn_spectrum_n_clicks, selection_data, threshold,
-    colorblind_boolean):
+    colorblind_boolean, top_k_fragmap):
     """ Wrapper function that calls fragmap generation modules. """
     warning_message = ""
     btn = ctx.triggered_id
@@ -381,7 +392,7 @@ def details_trigger(
     max_number_fragmap = 40
     max_number_specplot = 25
     if btn == "btn_push_fragmap" and selection_data and len(selection_data) >= 2 and len(selection_data) <= max_number_fragmap:
-        panel = fragmap.generate_fragmap_panel(selection_data, GLOBAL_DATA.spectra)
+        panel = fragmap.generate_fragmap_panel(selection_data, GLOBAL_DATA.spectra, top_k_fragmap)
     elif btn == "btn_push_meta" and selection_data:
         tmpdf = GLOBAL_DATA.metadata.iloc[selection_data]
         #tmpdf = GLOBAL_DATA.tsne_df.iloc[selection_data]
@@ -500,17 +511,23 @@ def max_degree_trigger_handler(n_submit, new_max_degree):
     Output('classes_to_be_highlighted_dropdown', 'options'), 
     Output('classes_to_be_highlighted_dropdown', 'value'),
     Output('node_elements_store', 'data'),
+    Output("select_class_level_dropdown", "value"),
     Input("select_class_level_dropdown", "value"),
     Input('session_data_update_trigger', 'data') # empty, global data strctures updated which require selected_class_level_assignments_store to update
 )
 def class_update_trigger_handler(selected_class : str, empty_trigger : None):
     """ Wrapper Function that construct class dcc.store data. """
     class_levels = list(GLOBAL_DATA.class_dict.keys())
+    btn = ctx.triggered_id
+    
+    # Update selected_class if the trigger for class updating is a new session data.
+    if btn == 'session_data_update_trigger':
+        selected_class = list(GLOBAL_DATA.class_dict.keys())[0]
     selected_class_level_assignments = GLOBAL_DATA.class_dict[selected_class]
     unique_assignments = list(np.unique(selected_class_level_assignments))
     node_elements = other_utils.initialize_cytoscape_graph_elements(
         GLOBAL_DATA.tsne_df, selected_class_level_assignments, GLOBAL_DATA.is_standard)
-    return selected_class, class_levels, selected_class_level_assignments, unique_assignments, [], node_elements
+    return selected_class, class_levels, selected_class_level_assignments, unique_assignments, [], node_elements, selected_class
 
 @app.callback(
     Output("edge-histogram-figure", "figure"),
