@@ -12,6 +12,10 @@ data_phophe
 data_urine
 data_wheat
 
+
+data_monoindolealkaloid
+processing_monoindole.ipynb
+
 specxplore/__pycache__/importing.cpython-38.pyc
 cython_utils.cpython-38-darwin.so
 
@@ -29,3 +33,4 @@ __pycache__/specxplore_settings.cpython-38.pyc
 
 # Ignore so objects that are constructed by setup.py and platform specific
 *.so
+
