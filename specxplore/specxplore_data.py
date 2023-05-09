@@ -161,7 +161,8 @@ class Spectrum:
     mass_to_charge_ratios : np.ndarray #np.ndarray[int, np.double] # for python 3.9 and up
     precursor_mass_to_charge_ratio : np.double
     identifier : np.int64
-    intensities : np.ndarray = None
+    intensities : np.ndarray
+
     # TDOD fix tuple to list of list
     mass_to_charge_ratio_aggregate_list : field(default_factory=tuple) = ()
     intensity_aggregate_list : field(default_factory=tuple) = ()
@@ -170,8 +171,6 @@ class Spectrum:
     
     def __post_init__(self):
         """ Assert that data provided to constructor is valid. """
-        if self.intensities is None:
-            self.intensities = np.repeat(np.nan, self.mass_to_charge_ratios.size)
         assert self.intensities.shape == self.mass_to_charge_ratios.shape, (
             "Intensities (array) and mass to charge ratios (array) must be equal shape.")
         if (self.intensity_aggregate_list) and (self.mass_to_charge_ratio_aggregate_list):
@@ -182,6 +181,22 @@ class Spectrum:
                 assert len(x) == len(y), ("Sub-lists of aggregate lists must be of equal length, i.e. for each"
                     " mass-to-charge-ratio there must be an intensity value at equal List[sublist] position.")
 
+def filter_spectrum_top_k_intensity_fragments(input_spectrum : Spectrum, k : int) -> Spectrum:
+    """ Filter unbinned Spectrum object to top-K highest intensity fragments """
+    assert k >= 1, 'k must be larger or equal to one.'
+    assert input_spectrum.is_binned_spectrum == False, "filter_spectrum_top_k_intensity_fragments() requires unbinned spectrum."
+    spectrum = copy.deepcopy(input_spectrum)
+    if spectrum.intensities.size > k:
+        index_of_k_largest_intensities = np.argpartition(spectrum.intensities, -k)[-k:]
+        mass_to_charge_ratios = spectrum.mass_to_charge_ratios[index_of_k_largest_intensities]
+        intensities = spectrum.intensities[index_of_k_largest_intensities]
+        spectrum = Spectrum(
+            mass_to_charge_ratios = mass_to_charge_ratios, 
+            precursor_mass_to_charge_ratio = spectrum.precursor_mass_to_charge_ratio,
+            identifier = spectrum.identifier, 
+            intensities = intensities)
+    return(spectrum)
+        
 
 @dataclass(frozen=True)
 class SpectraDF:
