@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import matchms
-from specxplore.specxplore_data import Spectrum, SpectraDF
+from specxplore.specxplore_data import Spectrum, SpectraDF, filter_spectrum_top_k_intensity_fragments
 from typing import List, Union
 import copy
 from specxplore.compose import compose_function
@@ -11,7 +11,9 @@ from functools import partial
 from warnings import warn
 
 # TODO: REFACTOR THE PANEL GENERATOR
-def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_list : List[Spectrum]) -> html.Div:
+def generate_fragmap_panel(
+        spectrum_identifier_list : List[int], 
+        all_spectra_list : List[Spectrum], top_k : int) -> html.Div:
     """ 
     Generate fragmap panel.
 
@@ -33,7 +35,7 @@ def generate_fragmap_panel(spectrum_identifier_list : List[int], all_spectra_lis
     spectrum_bin_template = [
         round(x, 1) 
         for x in list(np.arange(0, 1000 + mass_to_charge_ratio_step_size, mass_to_charge_ratio_step_size))]
-    fragmap = generate_fragmap(selected_spectra, 0.01, 1, 0, 1000, spectrum_bin_template, 0, 200)
+    fragmap = generate_fragmap(selected_spectra, 0.0, 1, 0, 1000, spectrum_bin_template, 0, top_k, 200)
     fragmap_output_panel = [dcc.Graph(id = "fragmap-panel", figure=fragmap, style={
         "width":"100%","height":"100%", "border":"1px grey solid"})]
     return(fragmap_output_panel)
@@ -414,7 +416,7 @@ def join_spectradf(
 def generate_fragmap(
     spectrum_list : List[Spectrum], relative_intensity_threshold : float, prevalence_threshold : int,
     mass_to_charge_ratio_minimum : float, mass_to_charge_ratio_maximum : float, bin_map : List[float],
-    root_spectrum_identifier : int, max_number_of_binned_fragments : int = 200) -> None:
+    root_spectrum_identifier : int, top_k : int, max_number_of_binned_fragments : int = 200) -> None:
     """ Processes list of spectra and generates fragmap graph. 
 
     :param spectrum_list: List of Spectrum objects with mass_to_charge_ratios and intensities arrays.
@@ -434,6 +436,8 @@ def generate_fragmap(
         achieved by setting the max number of fragments very high (e.g. 9999), but may lead to unreadable fragmaps.
     """
     # TODO: CONSIDER: prefilter spectra to size 200 before doing all data processing. Requires additional input?
+
+    spectrum_list = [filter_spectrum_top_k_intensity_fragments(spectrum, top_k) for spectrum in spectrum_list]
 
     # Get binned spectra and binned neutral loss spectra
     binned_spectrum_list = [bin_spectrum(spectrum, bin_map) for spectrum in spectrum_list]
