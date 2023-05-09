@@ -35,15 +35,17 @@ from networkx import read_graphml
 from networkx.readwrite import json_graph
 
 
+# Named Tuple Basis for ClassificationEntry class
 _ClassificationEntry = namedtuple(
     "ClassificationEntry", 
-    field_names=['inchi', 'smiles', 'cf_kingdom', 'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent', 
-                 'npc_class', 'npc_superclass', 'npc_pathway', 'npc_isglycoside'],
+    field_names=[
+        'inchi', 'smiles', 'cf_kingdom', 'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent', 
+        'npc_class', 'npc_superclass', 'npc_pathway', 'npc_isglycoside'],
     defaults = ["Not Available" for _ in range(0, 11)])
 
 class ClassificationEntry(_ClassificationEntry):
     """ 
-    Tuple container for classification entries. 
+    Tuple container class for classification entries. 
 
     Parameters:
         inchi: Compound inchi string.
@@ -77,6 +79,7 @@ class KmedoidGridEntry():
     silhouette_score : float
     random_seed_used : int
     def __str__(self) -> str:
+        """ Custom Print Method for kmedoid grid entry producing an easy readable string output. """
         custom_print = (
             f"k = {self.k}, silhoutte_score = {self.silhouette_score}, \n"
             f"cluster_assignment = {', '.join(self.cluster_assignments[0:7])}...")
@@ -84,9 +87,11 @@ class KmedoidGridEntry():
 
 def initialize_classification_output_file(filepath) -> None:
     """ Creates csv file with ClassificationEntry headers if not exists at filepath. """
+    # Initialize the file
     if not os.path.isfile(filepath):
         with open(filepath, "w") as file:
             pass
+    # Add header line to file
     if os.stat(filepath).st_size == 0:
         with open(filepath, "a") as file: # a for append mode
             file.write(", ".join(ClassificationEntry._fields) + os.linesep)
@@ -100,18 +105,19 @@ def append_classes_to_file(classes : ClassificationEntry, filepath : str) -> Non
 
 def batch_run_get_classes(
         inchi_list : List[str], 
-        filename : str, 
+        filepath : str, 
         verbose : bool = True) -> pd.DataFrame:
     """ 
-    Function queries GNPS API for classes for all spectra with inchi in spectrum list. 
+    Function queries GNPS API for NPClassifier and ClassyFire classifications for all inchi list. 
     
     A pandas.DataFrame is returned as output, and the corresponding csv is saved to file iteratively. This is done to
     allow run continuation in case of API disconnect errors.
     
     Parameters:
-        spectrum_list: List of matchms spectra. These are expected to have an inchi entry available.
+        inchi_list: List of inchi strings.
         filename: str file path for output to be saved to iteratively.
         verbose: Boolean indicator that controls progress prints. Default is true. Deactive prints by setting to False.
+    
     Returns:
         A pandas.DataFrame constructed from ClassificationEntry tuples. In addition, the list index is added as 
         "iloc_spectrum_identifier" column.
@@ -119,12 +125,12 @@ def batch_run_get_classes(
         Also saves intermediate results to csv file.
     """
     classes_list = []
-    initialize_classification_output_file(filename)
+    initialize_classification_output_file(filepath)
     for iloc, inchi in enumerate(inchi_list):
         if verbose and (iloc+1) % 10 == 0 and not iloc == 0:
             print(f"{iloc + 1} spectra done, {len(inchi_list) - (iloc+1)} spectra remaining.")
         classes = get_classes(inchi)
-        append_classes_to_file(classes, filename)
+        append_classes_to_file(classes, filepath)
         classes_list.append(classes)
     classes_df = pd.DataFrame.from_records(classes_list, columns=ClassificationEntry._fields)
     classes_df["iloc_spectrum_identifier"] = classes_df.index
@@ -139,7 +145,8 @@ def get_classes(inchi: Union[str, None]) -> ClassificationEntry:
                exception with a dict of "Not Available" data being returned.
     Returns:
         ClassificationEntry named tuple with classification information if available. If classification retrieval fails,
-        ClassificationEntry will contain "Not Available" defaults.
+        ClassificationEntry will contain "Not Available" defaults. "Not Available" defaults may also be produced by
+        server disconnections while in principle the classification may be obtainable.
     """
     if inchi is None or inchi == "":
         print("No inchi, returning Not Available structure.")
@@ -216,6 +223,7 @@ def get_json_cf_results(raw_json: bytes) -> List[str]:
     return cf_results_list
 
 
+
 def get_json_npc_results(raw_json: bytes) -> List[str]:
     """ Extracts NPClassifier classification key data in order from bytes version of json string.
     
@@ -244,7 +252,8 @@ def get_json_npc_results(raw_json: bytes) -> List[str]:
     npc_results_list.append(last_string)
     return npc_results_list
 
-# DONE.  NOT PURE FUNCTION! ATTEMPTS CONNECTION TO REMOTE (output depends on remote state).
+
+
 def get_cf_classes(smiles: str, inchi: str) -> Union[None, List[str]]:
     """ Get ClassyFire classes through GNPS API.
 
@@ -269,7 +278,8 @@ def get_cf_classes(smiles: str, inchi: str) -> Union[None, List[str]]:
                 classes_list = get_json_cf_results(inchi_query_result)
     return classes_list
 
-# DONE. NOT PURE FUNCTION! ATTEMPTS CONNECTION TO REMOTE (output depends on remote state).
+
+
 def get_npc_classes(smiles: str) -> Union[None, List[str]]:
     """ Get NPClassifier classes through GNPS API.
 
@@ -285,6 +295,8 @@ def get_npc_classes(smiles: str) -> Union[None, List[str]]:
         if query_result_json is not None:
             classes_list = get_json_npc_results(query_result_json)
     return classes_list
+
+
 
 def _return_model_filepath(path : str, model_suffix:str) -> str:
     """ Function parses path input into a model filepath. If a model filepath is provided, it is returned unaltered , if 
@@ -312,6 +324,8 @@ def _return_model_filepath(path : str, model_suffix:str) -> str:
         "filepath!")
     return filepath[0]
 
+
+
 def compute_similarities_ms2ds(spectrum_list:List[matchms.Spectrum], model_path:str) -> np.ndarray:
     """ Function computes pairwise similarity matrix for list of spectra using pretrained ms2deepscore model.
     
@@ -329,6 +343,7 @@ def compute_similarities_ms2ds(spectrum_list:List[matchms.Spectrum], model_path:
     return scores_ndarray
 
 
+
 def compute_similarities_s2v(spectrum_list:List[matchms.Spectrum], model_path:str) -> np.ndarray:
     """ Function computes pairwise similarity matrix for list of spectra using pretrained spec2vec model.
     
@@ -344,6 +359,7 @@ def compute_similarities_s2v(spectrum_list:List[matchms.Spectrum], model_path:st
     scores_matchms = calculate_scores(spectrum_list, spectrum_list, similarity_measure, is_symmetric=True)
     scores_ndarray = scores_matchms.scores
     return scores_ndarray
+
 
 
 def compute_similarities_cosine(spectrum_list:List[matchms.Spectrum], cosine_type : str = "ModifiedCosine"):
@@ -369,6 +385,7 @@ def compute_similarities_cosine(spectrum_list:List[matchms.Spectrum], cosine_typ
     return scores
 
 
+
 def compose_function(*func) -> object: 
     """ Generic function composer making use of functools reduce. 
     
@@ -380,6 +397,7 @@ def compose_function(*func) -> object:
     def compose(f, g):
         return lambda x : f(g(x))   
     return reduce(compose, func, lambda x : x)
+
 
 
 def harmonize_and_clean_spectrum(
@@ -400,7 +418,8 @@ def harmonize_and_clean_spectrum(
     spec = matchms.filtering.default_filters(spec)
     spec = matchms.filtering.add_precursor_mz(spec)
     spec = matchms.filtering.normalize_intensities(spec)
-    spec = matchms.filtering.select_by_mz(spec, 0, 1000)
+    spec = matchms.filtering.select_by_mz(
+        spec, minimum_mz_for_fragment_in_spectrum, maximum_mz_for_fragment_in_spectrum)
     spec = matchms.filtering.select_by_relative_intensity(spec, minimum_relative_intensity_for_fragments, 1)
     spec = matchms.filtering.reduce_to_number_of_peaks(
         spec, 
@@ -413,19 +432,33 @@ def harmonize_and_clean_spectrum(
     return spec
 
 
-def clean_spectra(input_spectrums : List[matchms.Spectrum]):
+def clean_spectra(
+        input_spectrums : List[matchms.Spectrum],
+        minimum_number_of_required_peaks_per_spectrum = 4,
+        maximum_number_of_peaks_allowed_per_spectrum = 200,
+        minimum_mz_for_fragment_in_spectrum = 0,
+        maximum_mz_for_fragment_in_spectrum = 1000,
+        minimum_relative_intensity_for_fragments = 0.01):
     """ 
-    Function harmonizes and cleans spectrum object ()
+    Function harmonizes and cleans list of spectrum objects
     
     Parameters:
-        spectrum: A single matchms spectrum object.
+        input_spectrums: List of matchms spectrum objects.
     Returns: 
-        A single matchms spectrum object.
+        A list of matchms spectrum objects. If harminizing and cleaning results in a None return for a spectrum, the
+        corresponding entry is removed from the list to avoid downstream processing. iloc of spectra in original
+        list may thus not match iloc in produced list.
     """
     spectrums = copy.deepcopy(input_spectrums) 
-    spectrums = [harmonize_and_clean_spectrum(s) for s in spectrums]
+    spectrums = [
+        harmonize_and_clean_spectrum(
+            s, minimum_number_of_required_peaks_per_spectrum, maximum_number_of_peaks_allowed_per_spectrum,
+            minimum_mz_for_fragment_in_spectrum, maximum_mz_for_fragment_in_spectrum, 
+            minimum_relative_intensity_for_fragments) 
+        for s in spectrums]
     spectrums = [s for s in spectrums if s is not None]
     return spectrums
+
 
 
 def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray) -> np.ndarray:
@@ -445,7 +478,7 @@ def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray
     sim_data = [ ]
     for row in tuple_array:
         for elem in row:
-            sim_data.append(float(elem[0])) # <- TODO: check float conversion necessary?
+            sim_data.append(float(elem[0]))
     return(np.array(sim_data).reshape(tuple_array.shape[0], tuple_array.shape[1]))
 
 def convert_similarity_to_distance(similarity_matrix : np.ndarray) -> np.ndarray:
@@ -458,8 +491,16 @@ def convert_similarity_to_distance(similarity_matrix : np.ndarray) -> np.ndarray
     return distance_matrix
 
 
-def run_kmedoid_grid(distance_matrix : np.ndarray, k_values : List[int], random_states : Union[List, None] = None):
-    """ Runs k-medoid clustering for every value in k_values. """
+def run_kmedoid_grid(distance_matrix : np.ndarray, k_values : List[int], random_states : Union[List, None] = None) -> List[KmedoidGridEntry]:
+    """ Runs k-medoid clustering for every value in k_values. 
+    
+    Parameters:
+        distance_matrix: An np.ndarray containing pairwise distances.
+        k_values: A list of k values to try in k-medoid clustering.
+        random_states: None or a list of integers specifying the random state to use for each k-medoid run.
+    Returns: 
+        A list of KmedoidGridEntry objects containing grid results.
+    """
     if random_states is None:
         random_states = [ 0 for _ in k_values ]
     output_list = []
@@ -475,14 +516,15 @@ def run_kmedoid_grid(distance_matrix : np.ndarray, k_values : List[int], random_
     return output_list
 
 def render_kmedoid_fitting_results_in_browser(kmedoid_list : List[KmedoidGridEntry]) -> None:
-    """ Plots Silhouette Score vs k for each pair in kmedoid list. """
+    """ Plots Silhouette Score vs k for each entry in list of KmedoidGridEntry objects. """
     scores = [x.silhouette_score for x in kmedoid_list]
     ks = [x.k for x in kmedoid_list]
     fig = px.scatter(x = ks, y = scores)
     fig.update_layout(xaxis_title="K (Number of Clusters)", yaxis_title="Silhouette Score")
     fig.show(renderer = "browser")
+    return None
 
-from dataclasses import dataclass
+
 @dataclass
 class TsneGridEntry():
     """ 
@@ -508,8 +550,16 @@ class TsneGridEntry():
             f"y coordinates = {', '.join(self.y_coordinates[0:4])}...")
         return custom_print
 
-def run_tsne_grid(distance_matrix : np.ndarray, perplexity_values : List[int], random_states : Union[List, None] = None):
-    """ Runs k-medoid clustering for every value in k_values. """
+def run_tsne_grid(distance_matrix : np.ndarray, perplexity_values : List[int], random_states : Union[List, None] = None) -> List[TsneGridEntry]:
+    """ Runs t-SNE embedding routine for every provided perplexity value in perplexity_values list.
+
+    Parameters:
+        distance_matrix: An np.ndarray containing pairwise distances.
+        perplexity_values: A list of perplexity values to try for t-SNE embedding.
+        random_states: None or a list of integers specifying the random state to use for each k-medoid run.
+    Returns: 
+        A list of TsneGridEntry objects containing grid results. 
+    """
     if random_states is None:
         random_states = [ 0 for _ in perplexity_values ]
     output_list = []
@@ -526,7 +576,7 @@ def run_tsne_grid(distance_matrix : np.ndarray, perplexity_values : List[int], r
 
 
 def render_tsne_fitting_results_in_browser(tsne_list : List[TsneGridEntry]) -> None:
-    """ Plots Silhouette Score vs k for each pair in kmedoid list. """
+    """ Plots pearson and spearman scores vs perplexity for each entry in list of TsneGridEntry objects. """
     pearson_scores = [x.spearman_score for x in tsne_list]
     spearman_scores = [x.pearson_score for x in tsne_list]
     perplexities = [x.perplexity for x in tsne_list]
@@ -536,6 +586,7 @@ def render_tsne_fitting_results_in_browser(tsne_list : List[TsneGridEntry]) -> N
     fig = go.Figure([trace_pearson, trace_spearman])
     fig.update_layout(xaxis_title="Perplexity", yaxis_title="Score")
     fig.show(renderer = "browser")
+    return None
 
 
 def expand_ms2query_results_table(results_table, n_spectra):
@@ -554,10 +605,10 @@ def run_single_file(
     ms2library: MS2Library,
     spectra_filename: str,
     results_filename: str,
-    nr_of_analogs_to_store: int = 1,
-    minimal_ms2query_score: Union[int, float] = 0.0,
-    additional_metadata_columns: Tuple[str] = ("retention_time", "retention_index",),
-    additional_ms2query_score_columns: List[str] = None
+    #nr_of_analogs_to_store: int = 1,
+    #minimal_ms2query_score: Union[int, float] = 0.0,
+    #additional_metadata_columns: Tuple[str] = ("retention_time", "retention_index",),
+    #additional_ms2query_score_columns: List[str] = None
     ) -> None:
     """
     Runs analog library search and stores search results for all spectra in provided file in results file. 
@@ -608,7 +659,7 @@ def convert_matchms_spectra_to_specxplore_spectrum(spectra = List[matchms.Spectr
 
 def extract_molecular_family_assignment_from_graphml(filepath : str) -> pd.DataFrame:
     """ Function extracts molecular family componentindex for each node in gnps mgf export. Expects that each
-    spectrum is a feature, hence the clustering option in mgf must be deactivated. """
+    spectrum is a feature, hence the clustering option in molecular networking must be deactivated. """
     graph = read_graphml(filepath)
     data = json_graph.node_link_data(graph)
     entries = []
