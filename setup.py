@@ -11,27 +11,14 @@ module_name_list = [
 module_paths = [os.path.join(directory_name, name) for name in module_name_list]
 
 setup(
-    name="specXplore setup",
+    name="specxplore",
     ext_modules=cythonize(module_paths),
     python_requires='>=3.8',
+    version = "0.0.0",
     install_requires=[
-        "dash",
-        "cython",
-        "plotly",
-        "dash_cytoscape",
-        "numpy",
-        "pandas",
         "ms2query",
-        "matchms",
-        "dash_daq",
-        "dash_cytoscape",
-        'scipy',
-        'networkx',
-        'sklearn',
-        'scipy',
-        'kmedoids',
-        'spec2vec',
-        'ms2deepscore'
+        "matchms<=0.13",
+        "ms2deepscore<0.3.1",
     ]
 )
 # Cleaning out .cpp files that are not needed after .so object construction.
