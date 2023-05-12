@@ -12,7 +12,7 @@ jobs:
       matrix:
         fail-fast: [false]
         python-version: ["3.8"]
-        os: ['ubuntu-latest'] # , 'macos-latest', 'windows-latest'
+        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
 
     steps:
       - uses: actions/checkout@v3
@@ -25,8 +25,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest
           pip install cython
+          pip install .
           python setup.py build_ext --inplace
-          python setup.py install
       - name: Test with pytest
         run: |
           pytest
