@@ -10,7 +10,7 @@ from spec2vec import Spec2Vec
 import matchms
 from matchms import calculate_scores
 from matchms.similarity import CosineGreedy, ModifiedCosine, CosineHungarian
-from ms2query.utils import load_matchms_spectrum_objects_from_file
+#from ms2query.utils import load_matchms_spectrum_objects_from_file
 from ms2query.ms2library import MS2Library
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model
