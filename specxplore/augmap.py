@@ -5,24 +5,25 @@ import itertools
 import pandas as pd
 from dash import html, dcc
 import plotly.express as px
+from typing import List
 
-def generate_optimal_leaf_ordering_index(similarity_matrix):
+def generate_optimal_leaf_ordering_index(similarity_matrix : np.ndarray):
     """ Function generates optimal leaf ordering index for given similarity matrix. """
     linkage_matrix = hierarchy.ward(similarity_matrix) # hierarchical clustering, ward linkage
     index = hierarchy.leaves_list(hierarchy.optimal_leaf_ordering(linkage_matrix, similarity_matrix))
     return index
 
-def extract_sub_matrix(idx, similarity_matrix):
+def extract_sub_matrix(idx : List[int], similarity_matrix : np.ndarray) -> np.ndarray:
     """ Extract relevant subset of spec_ids from similarity matrix. """
     out_similarity_matrix = similarity_matrix[idx, :][:, idx]
     return out_similarity_matrix
 
-def reoder_matrix(ordered_index, similarity_matrix):
+def reorder_matrix(ordered_index : List[int], similarity_matrix : np.ndarray) -> np.ndarray:
     """ Function reorders matrices according to ordered_index provided. """
     out_similarity_matrix = similarity_matrix[ordered_index,:][:,ordered_index]
     return out_similarity_matrix
 
-def generate_edge_list(idx, all_possible_edges, similarity_matrix, threshold):
+def generate_edge_list(idx : List[int], all_possible_edges : List[List[int]], similarity_matrix : np.ndarray, threshold : float) -> List[List[int]]:
     """ Function generates edge list from pairwise similarity matrix and threshold while abiding by idx ordering. """
     # developer note
     # Input is a list of integer locations idx, a list of lists where each sublist contains two integer identifiers, 
@@ -33,8 +34,14 @@ def generate_edge_list(idx, all_possible_edges, similarity_matrix, threshold):
         if similarity_matrix[elem[0]][elem[1]] >= threshold]
     return edges
 
-def generate_shape_list(edges, size_modifier, shape_kwargs):
-    """ Generates list with plotly shape object for each [x,y] pair in edges. """
+def generate_shape_list(edges : List[List[int]], size_modifier : float, shape_kwargs : dict ):
+    """ Generates list with plotly shape object for each [x,y] pair in edges. 
+    
+    Parameters:
+        edges:
+        size_modifier:
+        shape_kwargs: dictionary with  plotly.graph_objects.Layout.Shape properties
+    """
     shapes = [
         go.layout.Shape(
             x0=x-size_modifier, y0=y-size_modifier, 
@@ -129,9 +136,9 @@ def generate_augmap_graph(
     ordered_index = generate_optimal_leaf_ordering_index(similarity_matrix_1)
 
     # Reorder similarity matrices according to optimal leaf ordering
-    similarity_matrix_1 = reoder_matrix(ordered_index, similarity_matrix_1)
-    similarity_matrix_2 = reoder_matrix(ordered_index, similarity_matrix_2)
-    similarity_matrix_3 = reoder_matrix(ordered_index, similarity_matrix_3)
+    similarity_matrix_1 = reorder_matrix(ordered_index, similarity_matrix_1)
+    similarity_matrix_2 = reorder_matrix(ordered_index, similarity_matrix_2)
+    similarity_matrix_3 = reorder_matrix(ordered_index, similarity_matrix_3)
 
     # Reorder ids and idx according to optimal leaf ordering (computed above)
     idx_iloc_array = np.array(idx_iloc_list)[ordered_index]
