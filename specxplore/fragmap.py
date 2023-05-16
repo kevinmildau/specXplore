@@ -6,7 +6,6 @@ import matchms
 from specxplore.specxplore_data import Spectrum, SpectraDF, filter_spectrum_top_k_intensity_fragments
 from typing import List, Union
 import copy
-from specxplore.compose import compose_function
 from functools import partial
 from warnings import warn
 
@@ -447,15 +446,13 @@ def generate_fragmap(
     # construct spectra df and neutral loss df
     spectra_df = spectrum_list_to_pandas(binned_spectrum_list)
     losses_df = spectrum_list_to_pandas(neutral_loss_spectrum_list)
-
-    # Compose filter pipeline function using provided settings
-    filter_pipeline_spectra = compose_function(
-        partial(generate_intensity_filtered_df, intensity_min=relative_intensity_threshold),
-        partial(generate_mz_range_filtered_df, 
-            mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum))
     
     # Apply filters for mz and intensity values
-    filtered_spectra_df = filter_pipeline_spectra(spectra_df)
+    filtered_spectra_df = generate_intensity_filtered_df(
+        spectra_df, relative_intensity_threshold)
+    filtered_spectra_df = generate_mz_range_filtered_df(
+        spectra_df,  mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum)
+    
     filtered_losses_df = generate_mz_range_filtered_df(
         losses_df, mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum)
 
