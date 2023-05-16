@@ -38,7 +38,9 @@ setup(
         'pandas',
         'cython',
         'scipy',
-        "protobuf<=3.20.2"
+        'protobuf<=3.20.2', # older version needed for ms2query to be importable
+        'dash_daq',
+        'dash_bootstrap_components'
         ],
         extras_require={
             'dev': ['pytest']}
