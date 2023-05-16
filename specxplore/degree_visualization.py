@@ -49,7 +49,7 @@ def generate_degree_colored_elements(sources, targets, values, threshold):
         n_bins = min(20, n_unique_degrees)
         color_map = px.colors.sample_colorscale("plasma_r", [n/(n_colors -1) for n in range(n_colors)])
         print(color_map)
-        degree_bins = np.linspace(min_degree, max_degree, num = n_bins, dtype=np.int)
+        degree_bins = np.linspace(min_degree, max_degree, num = n_bins, dtype=np.int64)
         print("DEGREE BINS:", degree_bins)
         legend_fig = generate_plotly_bar_legend_for_colorscale(degree_bins, color_map)
         # generates color bin assignment indices for each unique nodes' degree
@@ -73,7 +73,7 @@ def generate_plotly_bar_legend_for_colorscale(degrees_binned, colors):
     """
     Generates a ploty bar graph figure object with color to degree mapping to serve as legend for the cytoscape graph.
     """
-    #tickvals = np.linspace(np.min(degrees_binned), np.max(degrees_binned), num=5, dtype=np.int)
+    #tickvals = np.linspace(np.min(degrees_binned), np.max(degrees_binned), num=5, dtype=np.int64)
     #y = np.repeat([1], len(degrees_binned))
     
     fig = go.Figure()
