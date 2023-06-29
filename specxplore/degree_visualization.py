@@ -9,7 +9,7 @@ def generate_degree_colored_elements(sources, targets, values, threshold):
     Generates degree elements and style sheet for coloring cytoscape nodes by their degree in plasma color scheme. 
     """
     # edge case: there are no edges at current threshold
-    # edge case: min and max degree are the same, and no discrete color scale can be established, n_colors related
+    # edge case: min and max degree are the same, and no discrete color scale can be established, only one color needed
     _, tmp_sources, tmp_targets = data_transfer_cython.extract_edges_above_threshold(
         sources, targets, values, threshold)
     
@@ -26,22 +26,16 @@ def generate_degree_colored_elements(sources, targets, values, threshold):
         min_degree = 0
         n_unique_degrees = 0
 
-    print("Degree number = ",n_unique_degrees)
-    if n_unique_degrees == 0:
-        # The edge list ist singular or zero
-        #legend_fig = [] 
-        #color_map = np.array(['white'])
-        #degree_bins = np.array([0])
-        #legend_fig = generate_plotly_bar_legend_for_colorscale(degree_bins, color_map)
+    case_no_edges_no_nonzero_degrees = n_unique_degrees == 0
+    if case_no_edges_no_nonzero_degrees:
         node_styles = [], 
         legend_fig = []
         return node_styles, legend_fig
 
     elif min_degree == max_degree:
         # there is no color grade since all degrees are identical
-        legend_fig = [] 
         color_map = np.array(['rgb(13, 8, 135)'])
-        degree_bins = np.array([min_degree])
+        degree_bins = np.array([str(min_degree)])
         legend_fig = generate_plotly_bar_legend_for_colorscale(degree_bins, color_map)
         color_assignment_array = np.repeat(['rgb(13, 8, 135)'], unique_nodes.size)
     else:
@@ -49,11 +43,12 @@ def generate_degree_colored_elements(sources, targets, values, threshold):
         n_bins = min(20, n_unique_degrees)
         color_map = px.colors.sample_colorscale("plasma_r", [n/(n_colors -1) for n in range(n_colors)])
         print(color_map)
-        degree_bins = np.linspace(min_degree, max_degree, num = n_bins, dtype=np.int64)
+        degree_bins_numeric = np.linspace(min_degree, max_degree, num = n_bins, dtype=np.int64)
+        degree_bins = [str(element) for element in degree_bins_numeric]
         print("DEGREE BINS:", degree_bins)
         legend_fig = generate_plotly_bar_legend_for_colorscale(degree_bins, color_map)
         # generates color bin assignment indices for each unique nodes' degree
-        color_bin_assignment_indices =  np.digitize(node_counts, degree_bins)-1
+        color_bin_assignment_indices =  np.digitize(node_counts, degree_bins_numeric)-1
         # color map is an array of size 100
         # color bin assignment indices is an array of size n with indices for color map
         color_assignment_array = np.array(color_map)[color_bin_assignment_indices]
