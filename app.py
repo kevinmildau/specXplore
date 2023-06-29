@@ -65,7 +65,7 @@ settings_panel = dbc.Offcanvas([
 
     html.B("Higlight Class(es) by color:"),
     dcc.Dropdown(
-        id='classes_to_be_highlighted_dropdown' , multi=True, clearable=False, options=[],
+        id='dropdown_classes_to_be_highlighted' , multi=True, clearable=False, options=[],
         value=[]),
     html.Br(),
 
@@ -109,6 +109,8 @@ settings_panel = dbc.Offcanvas([
     html.B("Session Data Location"),
     html.P("Provide path to a valid specXplore.pickle object."),
     html.Div([dcc.Input(id="upload-data", type="text", placeholder=None, debounce=True)]),
+    
+    # Multi-line break to make sure that dcc dropdown interactions don't cause resizing issues
     html.Br(),
     html.Br(),
     html.Br(),
@@ -225,7 +227,7 @@ app.layout=html.Div([
     Input('btn-run-clustnet', 'n_clicks'),
     Input('btn-run-degree', 'n_clicks'),
     Input('specid-focus-dropdown', 'value'), 
-    Input('classes_to_be_highlighted_dropdown', 'value'),
+    Input('dropdown_classes_to_be_highlighted', 'value'),
     Input('selected_class_level_assignments_store', "data"),
     Input('node_elements_store', 'data'),
     Input('session_data_update_trigger', 'data'),
@@ -253,62 +255,70 @@ def cytoscape_trigger(
     pan_location,
     previous_elements,
     previous_stylesheet):
+    """ Global overview interactivty and updating handling function. This function determines the updating sequence
+    to be performed depending on the reactive element that triggered the function."""
+
     btn = ctx.triggered_id
     max_colors = 8
-    max_edges_clustnet = 2500
-    max_edges_egonet = 2500
+    max_edges_clustnet = 2500 # make an input state
+    max_edges_egonet = 2500 # make an input state, make it actually used
+
     legend_panel = [] # initialize to empty list. Only get filled if degree node selected
     warning_messages = "" # initialize to empty string. Only gets expanded if warnings necessary.
     styles = GLOBAL_DATA.initial_style
 
     elements = node_elements_from_store
 
-    if (not btn in ("btn-run-egonet", "btn-run-clustnet") 
-            and classes_to_be_highlighted 
-            and len(classes_to_be_highlighted) > max_colors):
-        # filter classes to be highlighted to be less than or equal to max colors in length. 
-        warning_messages += (
-            f"  \n❌Number of classes selected = {len(classes_to_be_highlighted)} exceeds available colors = {max_colors}."
-            " Selection truncated to first 8 classes in selection dropdown.")
-        classes_to_be_highlighted = classes_to_be_highlighted[0:8]
-    
-    if classes_to_be_highlighted and btn == 'classes_to_be_highlighted_dropdown':
+    case_highlight_classes =  btn == 'dropdown_classes_to_be_highlighted' and classes_to_be_highlighted
+    case_too_many_classes_to_be_highlighted = (len(classes_to_be_highlighted) > max_colors)
+
+    if case_highlight_classes:
         # define style color update if trigger is class highlight dropdown
         tmp_colors = [{
             'selector' : f".{str(elem)}", 'style' : {"background-color" : COLORS[idx]}} 
             for idx, elem in enumerate(classes_to_be_highlighted)]
         styles = GLOBAL_DATA.initial_style + tmp_colors
+    if case_too_many_classes_to_be_highlighted:
+        warning_messages += (
+            f" \n❌Number of classes selected = {len(classes_to_be_highlighted)}" 
+            f"exceeds available colors = {max_colors}."
+            " Please select fewer classes for highlighting.")
+        classes_to_be_highlighted = classes_to_be_highlighted[0:8]
     
-    if btn == "btn-run-clustnet":
-        if spec_id_selection:
-            elements, styles, n_omitted_edges = clustnet.generate_cluster_node_link_diagram_cythonized(
-                GLOBAL_DATA.tsne_df, spec_id_selection, GLOBAL_DATA.ms2deepscore_sim, all_class_level_assignments,
-                threshold, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.mz, 
-                GLOBAL_DATA.is_standard,
-                max_edges_clustnet, max_edges_per_node)
-            if spec_id_selection and n_omitted_edges != int(0):
-                warning_messages += (
-                    f"  \n❌Current settings (threshold, maximum node degree) lead to edge omission." 
-                    f" {n_omitted_edges} edges with lowest edge weight removed from visualization.")
-        else:
+    case_generate_clustnet = (btn == "btn-run-clustnet" and spec_id_selection)
+    case_generate_clustnet_fails_because_no_selection = (btn == "btn-run-clustnet" and not spec_id_selection)
+    
+    if case_generate_clustnet:
+        elements, styles, n_omitted_edges = clustnet.generate_cluster_node_link_diagram_cythonized(
+            GLOBAL_DATA.tsne_df, spec_id_selection, GLOBAL_DATA.ms2deepscore_sim, all_class_level_assignments,
+            threshold, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.mz, 
+            GLOBAL_DATA.is_standard,
+            max_edges_clustnet, max_edges_per_node)
+        if n_omitted_edges != int(0):
             warning_messages += (
-                f"\n❌ No nodes selected, no edges can be rendered."
-            )
-
-    if btn == "btn-run-egonet":
-        if spec_id_selection:
-            elements, styles, n_omitted_edges = egonet.generate_egonet_cythonized(
-                spec_id_selection, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.tsne_df, 
-                GLOBAL_DATA.mz, threshold, expand_level)
-            if n_omitted_edges != int(0):
-                warning_messages += (
-                    f"  \n❌Current settings (threshold, maximum node degree, hop distance) lead to edge omission."
-                    f"{n_omitted_edges} edges removed from visualization. These either exceeded maximum node degrees in branching tree or were low similarity edges removed to avoid exceeding maximum edge numbers.")
-        else:
-            warning_messages += (f"  \n❌ No nodes selected, no edges can be shown.")
-        if (spec_id_selection and len(spec_id_selection) > 1):
+                f"  \n❌Current settings (threshold, maximum node degree) lead to edge omission." 
+                f" {n_omitted_edges} edges with lowest edge weight removed from visualization.")
+    if case_generate_clustnet_fails_because_no_selection:
+        warning_messages += (f"\n❌ No nodes selected, no edges can be rendered.")
+    
+    case_generate_egonet = (btn == "btn-run-egonet" and spec_id_selection and len(spec_id_selection) == 1)
+    case_generate_egonet_fails_because_no_selection = (btn == "btn-run-egonet" and not spec_id_selection)
+    case_generate_egonet_fails_because_multiselection = (
+        btn == "btn-run-egonet" and spec_id_selection and len(spec_id_selection)>1)
+    if case_generate_egonet:
+        elements, styles, n_omitted_edges = egonet.generate_egonet_cythonized(
+            spec_id_selection, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.tsne_df, 
+            GLOBAL_DATA.mz, threshold, expand_level)
+        if n_omitted_edges != int(0):
             warning_messages += (
-                f"  \n❌More than one node selected. Selecting spectrum {spec_id_selection[0]} as ego node.")
+                f"  \n❌Current settings (threshold, maximum node degree, hop distance) lead to edge omission."
+                f"{n_omitted_edges} edges removed from visualization. These either exceeded maximum node degrees "
+                "in branching tree or were low similarity edges removed to avoid exceeding maximum edge numbers.")
+    if case_generate_egonet_fails_because_no_selection:
+        warning_messages += (f"  \n❌ No node selected, no edges can be shown.")
+    if case_generate_egonet_fails_because_multiselection:
+        warning_messages += (
+            f"  \n❌More than one node selected. Select single spectrum as egonode.")
 
     if btn == 'btn-run-degree':
         styles, legend_plot = degree_visualization.generate_degree_colored_elements(
@@ -319,15 +329,28 @@ def cytoscape_trigger(
         else:
             styles = GLOBAL_DATA.initial_style
             warning_messages += (f"  \n❌ Threshold too stringent. All node degrees are zero.")
-    if (btn == 'specid-focus-dropdown' and spec_id_selection):
+    
+
+    case_change_node_selection_but_keep_style = (btn == 'specid-focus-dropdown' and spec_id_selection)
+    if case_change_node_selection_but_keep_style:
         styles = GLOBAL_DATA.initial_style + previous_stylesheet 
         elements = previous_elements
     
-    if (not btn in ("btn-run-egonet", "btn-run-clustnet") and classes_to_be_highlighted and not spec_id_selection):
+    case_highlight_selected_classes_unless_other_view_requested = (
+        btn == 'dropdown_classes_to_be_highlighted' 
+        # 
+        and not case_generate_clustnet
+        and not case_generate_egonet
+        or (not btn in ("btn-run-degree"))
+        and classes_to_be_highlighted 
+        and not spec_id_selection
+    )
+    if case_highlight_selected_classes_unless_other_view_requested:
         tmp_colors = [{
             'selector' : f".{str(elem)}", 'style' : {"background-color" : COLORS[idx]}} 
             for idx, elem in enumerate(classes_to_be_highlighted)]
         styles = GLOBAL_DATA.initial_style + tmp_colors
+    
     return elements, styles, zoom_level, pan_location, legend_panel, warning_messages
     
 ########################################################################################################################
@@ -509,8 +532,8 @@ def max_degree_trigger_handler(n_submit, new_max_degree):
     Output("selected_class_level_store", "data"), 
     Output("select_class_level_dropdown", "options"), 
     Output('selected_class_level_assignments_store', "data"),
-    Output('classes_to_be_highlighted_dropdown', 'options'), 
-    Output('classes_to_be_highlighted_dropdown', 'value'),
+    Output('dropdown_classes_to_be_highlighted', 'options'), 
+    Output('dropdown_classes_to_be_highlighted', 'value'),
     Output('node_elements_store', 'data'),
     Output("select_class_level_dropdown", "value"),
     Input("select_class_level_dropdown", "value"),
@@ -556,10 +579,27 @@ def update_histogram(threshold, empty_trigger):
 @app.callback(Output('session_data_update_trigger', 'data'),
               Input('upload-data', 'value'),
               Input('scaler_id', 'value'))
-def update_session_data(filename : str, scaler : Union[int, float]):    
-    # If the scaler triggers: update the specXplore object without reloading the data
-    # If the upload triggers, update the specXplore by importing data and using scaler_id value
+def update_session_data(filename : str, scaler : Union[int, float]) -> dict:    
+    '''
+    Session data update handling function. Triggers when a new data path is provided or a new coordinate scaling value
+    is provided. Function has a mock output for reactivity; session_data_update_trigger does not actually contain any
+    session data. This is to avoid having to json serialize potentially large specXplore objects.
+
+    Parameters:
+        filename: a string with absolute or relative filepath to data.
+        scaler: an integer scaler between 0.01 and 9999. This setting is used to rescale x and y coordinates from
+          the standard normal range to a larger value range for less overlap of nodes. 
+    Modifies:
+        The global variable GLOBAL_DATA is modified by this function.
+    Returns: 
+        An empty dictionary. 
     
+    Details:
+    Two cases are recognized:
+      1) If the scaler triggers the function: update the specXplore object without reloading the data
+      2) If the upload triggers, update the specXplore by importing data and using scaler_id value
+    '''
+    # 
     trigger_component = ctx.triggered_id
 
     case_upload_new_session_data = (
