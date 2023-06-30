@@ -70,7 +70,7 @@ class KmedoidGridEntry():
     Container Class for K medoid clustering results.
 
     Parameters:
-        k: the number of clusters aimed for.
+        k: the number of clusters set.
         cluster_assignments: List with cluster assignment for each observation.
         silhouette_score: float with clustering silhouette score.
     """
