@@ -12,6 +12,9 @@ data_phophe
 data_urine
 data_wheat
 
+notebooks/data
+notebooks/models
+
 tmp_archive 
 data_monoindolealkaloid
 processing_monoindole.ipynb
