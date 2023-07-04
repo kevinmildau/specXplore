@@ -589,18 +589,6 @@ def render_tsne_fitting_results_in_browser(tsne_list : List[TsneGridEntry]) -> N
     return None
 
 
-def expand_ms2query_results_table(results_table, n_spectra):
-    """ Expands ms2query output to contain NA rows for unsuccesful queries."""
-    # Construct complete index for all possible query_spectrum_nr entries
-    new_index = pd.Index(np.arange(1, n_spectra + 1), name="query_spectrum_nr")
-    # Superimpose the new index and reset index to iloc
-    out_df = results_table.set_index("query_spectrum_nr")
-    out_df = out_df.reindex(new_index).reset_index()
-    # add iloc index column
-    out_df["source_spectrum_mgf_iloc"] = out_df.index
-    return out_df
-
-
 def run_single_file(
     ms2library: MS2Library,
     spectra_filename: str,
