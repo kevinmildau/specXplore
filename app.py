@@ -27,7 +27,7 @@ from typing import List, Union
 # A small default dataset is loaded here. The actual dataset can be loaded from path.
 global GLOBAL_DATA
 if True:
-    specxplore_input_file = '/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore/data/data_and_output/wheat_data/wheat_data_specxplore_v6.pickle'
+    specxplore_input_file = '/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore/notebooks/data/data_and_output/wheat_data/wheat_data_specxplore_v6.pickle'
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
         GLOBAL_DATA.scale_coordinate_system(800)
