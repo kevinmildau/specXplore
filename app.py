@@ -9,7 +9,6 @@ from specxplore import augmap
 from specxplore import clustnet
 from specxplore import fragmap
 from specxplore import data_transfer
-from specxplore import specxplore_data_cython
 from specxplore import spectrum_plot
 from specxplore import degree_visualization
 from specxplore import other_utils
@@ -19,18 +18,18 @@ import plotly.graph_objects as go
 import os
 import numpy as np
 import pandas as pd # tmp import
-from specxplore.specxplore_data import specxplore_data, Spectrum
 from specxplore.constants import COLORS
 from typing import List, Union
+import specxplore.specxplore_data
 
 # The global specXplore object is used to avoid json serialization of the numpy arrays within specXplore.
 # A small default dataset is loaded here. The actual dataset can be loaded from path.
 global GLOBAL_DATA
 if True:
-    specxplore_input_file = '/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore/notebooks/data/data_and_output/wheat_data/wheat_data_specxplore_v6.pickle'
+    specxplore_input_file = '/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore/dev_test_complete.pickle'
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
-        GLOBAL_DATA.scale_coordinate_system(800)
+        GLOBAL_DATA.scale_coordinate_system(400)
 
 
 
@@ -131,9 +130,9 @@ selection_focus_panel = dbc.Offcanvas([
     html.P((
         "All spectrum ids selected for focused analysis in network views."
         "\n Selection can be modified here.")),
-    dcc.Dropdown(id='specid-focus-dropdown', multi=True, 
+    dcc.Dropdown(id='spectrum-iloc-focus-dropdown', multi=True, 
             style={'width': '90%', 'font-size': "100%"}, 
-            options=GLOBAL_DATA.specxplore_ids)],
+            options=GLOBAL_DATA.get_spectrum_iloc_list())],
     id="offcanvas-focus",
     placement="end",
     title="Selection Panel",
@@ -226,7 +225,7 @@ app.layout=html.Div([
     Input('btn-run-egonet', 'n_clicks'),
     Input('btn-run-clustnet', 'n_clicks'),
     Input('btn-run-degree', 'n_clicks'),
-    Input('specid-focus-dropdown', 'value'), 
+    Input('spectrum-iloc-focus-dropdown', 'value'), 
     Input('dropdown_classes_to_be_highlighted', 'value'),
     Input('selected_class_level_assignments_store', "data"),
     Input('node_elements_store', 'data'),
@@ -290,9 +289,8 @@ def cytoscape_trigger(
     
     if case_generate_clustnet:
         elements, styles, n_omitted_edges = clustnet.generate_cluster_node_link_diagram_cythonized(
-            GLOBAL_DATA.tsne_df, spec_id_selection, GLOBAL_DATA.ms2deepscore_sim, all_class_level_assignments,
-            threshold, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.mz, 
-            GLOBAL_DATA.is_standard,
+            GLOBAL_DATA.tsne_coordinates_table, spec_id_selection, GLOBAL_DATA.scores_ms2deepscore, all_class_level_assignments,
+            threshold, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.get_spectrum_iloc_list(),
             max_edges_clustnet, max_edges_per_node)
         if n_omitted_edges != int(0):
             warning_messages += (
@@ -307,8 +305,8 @@ def cytoscape_trigger(
         btn == "btn-run-egonet" and spec_id_selection and len(spec_id_selection)>1)
     if case_generate_egonet:
         elements, styles, n_omitted_edges = egonet.generate_egonet_cythonized(
-            spec_id_selection, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.tsne_df, 
-            GLOBAL_DATA.mz, threshold, expand_level)
+            spec_id_selection, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.tsne_coordinates_table, 
+            threshold, expand_level)
         if n_omitted_edges != int(0):
             warning_messages += (
                 f"  \n❌Current settings (threshold, maximum node degree, hop distance) lead to edge omission."
@@ -331,7 +329,7 @@ def cytoscape_trigger(
             warning_messages += (f"  \n❌ Threshold too stringent. All node degrees are zero.")
     
 
-    case_change_node_selection_but_keep_style = (btn == 'specid-focus-dropdown' and spec_id_selection)
+    case_change_node_selection_but_keep_style = (btn == 'spectrum-iloc-focus-dropdown' and spec_id_selection)
     if case_change_node_selection_but_keep_style:
         styles = GLOBAL_DATA.initial_style + previous_stylesheet 
         elements = previous_elements
@@ -356,16 +354,27 @@ def cytoscape_trigger(
 ########################################################################################################################
 # Set focus ids and open focus menu
 @app.callback(
-    Output('specid-focus-dropdown', 'value'),
+    Output('spectrum-iloc-focus-dropdown', 'value'),
+    Output('spectrum-iloc-focus-dropdown', 'options'),
     Input('cytoscape-tsne', 'selectedNodeData'),
-    prevent_initial_call=True
+    Input('session_data_update_trigger', 'data'),
+    State("spectrum-iloc-focus-dropdown", "options"),
+    #prevent_initial_call=True
 )
-def displaySelectedNodeData(data):
-    if data:
+def displaySelectedNodeData(selection_data, empty_trigger, old_options):
+    btn = ctx.triggered_id
+    if btn == 'session_data_update_trigger':
+        new_options = GLOBAL_DATA.get_spectrum_iloc_list()
+        new_focus_id_values = [] # always start wit empty set
+        return new_focus_id_values, new_options
+    
+    if selection_data:
         focus_ids = []
-        for elem in data:
+        for elem in selection_data:
             focus_ids.append(int(elem["id"]))
-        return focus_ids
+        return focus_ids, old_options
+    else:
+        return [], old_options
 
 @app.callback(
     Output("offcanvas-focus", "is_open"),
@@ -400,7 +409,7 @@ def toggle_offcanvas(n1, is_open):
     Input('btn_push_meta', 'n_clicks'),
     Input('btn-push-augmap', 'n_clicks'), 
     Input('btn_push_spectrum', 'n_clicks'),
-    State('specid-focus-dropdown', 'value'),
+    State('spectrum-iloc-focus-dropdown', 'value'),
     State("edge_threshold", "data"),
     State('colorblind_friendly_boolean_store', 'data'),
     State('top_k_fragments', 'value'),
@@ -412,14 +421,14 @@ def details_trigger(
     """ Wrapper function that calls fragmap generation modules. """
     warning_message = ""
     btn = ctx.triggered_id
-    max_number_augmap = 200
+    max_number_augmap = 500
     max_number_fragmap = 40
     max_number_specplot = 25
     if btn == "btn_push_fragmap" and selection_data and len(selection_data) >= 2 and len(selection_data) <= max_number_fragmap:
         panel = fragmap.generate_fragmap_panel(selection_data, GLOBAL_DATA.spectra, top_k_fragmap)
     elif btn == "btn_push_meta" and selection_data:
-        tmpdf = GLOBAL_DATA.metadata.iloc[selection_data]
-        #tmpdf = GLOBAL_DATA.tsne_df.iloc[selection_data]
+        tmpdf = GLOBAL_DATA.metadata_table.iloc[selection_data]
+        #tmpdf = GLOBAL_DATA.tsne_coordinates_table.iloc[selection_data]
         panel = dash_table.DataTable(
             id="table",
             columns=[{"name": i, "id": i} for i in tmpdf.columns],
@@ -432,7 +441,7 @@ def details_trigger(
             style_table={"overflowX": "auto"},)
     elif btn == "btn-push-augmap" and selection_data and len(selection_data) >= 2 and len(selection_data) <= max_number_augmap:
         panel = augmap.generate_augmap_panel(
-            selection_data, GLOBAL_DATA.ms2deepscore_sim, GLOBAL_DATA.cosine_sim , GLOBAL_DATA.spec2vec_sim, 
+            selection_data, GLOBAL_DATA.scores_ms2deepscore, GLOBAL_DATA.scores_modified_cosine , GLOBAL_DATA.scores_spec2vec, 
             threshold, colorblind_boolean)
     elif btn == "btn_push_spectrum" and selection_data and len(selection_data) <=max_number_specplot:
         if len(selection_data) == 1:
@@ -550,7 +559,7 @@ def class_update_trigger_handler(selected_class : str, empty_trigger : None):
     selected_class_level_assignments = GLOBAL_DATA.class_dict[selected_class]
     unique_assignments = list(np.unique(selected_class_level_assignments))
     node_elements = other_utils.initialize_cytoscape_graph_elements(
-        GLOBAL_DATA.tsne_df, selected_class_level_assignments, GLOBAL_DATA.is_standard)
+        GLOBAL_DATA.tsne_coordinates_table, selected_class_level_assignments, GLOBAL_DATA.highlight_table['highlight_bool'].to_list())
     return selected_class, class_levels, selected_class_level_assignments, unique_assignments, [], node_elements, selected_class
 
 @app.callback(
@@ -624,7 +633,7 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
         with open(filename, 'rb') as handle:
             specxplore_object = pickle.load(handle) 
         # assess compatibility of output
-        if isinstance(specxplore_object, specxplore_data):
+        if isinstance(specxplore_object, specxplore.specxplore_data.specxplore_session_data):
             GLOBAL_DATA = specxplore_object
             GLOBAL_DATA.scale_coordinate_system(scaler)
             print("Session data updated.")

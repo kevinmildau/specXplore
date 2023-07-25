@@ -1,5 +1,6 @@
 from typing import List, Union, Dict, Tuple
-import matchms.utils # UPDATE ALERT: this may not be the same in matchms >0.14
+
+import matchms.utils 
 import json
 import urllib
 import time
@@ -11,26 +12,24 @@ import matchms
 from matchms import calculate_scores
 from matchms.similarity import CosineGreedy, ModifiedCosine, CosineHungarian
 #from ms2query.utils import load_matchms_spectrum_objects_from_file
-from ms2query.ms2library import MS2Library
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model
 import copy
 import numpy as np
 from functools import reduce, partial
-from matchms.filtering import (default_filters, repair_inchi_inchikey_smiles, derive_inchikey_from_inchi, 
-    derive_smiles_from_inchi, derive_inchi_from_smiles, harmonize_undefined_inchi, harmonize_undefined_inchikey,
-    harmonize_undefined_smiles, normalize_intensities, select_by_mz, reduce_to_number_of_peaks)
 import pandas as pd
-from kmedoids import KMedoids
-from sklearn.metrics import silhouette_score
+
 from dataclasses import dataclass
 import plotly.express as px
 from collections import namedtuple
+
+from kmedoids import KMedoids
+from sklearn.metrics import silhouette_score
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import pearsonr, spearmanr  
 from sklearn.manifold import TSNE
 import plotly.graph_objects as go
-from specxplore.specxplore_data import Spectrum
+
 from networkx import read_graphml
 from networkx.readwrite import json_graph
 
@@ -64,26 +63,6 @@ class ClassificationEntry(_ClassificationEntry):
 
 
 
-@dataclass
-class KmedoidGridEntry():
-    """ 
-    Container Class for K medoid clustering results.
-
-    Parameters:
-        k: the number of clusters set.
-        cluster_assignments: List with cluster assignment for each observation.
-        silhouette_score: float with clustering silhouette score.
-    """
-    k : int
-    cluster_assignments : List[int]
-    silhouette_score : float
-    random_seed_used : int
-    def __str__(self) -> str:
-        """ Custom Print Method for kmedoid grid entry producing an easy readable string output. """
-        custom_print = (
-            f"k = {self.k}, silhoutte_score = {self.silhouette_score}, \n"
-            f"cluster_assignment = {', '.join(self.cluster_assignments[0:7])}...")
-        return custom_print
 
 def initialize_classification_output_file(filepath) -> None:
     """ Creates csv file with ClassificationEntry headers if not exists at filepath. """
@@ -399,68 +378,6 @@ def compose_function(*func) -> object:
     return reduce(compose, func, lambda x : x)
 
 
-
-def harmonize_and_clean_spectrum(
-        spectrum : matchms.Spectrum,
-        minimum_number_of_required_peaks_per_spectrum = 4,
-        maximum_number_of_peaks_allowed_per_spectrum = 200,
-        minimum_mz_for_fragment_in_spectrum = 0,
-        maximum_mz_for_fragment_in_spectrum = 1000,
-        minimum_relative_intensity_for_fragments = 0.01):
-    """ Function harmonizes and cleans spectrum object.
-    
-    Parameters:
-        spectrum: A single matchms spectrum object. 
-    Returns: 
-        A new cleaned matchms spectrum object.
-    """
-    spec = copy.deepcopy(spectrum)
-    spec = matchms.filtering.default_filters(spec)
-    spec = matchms.filtering.add_precursor_mz(spec)
-    spec = matchms.filtering.normalize_intensities(spec)
-    spec = matchms.filtering.select_by_mz(
-        spec, minimum_mz_for_fragment_in_spectrum, maximum_mz_for_fragment_in_spectrum)
-    spec = matchms.filtering.select_by_relative_intensity(spec, minimum_relative_intensity_for_fragments, 1)
-    spec = matchms.filtering.reduce_to_number_of_peaks(
-        spec, 
-        n_required=minimum_number_of_required_peaks_per_spectrum, 
-        n_max=maximum_number_of_peaks_allowed_per_spectrum)
-    spec = matchms.filtering.repair_inchi_inchikey_smiles(spec)
-    spec = matchms.filtering.harmonize_undefined_inchi(spec)
-    spec = matchms.filtering.harmonize_undefined_inchikey(spec)
-    spec = matchms.filtering.harmonize_undefined_smiles(spec)
-    return spec
-
-
-def clean_spectra(
-        input_spectrums : List[matchms.Spectrum],
-        minimum_number_of_required_peaks_per_spectrum = 4,
-        maximum_number_of_peaks_allowed_per_spectrum = 200,
-        minimum_mz_for_fragment_in_spectrum = 0,
-        maximum_mz_for_fragment_in_spectrum = 1000,
-        minimum_relative_intensity_for_fragments = 0.01):
-    """ 
-    Function harmonizes and cleans list of spectrum objects
-    
-    Parameters:
-        input_spectrums: List of matchms spectrum objects.
-    Returns: 
-        A list of matchms spectrum objects. If harminizing and cleaning results in a None return for a spectrum, the
-        corresponding entry is removed from the list to avoid downstream processing. iloc of spectra in original
-        list may thus not match iloc in produced list.
-    """
-    spectrums = copy.deepcopy(input_spectrums) 
-    spectrums = [
-        harmonize_and_clean_spectrum(
-            s, minimum_number_of_required_peaks_per_spectrum, maximum_number_of_peaks_allowed_per_spectrum,
-            minimum_mz_for_fragment_in_spectrum, maximum_mz_for_fragment_in_spectrum, 
-            minimum_relative_intensity_for_fragments) 
-        for s in spectrums]
-    spectrums = [s for s in spectrums if s is not None]
-    return spectrums
-
-
-
 def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray) -> np.ndarray:
     """ 
     Function extracts similarity matrix from matchms cosine scores array.
@@ -481,169 +398,6 @@ def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray
             sim_data.append(float(elem[0]))
     return(np.array(sim_data).reshape(tuple_array.shape[0], tuple_array.shape[1]))
 
-def convert_similarity_to_distance(similarity_matrix : np.ndarray) -> np.ndarray:
-    """ 
-    Converts pairwise similarity matrix to distance matrix with values between 0 and 1 
-    """
-    distance_matrix = 1.- similarity_matrix
-    distance_matrix = np.round(distance_matrix, 6) # Round to deal with floating point issues
-    distance_matrix = np.clip(distance_matrix, a_min = 0, a_max = 1) # Clip to deal with floating point issues
-    return distance_matrix
-
-
-def run_kmedoid_grid(distance_matrix : np.ndarray, k_values : List[int], random_states : Union[List, None] = None) -> List[KmedoidGridEntry]:
-    """ Runs k-medoid clustering for every value in k_values. 
-    
-    Parameters:
-        distance_matrix: An np.ndarray containing pairwise distances.
-        k_values: A list of k values to try in k-medoid clustering.
-        random_states: None or a list of integers specifying the random state to use for each k-medoid run.
-    Returns: 
-        A list of KmedoidGridEntry objects containing grid results.
-    """
-    if random_states is None:
-        random_states = [ 0 for _ in k_values ]
-    output_list = []
-    for k in k_values:
-        assert isinstance(k, int), (
-            "k must be python int object. KMedoids module requires strict Python int object (np.int64 rejected!)")
-    for idx, k in enumerate(k_values):
-        cluster = KMedoids(n_clusters=k, metric='precomputed', random_state=random_states[idx], method = "fasterpam")  
-        cluster_assignments = cluster.fit_predict(distance_matrix)
-        cluster_assignments = ["km_" + str(elem) for elem in cluster_assignments] # string conversion
-        score = silhouette_score(X = distance_matrix, labels = cluster_assignments, metric= "precomputed")
-        output_list.append(KmedoidGridEntry(k, cluster_assignments, score, random_states[idx]))
-    return output_list
-
-def render_kmedoid_fitting_results_in_browser(kmedoid_list : List[KmedoidGridEntry]) -> None:
-    """ Plots Silhouette Score vs k for each entry in list of KmedoidGridEntry objects. """
-    scores = [x.silhouette_score for x in kmedoid_list]
-    ks = [x.k for x in kmedoid_list]
-    fig = px.scatter(x = ks, y = scores)
-    fig.update_layout(xaxis_title="K (Number of Clusters)", yaxis_title="Silhouette Score")
-    fig.show(renderer = "browser")
-    return None
-
-
-@dataclass
-class TsneGridEntry():
-    """ 
-    Container Class for K medoid clustering results.
-
-    Parameters:
-        k: the number of clusters aimed for.
-        cluster_assignments: List with cluster assignment for each observation.
-        silhouette_score: float with clustering silhouette score.
-    """
-    perplexity : int
-    x_coordinates : List[int]
-    y_coordinates:  List[int]
-    pearson_score : float
-    spearman_score : float
-    random_seed_used : float
-    def __str__(self) -> str:
-        custom_print = (
-            f"Perplexity = {self.perplexity}," 
-            f"Pearson Score = {self.pearson_score}, "
-            f"Spearman Score = {self.spearman_score}, \n"
-            f"x coordinates = {', '.join(self.x_coordinates[0:4])}...",
-            f"y coordinates = {', '.join(self.y_coordinates[0:4])}...")
-        return custom_print
-
-def run_tsne_grid(distance_matrix : np.ndarray, perplexity_values : List[int], random_states : Union[List, None] = None) -> List[TsneGridEntry]:
-    """ Runs t-SNE embedding routine for every provided perplexity value in perplexity_values list.
-
-    Parameters:
-        distance_matrix: An np.ndarray containing pairwise distances.
-        perplexity_values: A list of perplexity values to try for t-SNE embedding.
-        random_states: None or a list of integers specifying the random state to use for each k-medoid run.
-    Returns: 
-        A list of TsneGridEntry objects containing grid results. 
-    """
-    if random_states is None:
-        random_states = [ 0 for _ in perplexity_values ]
-    output_list = []
-    for idx, perplexity in enumerate(perplexity_values):
-        model = TSNE(metric="precomputed", random_state = random_states[idx], init = "random", perplexity = perplexity)
-        z = model.fit_transform(distance_matrix)
-        # Compute embedding quality
-        dist_tsne = squareform(pdist(z, 'seuclidean'))
-        spearman_score = np.array(spearmanr(distance_matrix.flat, dist_tsne.flat))[0]
-        pearson_score = np.array(pearsonr(distance_matrix.flat, dist_tsne.flat))[0]
-        output_list.append(TsneGridEntry(perplexity, z[:,0], z[:,1], pearson_score, spearman_score, random_states[idx]))
-    return output_list
-
-
-
-def render_tsne_fitting_results_in_browser(tsne_list : List[TsneGridEntry]) -> None:
-    """ Plots pearson and spearman scores vs perplexity for each entry in list of TsneGridEntry objects. """
-    pearson_scores = [x.spearman_score for x in tsne_list]
-    spearman_scores = [x.pearson_score for x in tsne_list]
-    perplexities = [x.perplexity for x in tsne_list]
-
-    trace_spearman = go.Scatter(x = perplexities, y = spearman_scores, name="spearman_score", mode = "markers")
-    trace_pearson = go.Scatter(x = perplexities, y = pearson_scores, name="pearson_score", mode = "markers")
-    fig = go.Figure([trace_pearson, trace_spearman])
-    fig.update_layout(xaxis_title="Perplexity", yaxis_title="Score")
-    fig.show(renderer = "browser")
-    return None
-
-
-def run_single_file(
-    ms2library: MS2Library,
-    spectra_filename: str,
-    results_filename: str,
-    #nr_of_analogs_to_store: int = 1,
-    #minimal_ms2query_score: Union[int, float] = 0.0,
-    #additional_metadata_columns: Tuple[str] = ("retention_time", "retention_index",),
-    #additional_ms2query_score_columns: List[str] = None
-    ) -> None:
-    """
-    Runs analog library search and stores search results for all spectra in provided file in results file. 
-    Note that results are stored additively to the file; rerunning code appends to the existing file.
-
-    Args:
-    ------
-    ms2library:
-        MS2Library object
-    spectra_filename:
-        Path to file containing spectra on which analog search should be run.
-    results_filename:
-        Path to file in which the results are stored. Should be a .csv filename.
-    nr_of_top_analogs_to_store:
-        The number of returned analogs that are stored.
-    minimal_ms2query_score:
-        The minimal ms2query metascore needed to be stored in the csv file.
-        Spectra for which no analog with this minimal metascore was found,
-        will not be stored in the csv file.
-    additional_metadata_columns:
-        Additional columns with query spectrum metadata that should be added. For instance "retention_time".
-    additional_ms2query_score_columns:
-        Additional columns with scores used for calculating the ms2query metascore
-        Options are: "mass_similarity", "s2v_score", "ms2ds_score", "average_ms2ds_score_for_inchikey14",
-        "nr_of_spectra_with_same_inchikey14*0.01", "chemical_neighbourhood_score",
-        "average_tanimoto_score_for_chemical_neighbourhood_score",
-        "nr_of_spectra_for_chemical_neighbourhood_score*0.01"
-    set_charge_to:
-        The charge of all spectra that have no charge is set to this value. This is important for precursor m/z
-        calculations. It is important that for positive mode charge is set to 1 and at negative mode charge is set to -1
-        for correct precursor m/z calculations.
-    change_all_charges:
-        If True the charge of all spectra is set to this value. If False only the spectra that do not have a specified
-        charge will be changed.
-    """
-    # Go through spectra files in directory
-    spectra = load_matchms_spectrum_objects_from_file(spectra_filename)
-    ms2library.analog_search_store_in_csv(
-        spectra, results_filename, None)
-    return None
-
-def convert_matchms_spectra_to_specxplore_spectrum(spectra = List[matchms.Spectrum]) -> List[Spectrum]:
-  spectra_converted = [
-      Spectrum(spec.peaks.mz, float(spec.get("precursor_mz")), idx, spec.peaks.intensities) 
-      for idx, spec in enumerate(spectra)]
-  return spectra_converted
-
 
 def extract_molecular_family_assignment_from_graphml(filepath : str) -> pd.DataFrame:
     """ Function extracts molecular family componentindex for each node in gnps mgf export. Expects that each
@@ -661,37 +415,30 @@ def extract_molecular_family_assignment_from_graphml(filepath : str) -> pd.DataF
     df.reset_index(drop = True, inplace=True)
     return df
 
-def construct_metadata(spectra : List[matchms.Spectrum], identifier_key = "feature_id") -> pd.DataFrame:
-    """ 
-    Creates barebones metadata data frame with feature_id and feature_idx columns on basis of list of matchms spectra. 
-    """
-    feature_ids = [spectrum.metadata[identifier_key] for spectrum in spectra]
-    assert len(feature_ids) == len(set(feature_ids)), (
-        "Non-unique feature ids provided! Most likely causes are non-unique feature ids in input data, or duplicate"
-        " feature ids introduced by similar feature ids used in experimental and standard spectra joined."
-        )
-    feature_idx = np.arange(0, len(feature_ids), 1).tolist()
-    basic_metadata = pd.DataFrame({"feature_id" : feature_ids, "feature_idx" : feature_idx})
-    return basic_metadata
-
-def attach_metadata(
-        metadata : pd.DataFrame, addon_data : pd.DataFrame, 
-        identifier_left = "feature_id", identifier_right = "feature_id") -> pd.DataFrame:
-    """ Attaches addon_data to metadata via joins based on identifier_key 
-    
-    Metadata is assumed to be a barebones metadata data frame containing feature_id and feature_idx columns. addon_data
-    is assumed to have a matching feature_id column unless otherwise specified using identifier_left and identifier_right. 
-    A left join is performed, with any available information from addon_data being included into the output data frame.
-    """
-    extended_metadata = copy.deepcopy(metadata)
-    extended_metadata = extended_metadata.merge(
-        addon_data, left_on = identifier_left, right_on = identifier_left, how = "left")
-    extended_metadata.reset_index(inplace=True, drop=True)
-    return extended_metadata
-
-def convert_matchms_spectra_to_specxplore_spectrum(spectra = List[matchms.Spectrum]) -> List[Spectrum]:
-  """ Converts list of matchms.Spectrum objects to list of specxplore_data.Spectrum objects. """
-  spectra_converted = [
-      Spectrum(spec.peaks.mz, float(spec.get("precursor_mz")), idx, spec.peaks.intensities) 
-      for idx, spec in enumerate(spectra)]
-  return spectra_converted
+def apply_basic_matchms_filters_to_spectra(
+        input_spectra : List[matchms.Spectrum],
+        minimum_number_of_peaks_per_spectrum : int = 3,
+        maximum_number_of_peaks_per_spectrum : int = 200,
+        max_mz = 1000,
+        min_mz = 0,
+        verbose = True
+        ) -> List[matchms.Spectrum]:
+    ''' Applies basic pre-processing of spectra required for specXplore processing.'''
+    if verbose:
+        print("Number of spectra prior to filtering: ", len(input_spectra))
+    # Normalize intensities, important for similarity measures!
+    output_spectra = copy.deepcopy(input_spectra)
+    output_spectra = [matchms.filtering.normalize_intensities(spec) for spec in output_spectra]
+    output_spectra = [matchms.filtering.select_by_mz(spec, mz_from = 0, mz_to = 1000) for spec in output_spectra]
+    # Clean spectra by remove very low intensity fragments, noise removal
+    output_spectra = [
+        matchms.filtering.reduce_to_number_of_peaks(
+            spec, n_required = minimum_number_of_peaks_per_spectrum, n_max= maximum_number_of_peaks_per_spectrum) 
+        for spec in output_spectra]
+    # Add precursor mz values to matchms spectrum entry
+    output_spectra = [matchms.filtering.add_precursor_mz(spec)  for spec in output_spectra]
+    # remove none entries in list (no valid spectrum returned)
+    output_spectra = [spec for spec in output_spectra if spec is not None]
+    if verbose:
+        print("Number of spectra after to filtering: ", len(output_spectra))
+    return output_spectra

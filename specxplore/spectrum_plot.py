@@ -16,13 +16,13 @@ PLOT_LAYOUT_SETTINGS = {
 
 def generate_single_spectrum_plot(spectrum : Spectrum) -> go.Figure:
     """ Generates single spectrum plot. """
-    hover_trace_invisible = bar_hover_trace(spectrum.mass_to_charge_ratios, spectrum.intensities, spectrum.identifier)
+    hover_trace_invisible = bar_hover_trace(spectrum.mass_to_charge_ratios, spectrum.intensities, spectrum.spectrum_iloc)
     visual_trace = bar_line_trace(spectrum.mass_to_charge_ratios, spectrum.intensities)
     figure = go.Figure(data = [hover_trace_invisible] + visual_trace)
     figure.update_yaxes(range=[0, 1])
     #visual_trace = bar_shape_trace(spectrum.mass_to_charge_ratios, spectrum.intensities)
     #figure.update_layout(shapes=visual_trace)
-    figure.update_layout(title = {'text': f"Spectrum {spectrum.identifier}"}, **PLOT_LAYOUT_SETTINGS)
+    figure.update_layout(title = {'text': f"Spectrum {spectrum.spectrum_iloc}"}, **PLOT_LAYOUT_SETTINGS)
     return figure
 
 def bar_shape_trace(x_values: np.ndarray, y_values: np.ndarray) -> [go.layout.Shape]:
@@ -49,9 +49,9 @@ def bar_hover_trace(x_values: np.ndarray, y_values: np.ndarray, spectrum_identif
 def generate_mirror_plot(top_spectrum : Spectrum, bottom_spectrum: Spectrum) -> go.Figure:
     """ Generates spectrum mirrorplot. """
     top_hover_trace_invisible = bar_hover_trace(
-        top_spectrum.mass_to_charge_ratios, top_spectrum.intensities, top_spectrum.identifier)
+        top_spectrum.mass_to_charge_ratios, top_spectrum.intensities, top_spectrum.spectrum_iloc)
     bottom_hover_trace_invisible = bar_hover_trace(
-        bottom_spectrum.mass_to_charge_ratios, bottom_spectrum.intensities * -1.0, bottom_spectrum.identifier)
+        bottom_spectrum.mass_to_charge_ratios, bottom_spectrum.intensities * -1.0, bottom_spectrum.spectrum_iloc)
     top_visible_trace = bar_line_trace(top_spectrum.mass_to_charge_ratios, top_spectrum.intensities)
     bottom_visible_trace = bar_line_trace(
         bottom_spectrum.mass_to_charge_ratios, bottom_spectrum.intensities * -1.0)
@@ -60,7 +60,7 @@ def generate_mirror_plot(top_spectrum : Spectrum, bottom_spectrum: Spectrum) -> 
     figure.update_yaxes(range=[-1, 1])
     figure.add_hline(y=0.0, line_width=1, line_color="black", opacity=1)
     figure.update_layout(
-        title = {'text': f"Spectrum {top_spectrum.identifier} vs Spectrum {bottom_spectrum.identifier}"},
+        title = {'text': f"Spectrum {top_spectrum.spectrum_iloc} vs Spectrum {bottom_spectrum.spectrum_iloc}"},
         **PLOT_LAYOUT_SETTINGS)
     return figure
 
@@ -74,7 +74,7 @@ def generate_multiple_spectra_figure_div_list(spectra : List[Spectrum]) -> List[
     figure_div_list = []
     for spectrum in spectra:
         spectrum_figure = generate_single_spectrum_plot(spectrum)
-        figure_div = dcc.Graph(id = f'_spectrum_plot_for_spectrum_{spectrum.identifier}', figure = spectrum_figure)
+        figure_div = dcc.Graph(id = f'_spectrum_plot_for_spectrum_{spectrum.spectrum_iloc}', figure = spectrum_figure)
         figure_div_list.append(figure_div)
     return figure_div_list
 

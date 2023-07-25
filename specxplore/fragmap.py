@@ -60,7 +60,7 @@ def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> SpectraDF:
     # Add spectra to data frame list
     for spectrum in spectrum_list:
         n_repeats = len(spectrum.mass_to_charge_ratios)
-        spectrum_identifier_repeated = np.repeat(spectrum.identifier, n_repeats)
+        spectrum_identifier_repeated = np.repeat(spectrum.spectrum_iloc, n_repeats)
         is_binned_spectrum_repeated = np.repeat(spectrum.is_binned_spectrum, n_repeats)
         is_neutral_loss_repeated = np.repeat(spectrum.is_neutral_loss, n_repeats)
         tmp_df = pd.DataFrame({
@@ -139,7 +139,8 @@ def bin_spectrum(spectrum : Spectrum, bin_map : np.ndarray) -> Spectrum:
     output_spectrum = Spectrum(
         mass_to_charge_ratios=np.array(mass_to_charge_ratio_list),
         precursor_mass_to_charge_ratio=copy.deepcopy(spectrum.precursor_mass_to_charge_ratio),
-        identifier=copy.deepcopy(spectrum.identifier),
+        spectrum_iloc=copy.deepcopy(spectrum.spectrum_iloc),
+        feature_id=copy.deepcopy(spectrum.feature_id),
         intensities=np.array(intensity_list),
         intensity_aggregate_list=intensity_aggregate_list,
         mass_to_charge_ratio_aggregate_list=mass_to_charge_ratio_aggregate_list,
@@ -164,7 +165,8 @@ def compute_neutral_loss_spectrum(spectrum: Spectrum) -> Spectrum:
     neutral_loss_spectrum = Spectrum(
         mass_to_charge_ratios = neutral_losses_mass_to_charge_ratios, 
         precursor_mass_to_charge_ratio = copy.deepcopy(spectrum.precursor_mass_to_charge_ratio), 
-        identifier = copy.deepcopy(spectrum.identifier),
+        spectrum_iloc = copy.deepcopy(spectrum.spectrum_iloc),
+        feature_id= copy.deepcopy(spectrum.feature_id),
         intensities = neutral_losses_intensities,
         is_neutral_loss = True)
     return neutral_loss_spectrum
