@@ -1,4 +1,5 @@
 #cython: language_level=3
+# python3 setup.py install
 from setuptools import setup, Extension
 from Cython.Build import cythonize
 import os
