@@ -9,7 +9,7 @@ module_name_list = [
     'egonet_cython', 
     'clustnet_cython', 
     'data_transfer_cython', 
-    'specxplore_data_cython']
+    'datastructures_cython']
 module_paths = [
      Extension(
         f'specxplore.{name}',
