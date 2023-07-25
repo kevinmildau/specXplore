@@ -199,3 +199,4 @@ cython_debug/
 #.idea/
 dev_test_complete.pickle
 dev_test_part.pickle
+developer_notes.md
