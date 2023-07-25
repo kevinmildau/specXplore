@@ -12,9 +12,6 @@ def generate_degree_colored_elements(sources, targets, values, threshold):
     # edge case: min and max degree are the same, and no discrete color scale can be established, only one color needed
     _, tmp_sources, tmp_targets = utils_cython.extract_edges_above_threshold(
         sources, targets, values, threshold)
-    
-    print("Sources and targets:", tmp_sources, tmp_targets, type(tmp_sources))
-
     if tmp_sources.size >=1 and tmp_targets.size >=1:
         # Count how often each unique node occurs. in edge list. If once, there is an edge
         unique_nodes, node_counts = np.unique(np.concatenate([tmp_sources, tmp_targets]), return_counts= True)
@@ -42,10 +39,8 @@ def generate_degree_colored_elements(sources, targets, values, threshold):
         n_colors = min(20, n_unique_degrees)
         n_bins = min(20, n_unique_degrees)
         color_map = px.colors.sample_colorscale("plasma_r", [n/(n_colors -1) for n in range(n_colors)])
-        print(color_map)
         degree_bins_numeric = np.linspace(min_degree, max_degree, num = n_bins, dtype=np.int64)
         degree_bins = [str(element) for element in degree_bins_numeric]
-        print("DEGREE BINS:", degree_bins)
         legend_fig = generate_plotly_bar_legend_for_colorscale(degree_bins, color_map)
         # generates color bin assignment indices for each unique nodes' degree
         color_bin_assignment_indices =  np.digitize(node_counts, degree_bins_numeric)-1
