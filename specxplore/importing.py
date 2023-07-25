@@ -1,10 +1,7 @@
-from typing import List, Union, Dict, Tuple
-
 import matchms.utils 
 import json
 import urllib
 import time
-from matchms.typing import SpectrumType
 import os
 import gensim
 from spec2vec import Spec2Vec
@@ -16,23 +13,11 @@ from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model
 import copy
 import numpy as np
-from functools import reduce, partial
 import pandas as pd
-
-from dataclasses import dataclass
-import plotly.express as px
 from collections import namedtuple
-
-from kmedoids import KMedoids
-from sklearn.metrics import silhouette_score
-from scipy.spatial.distance import pdist, squareform
-from scipy.stats import pearsonr, spearmanr  
-from sklearn.manifold import TSNE
-import plotly.graph_objects as go
-
 from networkx import read_graphml
 from networkx.readwrite import json_graph
-
+from typing import List, Union
 
 # Named Tuple Basis for ClassificationEntry class
 _ClassificationEntry = namedtuple(
