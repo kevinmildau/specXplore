@@ -26,7 +26,7 @@ import specxplore.specxplore_data
 # A small default dataset is loaded here. The actual dataset can be loaded from path.
 global GLOBAL_DATA
 if True:
-    specxplore_input_file = '/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore/dev_test_complete.pickle'
+    specxplore_input_file = '/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore-illustrative-examples/data/data_wheat_output/specxplore_wheat.pickle'
     with open(specxplore_input_file, 'rb') as handle:
         GLOBAL_DATA = pickle.load(handle) 
         GLOBAL_DATA.scale_coordinate_system(400)
