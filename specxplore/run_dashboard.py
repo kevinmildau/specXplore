@@ -6,7 +6,7 @@ import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
 
 import specxplore
-from specxplore import egonet, augmap, fragmap, netview, utils, specplot, degree_map
+from specxplore import degreemap, egonet, augmap, fragmap, netview, utils, specplot
 import specxplore.datastructures
 from specxplore.constants import COLORS
 
@@ -326,7 +326,7 @@ app.layout=html.Div(
     Input('dropdown_classes_to_be_highlighted', 'value'),
     Input('selected_class_level_assignments_store', "data"),
     Input('node_elements_store', 'data'),
-    Input('session_data_update_trigger', 'data'),
+    Input('session_data_update_trigger', 'data'),  # empty session data used as dash trigger only
     State("maximum-number-of-nodes", "data"),
     State("edge_threshold", "data"),
     State("expand_level", "data"),
@@ -334,30 +334,31 @@ app.layout=html.Div(
     State('cytoscape-tsne', 'pan'),
     State('cytoscape-tsne', 'elements'),   # <-- for persistency
     State('cytoscape-tsne', 'stylesheet'), # <-- for persistency
-    prevent_initial_call=True)
+    prevent_initial_call=True
+)
 def cytoscape_trigger(
-    _n_clicks1, 
-    _n_clicks2,
-    _n_clicks3,
-    spec_id_selection, 
-    classes_to_be_highlighted,
-    all_class_level_assignments, 
-    node_elements_from_store,
-    none_data_trigger, 
-    max_edges_per_node,
-    threshold, 
-    expand_level, 
-    zoom_level, 
-    pan_location,
-    previous_elements,
-    previous_stylesheet):
+        _n_clicks1, 
+        _n_clicks2,
+        _n_clicks3,
+        spec_id_selection, 
+        classes_to_be_highlighted,
+        all_class_level_assignments, 
+        node_elements_from_store,
+        _none_data_trigger, 
+        max_edges_per_node,
+        threshold, 
+        expand_level, 
+        zoom_level, 
+        pan_location,
+        previous_elements,
+        previous_stylesheet):
     """ Global overview interactivty and updating handling function. This function determines the updating sequence
     to be performed depending on the reactive element that triggered the function."""
 
     btn = ctx.triggered_id
     max_colors = 8
     max_edges_clustnet = 2500 # make an input state
-    max_edges_egonet = 2500 # make an input state, make it actually used
+    max_edges_egonet = 2500 # currently not used: make an input state, make it actually used
 
     legend_panel = [] # initialize to empty list. Only get filled if degree node selected
     warning_messages = "" # initialize to empty string. Only gets expanded if warnings necessary.
@@ -386,54 +387,88 @@ def cytoscape_trigger(
     
     if case_generate_clustnet:
         elements, styles, n_omitted_edges = netview.generate_cluster_node_link_diagram_cythonized(
-            GLOBAL_DATA.tsne_coordinates_table, spec_id_selection, GLOBAL_DATA.scores_ms2deepscore, all_class_level_assignments,
-            threshold, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.get_spectrum_iloc_list(),
-            max_edges_clustnet, max_edges_per_node)
+            GLOBAL_DATA.tsne_coordinates_table, 
+            spec_id_selection,
+            GLOBAL_DATA.scores_ms2deepscore, 
+            all_class_level_assignments,
+            threshold, 
+            GLOBAL_DATA.sources, 
+            GLOBAL_DATA.targets, 
+            GLOBAL_DATA.values, 
+            GLOBAL_DATA.get_spectrum_iloc_list(),
+            max_edges_clustnet, max_edges_per_node
+        )
         if n_omitted_edges != int(0):
             warning_messages += (
                 f"  \n❌Current settings (threshold, maximum node degree) lead to edge omission." 
-                f" {n_omitted_edges} edges with lowest edge weight removed from visualization.")
+                f" {n_omitted_edges} edges with lowest edge weight removed from visualization."
+            )
     if case_generate_clustnet_fails_because_no_selection:
         warning_messages += (f"\n❌ No nodes selected, no edges can be rendered.")
     
-    case_generate_egonet = (btn == "btn-run-egonet" and spec_id_selection and len(spec_id_selection) == 1)
-    case_generate_egonet_fails_because_no_selection = (btn == "btn-run-egonet" and not spec_id_selection)
+    case_generate_egonet = (
+        btn == "btn-run-egonet" 
+        and spec_id_selection 
+        and len(spec_id_selection) == 1
+    )
+    case_generate_egonet_fails_because_no_selection = (
+        btn == "btn-run-egonet" 
+        and not spec_id_selection
+    )
     case_generate_egonet_fails_because_multiselection = (
-        btn == "btn-run-egonet" and spec_id_selection and len(spec_id_selection)>1)
+        btn == "btn-run-egonet" 
+        and spec_id_selection 
+        and len(spec_id_selection)>1
+    )
     if case_generate_egonet:
         elements, styles, n_omitted_edges = egonet.generate_egonet_cythonized(
-            spec_id_selection, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.tsne_coordinates_table, 
-            threshold, expand_level)
+            spec_id_selection, 
+            GLOBAL_DATA.sources, 
+            GLOBAL_DATA.targets, 
+            GLOBAL_DATA.values, 
+            GLOBAL_DATA.tsne_coordinates_table, 
+            threshold, 
+            expand_level, 
+            max_edges_egonet
+        )
         if n_omitted_edges != int(0):
             warning_messages += (
                 f"  \n❌Current settings (threshold, maximum node degree, hop distance) lead to edge omission."
                 f"{n_omitted_edges} edges removed from visualization. These either exceeded maximum node degrees "
-                "in branching tree or were low similarity edges removed to avoid exceeding maximum edge numbers.")
+                "in branching tree or were low similarity edges removed to avoid exceeding maximum edge numbers."
+            )
     if case_generate_egonet_fails_because_no_selection:
         warning_messages += (f"  \n❌ No node selected, no edges can be shown.")
     if case_generate_egonet_fails_because_multiselection:
         warning_messages += (
-            f"  \n❌More than one node selected. Select single spectrum as egonode.")
+            f"  \n❌More than one node selected. Select single spectrum as egonode."
+        )
 
     if btn == 'btn-run-degree':
-        styles, legend_plot = degree_map.generate_degree_colored_elements(
-            GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, threshold)
+        styles, legend_plot = degreemap.generate_degree_colored_elements(
+            GLOBAL_DATA.sources, 
+            GLOBAL_DATA.targets, 
+            GLOBAL_DATA.values, 
+            threshold
+        )
         if styles and legend_plot:
             styles = GLOBAL_DATA.initial_style + styles
-            legend_panel = [dcc.Graph(id = 'legend', figure = legend_plot, style={"height":"8vh", })]
+            legend_panel = [
+                dcc.Graph(id = 'legend', figure = legend_plot, style={"height":"8vh", })
+            ]
         else:
             styles = GLOBAL_DATA.initial_style
             warning_messages += (f"  \n❌ Threshold too stringent. All node degrees are zero.")
-    
-
-    case_change_node_selection_but_keep_style = (btn == 'spectrum-iloc-focus-dropdown' and spec_id_selection)
+    case_change_node_selection_but_keep_style = (
+        btn == 'spectrum-iloc-focus-dropdown'
+        and spec_id_selection
+    )
     if case_change_node_selection_but_keep_style:
         styles = GLOBAL_DATA.initial_style + previous_stylesheet 
         elements = previous_elements
     
     case_highlight_selected_classes_unless_other_view_requested = (
         btn == 'dropdown_classes_to_be_highlighted' 
-        # 
         and not case_generate_clustnet
         and not case_generate_egonet
         or (not btn in ("btn-run-degree"))
@@ -441,9 +476,14 @@ def cytoscape_trigger(
         and not spec_id_selection
     )
     if case_highlight_selected_classes_unless_other_view_requested:
-        tmp_colors = [{
-            'selector' : f".{str(elem)}", 'style' : {"background-color" : COLORS[idx]}} 
-            for idx, elem in enumerate(classes_to_be_highlighted)]
+        tmp_colors = [
+            {
+                'selector' : f".{str(elem)}", 
+                'style' : {"background-color" : COLORS[idx]}
+            } 
+            for idx, elem 
+            in enumerate(classes_to_be_highlighted)
+        ]
         styles = GLOBAL_DATA.initial_style + tmp_colors
     
     return elements, styles, zoom_level, pan_location, legend_panel, warning_messages
@@ -454,13 +494,13 @@ def cytoscape_trigger(
     Output('spectrum-iloc-focus-dropdown', 'value'),
     Output('spectrum-iloc-focus-dropdown', 'options'),
     Input('cytoscape-tsne', 'selectedNodeData'),
-    Input('session_data_update_trigger', 'data'),
+    Input('session_data_update_trigger', 'data'),  # empty session data used as dash trigger only
     State("spectrum-iloc-focus-dropdown", "options"),
     #prevent_initial_call=True
 )
 def displaySelectedNodeData(
     selection_data, 
-    _empty_trigger, 
+    _, 
     old_options):
 
     btn = ctx.triggered_id
@@ -517,13 +557,13 @@ def toggle_offcanvas(n1, is_open):
     prevent_initial_call=True
 )
 def details_trigger(
-    btn_fragmap_n_clicks, 
-    btn_meta_n_clicks, 
-    btn_augmap_n_clicks, 
-    btn_spectrum_n_clicks, 
-    selection_data, 
-    threshold,
-    colorblind_boolean, top_k_fragmap):
+        _btn_fragmap_n_clicks, 
+        _btn_meta_n_clicks, 
+        _btn_augmap_n_clicks, 
+        _btn_spectrum_n_clicks, 
+        selection_data, 
+        threshold,
+        colorblind_boolean, top_k_fragmap):
     """ Wrapper function that calls fragmap generation modules. """
     warning_message = ""
     btn = ctx.triggered_id
@@ -623,7 +663,7 @@ def displaymouseoverData(data, selected_class_level):
     Input('expand_level_input', 'n_submit'),
     Input("expand_level_input", "value"))
 
-def expand_trigger_handler(n_submit, new_expand_level):
+def expand_trigger_handler(_, new_expand_level):
     new_expand_level, new_placeholder=utils.update_expand_level(
         new_expand_level)
     return new_expand_level, new_placeholder
@@ -635,7 +675,7 @@ def expand_trigger_handler(n_submit, new_expand_level):
     Input("input-maximum-number-of-nodes", 'n_submit'),
     Input("input-maximum-number-of-nodes", "value"))
 
-def max_degree_trigger_handler(n_submit, new_max_degree):
+def max_degree_trigger_handler(_, new_max_degree):
     new_max_degree, new_placeholder=utils.update_max_degree(new_max_degree)
     return new_max_degree, new_placeholder
 "input-maximum-number-of-nodes"
@@ -652,26 +692,30 @@ def max_degree_trigger_handler(n_submit, new_max_degree):
     Output('node_elements_store', 'data'),
     Output("select_class_level_dropdown", "value"),
     Input("select_class_level_dropdown", "value"),
-    Input('session_data_update_trigger', 'data') # empty, global data structures updated which require selected_class_level_assignments_store to update
+    Input('session_data_update_trigger', 'data') # empty session data used as dash trigger only
 )
-def class_update_trigger_handler(selected_class : str, _ : None):
+def class_update_trigger_handler(
+        selected_class : str, 
+        _ : None):
     """ Wrapper Function that construct class dcc.store data. """
     class_levels = list(GLOBAL_DATA.class_dict.keys())
     btn = ctx.triggered_id
-    
     # Update selected_class if the trigger for class updating is a new session data.
     if btn == 'session_data_update_trigger':
         selected_class = list(GLOBAL_DATA.class_dict.keys())[0]
-    selected_class_level_assignments = GLOBAL_DATA.class_dict[selected_class]
-    unique_assignments = list(np.unique(selected_class_level_assignments))
+    class_assignments = GLOBAL_DATA.class_dict[selected_class]
+    unique_assignments = list(np.unique(class_assignments))
     node_elements = utils.initialize_cytoscape_graph_elements(
-        GLOBAL_DATA.tsne_coordinates_table, selected_class_level_assignments, GLOBAL_DATA.highlight_table['highlight_bool'].to_list())
-    return selected_class, class_levels, selected_class_level_assignments, unique_assignments, [], node_elements, selected_class
+        GLOBAL_DATA.tsne_coordinates_table, 
+        class_assignments, 
+        GLOBAL_DATA.highlight_table['highlight_bool'].to_list()
+    )
+    return selected_class, class_levels, class_assignments, unique_assignments, [], node_elements, selected_class
 
 @app.callback(
     Output("edge-histogram-figure", "figure"),
     Input("edge_threshold", "data"),
-    Input('session_data_update_trigger', 'data')
+    Input('session_data_update_trigger', 'data')  # empty session data used as dash trigger only
 )
 def update_histogram(threshold : float, _ : None) -> go.Figure:
     fig = go.Figure()
@@ -690,10 +734,11 @@ def update_histogram(threshold : float, _ : None) -> go.Figure:
     return fig
 
 
-
-@app.callback(Output('session_data_update_trigger', 'data'),
-            Input('upload-data', 'value'),
-            Input('scaler_id', 'value'))
+@app.callback(
+    Output('session_data_update_trigger', 'data'),  # empty session data used as dash trigger only
+    Input('upload-data', 'value'),
+    Input('scaler_id', 'value')
+)
 def update_session_data(filename : str, scaler : Union[int, float]) -> dict:    
     '''
     Session data update handling function. Triggers when a new data path is provided or a new coordinate scaling value
