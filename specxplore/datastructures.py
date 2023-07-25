@@ -8,7 +8,7 @@ import copy
 from specxplore import datastructures_cython
 import specxplore.importing
 from specxplore import utils
-from specxplore.clustnet import SELECTED_NODES_STYLE, GENERAL_STYLE, SELECTION_STYLE
+from specxplore.netview import SELECTED_NODES_STYLE, GENERAL_STYLE, SELECTION_STYLE
 import os
 import json 
 import pickle
