@@ -6,7 +6,11 @@ from libcpp.string cimport string
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-def create_cluster_edge_list(long[:] sources, long[:] targets, long[:] cluster_selection):
+def create_cluster_edge_list(
+        long[:] sources, 
+        long[:] targets, 
+        long[:] cluster_selection
+        ):
     assert sources.size == targets.size
     edges = [{}] * sources.size
     cdef set cluster_set = set(cluster_selection)

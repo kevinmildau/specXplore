@@ -58,6 +58,7 @@ def generate_node_list(data_frame : pandas.DataFrame) -> List[Dict]:
     Returns:
         List[Dict]: A list with dictionary entries for each node giving id, label, and position information.
     """
+
     number_of_nodes = data_frame.shape[0]
     nodes = [{
         'data': {
@@ -71,9 +72,15 @@ def generate_node_list(data_frame : pandas.DataFrame) -> List[Dict]:
     return nodes
 
 def construct_cytoscape_egonet(
-    elements, style_sheet, boxSelectionEnabled = True, autolock = False, autoungrabify = False, 
-    autounselectify = False, userZoomingEnabled = True):
+        elements, 
+        style_sheet,
+        boxSelectionEnabled = True, 
+        autolock = False, 
+        autoungrabify = False, 
+        autounselectify = False, 
+        userZoomingEnabled = True):
     """ Function returns cytoscape graph object for egonet. """
+
     cytoscape_graph = cyto.Cytoscape(
         id='cytoscape-tsne-subnet',
         layout={'name':'preset'},
@@ -97,7 +104,14 @@ def generate_ego_style_selector(ego_id):
     return ego_style
 
 def construct_ego_net_elements_and_styles(
-    data_frame, sources, targets, values, threshold, ego_id, expand_level, maximum_number_of_edges):
+        data_frame, 
+        sources, 
+        targets, 
+        values, 
+        threshold, 
+        ego_id, 
+        expand_level, 
+        maximum_number_of_edges):
     """ Function constructs elements for EgoNet cytoscape graph. """
     _,selected_sources, selected_targets = utils_cython.extract_edges_above_threshold(
         sources, targets, values, threshold)
@@ -115,7 +129,14 @@ def construct_ego_net_elements_and_styles(
 
 
 def generate_egonet_cythonized(
-    clust_selection, SOURCE, TARGET, VALUE, TSNE_DF, threshold, expand_level, maximum_number_of_edges):
+        clust_selection, 
+        SOURCE, 
+        TARGET, 
+        VALUE, 
+        TSNE_DF, 
+        threshold, 
+        expand_level, 
+        maximum_number_of_edges):
     
     # Check whether a valid cluster selection has been provided, if not return empty div.
     if not clust_selection:

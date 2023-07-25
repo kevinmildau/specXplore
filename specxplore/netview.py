@@ -1,6 +1,4 @@
 import numpy as np
-import dash_cytoscape as cyto
-from dash import html
 from specxplore import utils_cython, netview_cython
 
 
@@ -47,8 +45,18 @@ SELECTED_NODES_STYLE = [{
         "border-style": "dashed",}}]
 
 def generate_cluster_node_link_diagram_cythonized(
-    TSNE_DF, selected_nodes, SM_MS2DEEPSCORE, selected_class_data, 
-    threshold, SOURCE, TARGET, VALUE, is_highlighted, max_edges, max_edges_per_node):
+        TSNE_DF, 
+        selected_nodes, 
+        SM_MS2DEEPSCORE, 
+        selected_class_data, 
+        threshold, 
+        SOURCE, 
+        TARGET, 
+        VALUE, 
+        is_highlighted, 
+        max_edges, 
+        max_edges_per_node
+        ):
     
     # Extract all nodes and edges connected to the selection
     selected_nodes_np = np.array(selected_nodes)

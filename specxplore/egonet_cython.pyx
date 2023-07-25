@@ -11,8 +11,13 @@ from collections import Counter
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 def creating_branching_dict_new(
-    long[:] source, long[:] target, long root, long n_levels, int max_edges):
-    """Function creates edge branching edge lists.
+        long[:] source, 
+        long[:] target, 
+        long root, 
+        long n_levels, 
+        int max_edges):
+    """
+    Function creates edge branching edge lists.
     
     Assumes all edges defined by source and target pairs are already above threshold!
 
@@ -26,6 +31,7 @@ def creating_branching_dict_new(
             Populate branching dict with new edge and node sets.
             Repeat until no new nodes or edges are found, or until n_levels is reached.
     """
+    
     cdef vector[int] edge_ids = np.arange(0, source.shape[0], dtype = np.int64)
     cdef int index
     cdef int inner_index
@@ -120,8 +126,14 @@ def creating_branching_dict_new(
 
 
 def generate_edge_elements_and_styles(
-    branching_dict, long[:] source, long[:] target, nodes):
-    """Generates an edge list and style list for a given branching dict. """
+        branching_dict, 
+        long[:] source, 
+        long[:] target, 
+        nodes):
+    """ 
+    Generates an edge list and style list for a given branching dict.
+    """
+    
     n_colors = max(2, len(branching_dict) + 1)
     # "ice" might be a good alternative color
     colors = px.colors.sample_colorscale("Viridis", [n/(n_colors -1) for n in range(n_colors)])
