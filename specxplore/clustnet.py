@@ -31,7 +31,7 @@ GENERAL_STYLE = [{
     #'style':{
     #    'content':'data(label)','color':'black', "font-family": "Ubuntu Mono", "font-size": "1px",
     #    "text-wrap": "wrap", "text-max-width": 100,},
-    'selector':'.is_standard', 
+    'selector':'.is_highlighted', 
     'style': {'shape' : 'diamond', 'opacity':1, 'background-color': '#757573'}}]
 
 EDGE_STYLE = [{    
@@ -48,7 +48,7 @@ SELECTED_NODES_STYLE = [{
 
 def generate_cluster_node_link_diagram_cythonized(
     TSNE_DF, selected_nodes, SM_MS2DEEPSCORE, selected_class_data, 
-    threshold, SOURCE, TARGET, VALUE, MZ, is_standard, max_edges, max_edges_per_node):
+    threshold, SOURCE, TARGET, VALUE, is_highlighted, max_edges, max_edges_per_node):
     
     # Extract all nodes and edges connected to the selection
     selected_nodes_np = np.array(selected_nodes)
@@ -84,13 +84,13 @@ def generate_cluster_node_link_diagram_cythonized(
         else:
             node_class = "node_out_of_set"
         
-        if is_standard[i] == True:
-            standard_entry = " is_standard"
+        if is_highlighted[i] == True:
+            standard_entry = " is_highlighted"
         else:
             standard_entry = ""
         nodes[i] = {
                 'data':{'id':str(i), 
-                'label': str(str(i) + ': ' + str(MZ[i]))},
+                'label': str(i)},
                 'position':{'x':TSNE_DF["x"].iloc[i], 'y':-TSNE_DF["y"].iloc[i]}, 
                 'classes': str(node_class) + str(standard_entry)}
 

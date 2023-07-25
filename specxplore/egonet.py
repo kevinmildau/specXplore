@@ -50,23 +50,21 @@ def generate_empty_div_message(plot_type: str) -> html.Div:
 # expect minor speed ups since n_nodes < 10_000
 #
 # Impl. Note: all nodes needed for current implementation of generate_edge_elements_and_styles()
-def generate_node_list(data_frame : pandas.DataFrame, mz : numpy.array) -> List[Dict]:
+def generate_node_list(data_frame : pandas.DataFrame) -> List[Dict]:
     """ Function generates node list of dictionaries for cytoscape elements.
     
     Args:
         data_frame (pandas.DataFrame): A pandas.DataFrame with numeric columns with x and y axis information for
         nodes.
-        mz (numpy.array)
 
     Returns:
         List[Dict]: A list with dictionary entries for each node giving id, label, and position information.
     """
     number_of_nodes = data_frame.shape[0]
-    mz_str = np.array(mz, dtype="str")
     nodes = [{
         'data': {
             'id': str(elem), 
-            'label': str(str(elem) + ': ' + mz_str[elem])},
+            'label': str(elem)},
         'position': {
             'x':data_frame["x"].iloc[elem], 
             'y':-data_frame["y"].iloc[elem]},
@@ -101,11 +99,11 @@ def generate_ego_style_selector(ego_id):
     return ego_style
 
 def construct_ego_net_elements_and_styles(
-    data_frame, precursor_masses,  sources, targets, values, threshold, ego_id, expand_level):
+    data_frame, sources, targets, values, threshold, ego_id, expand_level):
     """ Function constructs elements for EgoNet cytoscape graph. """
     _,selected_sources, selected_targets = data_transfer_cython.extract_edges_above_threshold(
         sources, targets, values, threshold)
-    nodes = generate_node_list(data_frame, precursor_masses)
+    nodes = generate_node_list(data_frame)
     bdict, n_edges_omitted = egonet_cython.creating_branching_dict_new(
         selected_sources, selected_targets, ego_id, int(expand_level), int(2500))
     print(bdict)
@@ -118,7 +116,7 @@ def construct_ego_net_elements_and_styles(
 
 
 def generate_egonet_cythonized(
-    clust_selection, SOURCE, TARGET, VALUE, TSNE_DF, MZ, threshold, expand_level):
+    clust_selection, SOURCE, TARGET, VALUE, TSNE_DF, threshold, expand_level):
     
     # Check whether a valid cluster selection has been provided, if not return empty div.
     if not clust_selection:
@@ -135,7 +133,7 @@ def generate_egonet_cythonized(
     
     # Construct Data for ego net visualization
     elements, edge_styles, n_edges_omitted = construct_ego_net_elements_and_styles(
-        TSNE_DF, MZ, SOURCE, TARGET, VALUE, threshold, ego_id, expand_level)
+        TSNE_DF, SOURCE, TARGET, VALUE, threshold, ego_id, expand_level)
     
     style_sheet = SELECTED_STYLE + BASIC_NODE_STYLE_SHEET + edge_styles + generate_ego_style_selector(ego_id) + BASIC_EDGE_STYLE
 
