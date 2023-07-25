@@ -1,7 +1,7 @@
 import numpy as np
 import dash_cytoscape as cyto
 from dash import html
-from specxplore import data_transfer_cython, clustnet_cython
+from specxplore import utils_cython, clustnet_cython
 
 
 NODE_SIZE = "10"
@@ -54,11 +54,11 @@ def generate_cluster_node_link_diagram_cythonized(
     selected_nodes_np = np.array(selected_nodes)
     
     # Get source and target identifier arrays
-    #v,s,t = data_transfer_cython.extract_selected_above_threshold(
+    #v,s,t = utils_cython.extract_selected_above_threshold(
     #    SOURCE, TARGET, VALUE, selected_nodes_np, threshold)
     
     # Get source and target identifier arrays
-    v,s,t, n_omitted_edges_topk = data_transfer_cython.extract_selected_above_threshold_top_k(
+    v,s,t, n_omitted_edges_topk = utils_cython.extract_selected_above_threshold_top_k(
         SOURCE, TARGET, VALUE, selected_nodes_np, threshold, max_edges_per_node)
 
     connected_nodes = set(list(np.unique(np.concatenate([s, t]))))             # <---------- for filtering

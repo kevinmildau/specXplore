@@ -1,4 +1,4 @@
-from specxplore import data_transfer_cython
+from specxplore import utils_cython
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
@@ -10,7 +10,7 @@ def generate_degree_colored_elements(sources, targets, values, threshold):
     """
     # edge case: there are no edges at current threshold
     # edge case: min and max degree are the same, and no discrete color scale can be established, only one color needed
-    _, tmp_sources, tmp_targets = data_transfer_cython.extract_edges_above_threshold(
+    _, tmp_sources, tmp_targets = utils_cython.extract_edges_above_threshold(
         sources, targets, values, threshold)
     
     print("Sources and targets:", tmp_sources, tmp_targets, type(tmp_sources))

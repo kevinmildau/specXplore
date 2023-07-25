@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import matchms
-from specxplore.specxplore_data import Spectrum, SpectraDF, filter_spectrum_top_k_intensity_fragments
+from specxplore.datastructures import Spectrum, SpectraDF, filter_spectrum_top_k_intensity_fragments
 from typing import List, Union
 import copy
 from functools import partial

@@ -7,7 +7,7 @@ from typing import List, TypedDict, Tuple, Dict, NamedTuple, Union
 import copy
 from specxplore import datastructures_cython
 import specxplore.importing
-from specxplore import other_utils
+from specxplore import utils
 from specxplore.clustnet import SELECTED_NODES_STYLE, GENERAL_STYLE, SELECTION_STYLE
 import os
 import json 
@@ -179,7 +179,7 @@ class specxplore_session_data:
         ''' Wrapper for cosmetic and quantitative network variable initialization based on input data. '''
         self.initialize_specxplore_dashboard_variables()
         self.construct_derived_network_variables()
-        self.initial_node_elements = other_utils.initialize_cytoscape_graph_elements(
+        self.initial_node_elements = utils.initialize_cytoscape_graph_elements(
             self.tsne_coordinates_table, self.selected_class_data, self.highlight_table['highlight_bool'].to_list())
         return None
 
@@ -410,9 +410,9 @@ class specxplore_session_data:
         """ Applies scaling to coordinate system in tsne_coordinates_table """
         assert not np.isclose([scaler], [0], rtol=1e-05, atol=1e-08, equal_nan=False)[0], (
             'Scaling with 0 or near 0 not allowed; likely loss of data!')
-        self.tsne_coordinates_table["x"] = other_utils.scale_array_to_minus1_plus1(
+        self.tsne_coordinates_table["x"] = utils.scale_array_to_minus1_plus1(
              self.tsne_coordinates_table["x"].to_numpy()) * scaler
-        self.tsne_coordinates_table["y"] = other_utils.scale_array_to_minus1_plus1(
+        self.tsne_coordinates_table["y"] = utils.scale_array_to_minus1_plus1(
              self.tsne_coordinates_table["y"].to_numpy()) * scaler
 
 

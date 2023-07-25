@@ -1,7 +1,7 @@
 import numpy as np
 import dash_cytoscape as cyto
 from dash import html
-from specxplore import data_transfer_cython, egonet_cython, clustnet_cython
+from specxplore import utils_cython, egonet_cython, clustnet_cython
 import warnings
 import pandas
 from typing import List, Dict
@@ -101,7 +101,7 @@ def generate_ego_style_selector(ego_id):
 def construct_ego_net_elements_and_styles(
     data_frame, sources, targets, values, threshold, ego_id, expand_level):
     """ Function constructs elements for EgoNet cytoscape graph. """
-    _,selected_sources, selected_targets = data_transfer_cython.extract_edges_above_threshold(
+    _,selected_sources, selected_targets = utils_cython.extract_edges_above_threshold(
         sources, targets, values, threshold)
     nodes = generate_node_list(data_frame)
     bdict, n_edges_omitted = egonet_cython.creating_branching_dict_new(

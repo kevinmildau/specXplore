@@ -8,7 +8,7 @@ directory_name = './specxplore'
 module_name_list = [
     'egonet_cython', 
     'clustnet_cython', 
-    'data_transfer_cython', 
+    'utils_cython', 
     'datastructures_cython']
 module_paths = [
      Extension(

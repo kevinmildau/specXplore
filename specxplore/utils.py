@@ -1,35 +1,51 @@
-import plotly.graph_objects as go
-import plotly.express as px
 import numpy as np
-import re
+from functools import reduce
 
-def construct_grey_palette(n_colors, white_buffer = 20, black_buffer = 5):
-    """Constructs a grey scale color palette. 
-    
-    The color palette is constructed such that the first n = white_buffer white 
-    colors are removed since they are to faint to distinguish from one another. 
-    Similarly, the black_buffer is used to removes the darkest, 
-    non-distinguishable shades of gray.
-    
-    Parameters:
-    ------
-    n_colors:
-        The number of colors to be generated.
-    white_buffer:
-        The number of light gray shades to remove.
-    black_buffer
-        The number of dark gray shades to remove.
+def standardize_array(array : np.ndarray):
+    # mean centering and deviation scaling
+    out = (array - np.mean(array)) / np.std(array)
+    return out
 
-    Returns:
-    ------
-    colors:
-        List of color strings.
+def scale_array_to_minus1_plus1(array : np.ndarray) -> np.ndarray:
+    """ Rescales array to lie between -1 and 1."""
+    # Normalised [-1,1]
+    out = 2.*(array - np.min(array))/np.ptp(array)-1
+    return out
+
+def initialize_cytoscape_graph_elements(tsne_df, selected_class_data, highlight_bool):
+    n_nodes = tsne_df.shape[0]
+    nodes = [{}] * n_nodes 
+    for i in range(0, n_nodes):
+        if highlight_bool[i] == True:
+            highlight_entry = " is_highlighted"
+        else:
+            highlight_entry = ""
+        nodes[i] = {
+            'data':  dict(id = str(i)),
+            'classes': str(selected_class_data[i]) + highlight_entry, #.replace('_',''), #  color_class[i],
+            'position':{'x':tsne_df["x"].iloc[i], 'y':-tsne_df["y"].iloc[i]},   
+        }
+    return nodes
+
+def compose_function(*func): 
+    """ Generic function composer making use of functools reduce. 
+    
+    :param *func: Any number n of input functions to be composed.
+    :returns: A new function object.
+
+    Notes:
+    Works well in conjunction with functools:partial, where functions can be composed using functions with partially
+    filled arguments. This is especially useful for small processing pipelines that are locally defined. e.g:
+    threshold_filter_07 = partial(threshold_filter_array, threshold = 0.7)
+    extract_top_5 = partial(extract_top_from_array, top_number = 5)
+    pipeline = compose(threshold_filter_07, extract_top_5)
+    Where pipeline is now a function with one argument (array) based on partial functions with default arguments set.
     """
-    n_colors = n_colors + white_buffer + black_buffer
-    colors = px.colors.sample_colorscale(
-        "greys", [n/(n_colors -1) for n in range(n_colors)])
-    colors = colors[white_buffer-1:n_colors-black_buffer]
-    return colors
+    def compose(f, g):
+        return lambda x : f(g(x))   
+    return reduce(compose, func, lambda x : x)
+
+import re
 
 def extract_hex_from_rgb_string(rgb_string):
     """ Extracts hex code from rgb string.
@@ -46,6 +62,13 @@ def extract_hex_from_rgb_string(rgb_string):
     output:
         hex color string corresponding to input rgb string.
 
+    Example:
+    --------
+    Numbers out of range are fixed automatically to be within range.
+
+    txt =  'rgb(230.01, 255.99999999, -0.6)'
+
+    print(extract_hex_from_rgb_string(txt))
     """
     floats = re.findall(
         "[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", rgb_string)
@@ -55,59 +78,6 @@ def extract_hex_from_rgb_string(rgb_string):
     ints = tuple(ints)
     return('#%02x%02x%02x' % ints)
 
-if False:
-    # too high nums, too low nums are fixed automatically.
-    txt =  'rgb(230.01, 255.99999999, -0.6)'
-    print(extract_hex_from_rgb_string(txt))
-
-def create_color_dict(colors, cluster):
-    """ Creates color dictionary with grayscale color for each unique cluster.
-
-    Args
-    ------
-    colors:
-        A list of color strings (hex)
-    cluster:
-        A list of cluster identifiers (int or str). The list may be unique
-        identifiers or a list of cluster assignments to be turned into unique
-        assignments by the function.
-    Returns
-    ------
-    output:
-        A color dictionary where each unique cluster is a string key with the
-        corresponding value being a hex code color: {clust_key : color_string}.
-
-    """
-    unique_clusters = list(set(cluster))
-    unique_clusters = [str(e) for e in unique_clusters]
-    color_dict = {
-        clust : colors[idx] 
-        for idx, clust in enumerate(unique_clusters)}
-    return color_dict
-
-def extract_identifiers_from_plotly_selection(plotly_selection_data):
-    """ Function extracts custom_data id's from a provided point selection 
-    dictionary. 
-        
-    Args / Parameters
-    ------
-    plotly_selection_data:
-        Selection data as returned by plotly (json format). spec_ids are 
-        assumed too be stored inside the 'customdata' component of the 
-        selection data at index 0.
-
-    Returns
-    ------
-    output:
-        List of spec_ids corresponding to the selected scatter points.
-    
-    """
-    if plotly_selection_data != None:
-        selected_ids = [
-            elem["customdata"][0] for elem in plotly_selection_data["points"]]
-    else:
-        selected_ids = []
-    return selected_ids
 
 def update_expand_level(new_expand_level):
     """ Function updates expand level and placeholder in line with input.
@@ -174,7 +144,8 @@ def update_threshold(new_threshold):
         default_threshold = 0.9
         default_placeholder = "Threshold 0 < thr < 1, def. 0.9"
         return default_threshold,  default_placeholder
-    
+
+
 def update_max_degree(new_max_degree):
     """ Function updates maximum node degree and placeholder in line with input.
     

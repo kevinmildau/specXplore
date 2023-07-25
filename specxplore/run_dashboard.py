@@ -6,7 +6,7 @@ import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
 
 import specxplore
-from specxplore import egonet, augmap, clustnet, fragmap, data_transfer, specplot, degree_map, other_utils
+from specxplore import egonet, augmap, clustnet, fragmap, utils, specplot, degree_map
 import specxplore.datastructures
 from specxplore.constants import COLORS
 
@@ -580,7 +580,7 @@ def details_trigger(
 )
 
 def update_threshold_trigger_handler(n_submit, new_threshold):
-    new_threshold, new_placeholder=data_transfer.update_threshold(new_threshold)
+    new_threshold, new_placeholder=utils.update_threshold(new_threshold)
     return new_threshold, new_placeholder
 
 ####################################################################################################################
@@ -624,7 +624,7 @@ def displaymouseoverData(data, selected_class_level):
     Input("expand_level_input", "value"))
 
 def expand_trigger_handler(n_submit, new_expand_level):
-    new_expand_level, new_placeholder=data_transfer.update_expand_level(
+    new_expand_level, new_placeholder=utils.update_expand_level(
         new_expand_level)
     return new_expand_level, new_placeholder
 
@@ -636,7 +636,7 @@ def expand_trigger_handler(n_submit, new_expand_level):
     Input("input-maximum-number-of-nodes", "value"))
 
 def max_degree_trigger_handler(n_submit, new_max_degree):
-    new_max_degree, new_placeholder=data_transfer.update_max_degree(new_max_degree)
+    new_max_degree, new_placeholder=utils.update_max_degree(new_max_degree)
     return new_max_degree, new_placeholder
 "input-maximum-number-of-nodes"
 
@@ -664,7 +664,7 @@ def class_update_trigger_handler(selected_class : str, _ : None):
         selected_class = list(GLOBAL_DATA.class_dict.keys())[0]
     selected_class_level_assignments = GLOBAL_DATA.class_dict[selected_class]
     unique_assignments = list(np.unique(selected_class_level_assignments))
-    node_elements = other_utils.initialize_cytoscape_graph_elements(
+    node_elements = utils.initialize_cytoscape_graph_elements(
         GLOBAL_DATA.tsne_coordinates_table, selected_class_level_assignments, GLOBAL_DATA.highlight_table['highlight_bool'].to_list())
     return selected_class, class_levels, selected_class_level_assignments, unique_assignments, [], node_elements, selected_class
 
