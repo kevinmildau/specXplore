@@ -6,7 +6,7 @@ import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
 
 import specxplore
-from specxplore import egonet, augmap, clustnet, fragmap, utils, specplot, degree_map
+from specxplore import egonet, augmap, fragmap, netview, utils, specplot, degree_map
 import specxplore.datastructures
 from specxplore.constants import COLORS
 
@@ -385,7 +385,7 @@ def cytoscape_trigger(
     case_generate_clustnet_fails_because_no_selection = (btn == "btn-run-clustnet" and not spec_id_selection)
     
     if case_generate_clustnet:
-        elements, styles, n_omitted_edges = clustnet.generate_cluster_node_link_diagram_cythonized(
+        elements, styles, n_omitted_edges = netview.generate_cluster_node_link_diagram_cythonized(
             GLOBAL_DATA.tsne_coordinates_table, spec_id_selection, GLOBAL_DATA.scores_ms2deepscore, all_class_level_assignments,
             threshold, GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, GLOBAL_DATA.get_spectrum_iloc_list(),
             max_edges_clustnet, max_edges_per_node)

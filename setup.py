@@ -7,7 +7,7 @@ import os
 directory_name = './specxplore'
 module_name_list = [
     'egonet_cython', 
-    'clustnet_cython', 
+    'netview_cython', 
     'utils_cython', 
     'datastructures_cython']
 module_paths = [

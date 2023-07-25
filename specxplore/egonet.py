@@ -1,7 +1,7 @@
 import numpy as np
 import dash_cytoscape as cyto
 from dash import html
-from specxplore import utils_cython, egonet_cython, clustnet_cython
+from specxplore import utils_cython, egonet_cython, netview_cython
 import warnings
 import pandas
 from typing import List, Dict

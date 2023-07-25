@@ -1,7 +1,7 @@
 import numpy as np
 import dash_cytoscape as cyto
 from dash import html
-from specxplore import utils_cython, clustnet_cython
+from specxplore import utils_cython, netview_cython
 
 
 NODE_SIZE = "10"
@@ -73,7 +73,7 @@ def generate_cluster_node_link_diagram_cythonized(
 
     n_omitted_edges = n_omitted_edges_topk + n_omitted_edges_max_limit
     # Create Edge list
-    edges = clustnet_cython.create_cluster_edge_list(s,t,selected_nodes_np)
+    edges = netview_cython.create_cluster_edge_list(s,t,selected_nodes_np)
 
     cluster_set = set(selected_nodes)
     n_nodes = TSNE_DF.shape[0]
