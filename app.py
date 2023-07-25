@@ -1,4 +1,3 @@
-# Main specXplore prototype
 from dash import dcc, html, ctx, dash_table, Dash
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
@@ -10,209 +9,304 @@ from specxplore import clustnet
 from specxplore import fragmap
 from specxplore import data_transfer
 from specxplore import spectrum_plot
-from specxplore import degree_visualization
+from specxplore import degree_map
 from specxplore import other_utils
-from specxplore.clustnet import SELECTED_NODES_STYLE, GENERAL_STYLE, SELECTION_STYLE
 import pickle
 import plotly.graph_objects as go
 import os
 import numpy as np
-import pandas as pd # tmp import
 from specxplore.constants import COLORS
-from typing import List, Union
+from typing import Union
 import specxplore.specxplore_data
 
-# The global specXplore object is used to avoid json serialization of the numpy arrays within specXplore.
-# A small default dataset is loaded here. The actual dataset can be loaded from path.
-global GLOBAL_DATA
-if True:
-    specxplore_input_file = '/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore-illustrative-examples/data/data_wheat_output/specxplore_wheat.pickle'
-    with open(specxplore_input_file, 'rb') as handle:
-        GLOBAL_DATA = pickle.load(handle) 
-        GLOBAL_DATA.scale_coordinate_system(400)
-
-
-
-########################################################################################################################
+specxplore_input_file = '/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore-illustrative-examples/data/data_wheat_output/specxplore_wheat.pickle'
+with open(specxplore_input_file, 'rb') as handle:
+    GLOBAL_DATA = pickle.load(handle) 
+    GLOBAL_DATA.scale_coordinate_system(400)
+####################################################################################################################
 # All settings panel
 
 
-########################################################################################################################
+####################################################################################################################
 # All settings panel
-settings_panel = dbc.Offcanvas([
-
-    html.B("Set Edge Threshold:"),
-    html.P("A value between 0 and 1 (excluded)"),
-    dcc.Input(
-        id="edge_threshold_input_id", type="number", 
-        debounce=True, placeholder="Threshold 0 < thr < 1, def. 0.9", 
-        style={"width" : "100%"}),
-    html.Br(),
-    html.Br(),
-
-    html.Div([dcc.Graph(
-        id = "edge-histogram-figure", figure = [],  style={"width":"100%","height":"30vh"})]),
-    html.Br(),
-
-    html.B("Set maximum node degree:"),
-    html.P("A value between 1 and 9999. The lower, the fewer edges are allowed for each node."),
-    dcc.Input( id="input-maximum-number-of-nodes", type="number", 
-        debounce=True, 
-        placeholder="1 <= Value <= 9999, def. 9999", 
-        style={"width" : "100%"}),
-    html.Br(),
-
-    html.B("Higlight Class(es) by color:"),
-    dcc.Dropdown(
-        id='dropdown_classes_to_be_highlighted' , multi=True, clearable=False, options=[],
-        value=[]),
-    html.Br(),
-
-    html.B("Set Hop Distance for EgoNet:"),
-    html.P("A value between 1 and 5. Controls connection branching in EgoNet."),
-    dcc.Input( id="expand_level_input", type="number", 
-        debounce=True, 
-        placeholder="Value between 1 < exp.lvl. < 5, def. 1", 
-        style={"width" : "100%"}),
-    html.Br(),
-
-    html.B("Select Class Level:"),
-    dcc.Dropdown( 
-        id='select_class_level_dropdown' , multi=False, 
-        clearable=False, options= GLOBAL_DATA.available_classes, 
-        value=GLOBAL_DATA.available_classes[0]),
-    html.Br(),
-
-    html.B("Toggle colorblind friendly for Augmap:"),
-    daq.BooleanSwitch(id='augmap_colorblind_friendly_switch', on=False),
-    html.Br(),
-
-    html.B("Set top-K for fragmap"),
-    html.P(("A value between 1 and 9999. This value is used to restrict the number of fragments displayed in fragmap. "
-            "If the number of fragments exceeds top-K, only the top-K highest intensity fragments are displayed " 
-            "alongside the corresponding neutral losses.")),
-    dcc.Input(
-        id="top_k_fragments", type="number", 
-        debounce=True, value=25, placeholder = "25",
-        style={"width" : "100%"}),
-    html.Br(),
-
-    html.B("Set Visal Scale:"),
-    html.P("A value between 0 excluded and 2000. This value is used to expand the t-SNE layout to be larger or smaller."),
-    dcc.Input(
-        id="scaler_id", type="number", 
-        debounce=True, value=400, placeholder = "400",
-        style={"width" : "100%"}),
-    html.Br(),
-
-    html.B("Session Data Location"),
-    html.P("Provide path to a valid specXplore.pickle object."),
-    html.Div([dcc.Input(id="upload-data", type="text", placeholder=None, debounce=True)]),
-    
-    # Multi-line break to make sure that dcc dropdown interactions don't cause resizing issues
-    html.Br(),
-    html.Br(),
-    html.Br(),
-    html.Br(),
-    html.Br(),
-    html.Br(),
-    html.Br(),
-    html.Br(),
-    html.Br(),
+settings_panel = dbc.Offcanvas(
+    children=[
+        html.B("Set Edge Threshold:"),
+        html.P("A value between 0 and 1 (excluded)"),
+        dcc.Input(
+            id="edge_threshold_input_id", 
+            type="number", 
+            debounce=True, 
+            placeholder="Threshold 0 < thr < 1, def. 0.9", 
+            style={"width" : "100%"}
+        ),
+        html.Br(),
+        html.Br(),
+        html.Div(
+            children=[
+                dcc.Graph(
+                    id = "edge-histogram-figure", 
+                    figure = [],  
+                    style={"width":"100%","height":"30vh"}
+                )
+            ]
+        ),
+        html.Br(),
+        html.B("Set maximum node degree:"),
+        html.P("A value between 1 and 9999. The lower, the fewer edges are allowed for each node."),
+        dcc.Input(
+            id="input-maximum-number-of-nodes", 
+            type="number", 
+            debounce=True, 
+            placeholder="1 <= Value <= 9999, def. 9999", 
+            style={"width" : "100%"}
+        ),
+        html.Br(),
+        html.B("Higlight Class(es) by color:"),
+        dcc.Dropdown(
+            id='dropdown_classes_to_be_highlighted' , 
+            multi=True, 
+            clearable=False, 
+            options=[],
+            value=[]
+        ),
+        html.Br(),
+        html.B("Set Hop Distance for EgoNet:"),
+        html.P("A value between 1 and 5. Controls connection branching in EgoNet."),
+        dcc.Input(
+            id="expand_level_input", 
+            type="number", 
+            debounce=True, 
+            placeholder="Value between 1 < exp.lvl. < 5, def. 1", 
+            style={"width" : "100%"}
+        ),
+        html.Br(),
+        html.B("Select Class Level:"),
+        dcc.Dropdown( 
+            id='select_class_level_dropdown' , 
+            multi=False, 
+            clearable=False, 
+            options= GLOBAL_DATA.available_classes, 
+            value=GLOBAL_DATA.available_classes[0]
+        ),
+        html.Br(),
+        html.B("Toggle colorblind friendly for Augmap:"),
+        daq.BooleanSwitch(
+            id='augmap_colorblind_friendly_switch', 
+            on=False
+        ),
+        html.Br(),
+        html.B("Set top-K for fragmap"),
+        html.P(
+            children=(
+                "A value between 1 and 9999. This value is used to restrict the number of"
+                " fragments displayed in fragmap. "
+                "If the number of fragments exceeds top-K, only the top-K highest intensity"
+                " fragments are displayed " 
+                "alongside the corresponding neutral losses."
+            )
+        ),
+        dcc.Input(
+            id="top_k_fragments", type="number", 
+            debounce=True, value=25, placeholder = "25",
+            style={"width" : "100%"}
+        ),
+        html.Br(),
+        html.B("Set Visal Scale:"),
+        html.P(
+            children=(
+                "A value between 0 excluded and 2000. This value is used to expand the t-SNE layout to be"
+                " larger or smaller."
+            )
+        ),
+        dcc.Input(
+            id="scaler_id", 
+            type="number", 
+            debounce=True, 
+            value=400, 
+            placeholder = "400",
+            style={"width" : "100%"}
+        ),
+        html.Br(),
+        html.B("Session Data Location"),
+        html.P("Provide path to a valid specXplore.pickle object."),
+        html.Div(
+            children=[
+                dcc.Input(
+                    id="upload-data", 
+                    type="text", 
+                    placeholder=None, 
+                    debounce=True)
+            ]
+        ),
+        # Multi-line break to make sure that dcc dropdown interactions don't cause resizing issues
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
     ],
     id="offcanvas-settings",
     title="specXplore settings",
-    is_open=False,)
+    is_open=False)
 
-########################################################################################################################
+####################################################################################################################
 # Focus selection panel
-selection_focus_panel = dbc.Offcanvas([
-    html.P((
-        "All spectrum ids selected for focused analysis in network views."
-        "\n Selection can be modified here.")),
-    dcc.Dropdown(id='spectrum-iloc-focus-dropdown', multi=True, 
+selection_focus_panel = dbc.Offcanvas(
+    children=[
+        html.P(
+            children = (
+                "All spectrum ids selected for focused analysis in network views."
+                "\n Selection can be modified here."
+            )
+        ),
+        dcc.Dropdown(
+            id='spectrum-iloc-focus-dropdown', 
+            multi=True, 
             style={'width': '90%', 'font-size': "100%"}, 
-            options=GLOBAL_DATA.get_spectrum_iloc_list())],
+            options=GLOBAL_DATA.get_spectrum_iloc_list())
+    ],
     id="offcanvas-focus",
     placement="end",
     title="Selection Panel",
     is_open=False)
-########################################################################################################################
+
+####################################################################################################################
 # Button array on left side of plot
 
 button_height = "9vh"
 button_style_text = {
-    'width': '98%', 'height': button_height, "fontSize": "11px", "textAlign": "center", "border":"1px black solid",
-    'backgroundColor' : '#8B008B'}
-control_button_group = [
-    dbc.ButtonGroup([
-        dbc.Button('⚙ Settings', id="btn-open-settings", style = button_style_text),
-        dbc.Button('View Selection', id="btn-open-focus", style = button_style_text),
-        dbc.Button('Show Node Degree ', id='btn-run-degree', n_clicks=0, style = button_style_text),
-        dbc.Button('EgoNet ', id='btn-run-egonet', n_clicks=0, style = button_style_text),
-        dbc.Button('Show Edges for Selection', id="btn-run-clustnet", n_clicks=0, style = button_style_text),  
-        dbc.Button('Augmap', id="btn-push-augmap", n_clicks=0, style = button_style_text),
-        dbc.Button('Spectrum Plot(s)', id='btn_push_spectrum', n_clicks=0, style = button_style_text),
-        dbc.Button('Fragmap', id="btn_push_fragmap", n_clicks=0, style = button_style_text),
-        dbc.Button('Metadata Table', id="btn_push_meta", n_clicks=0, style = button_style_text)
-        ],vertical=True, style = {"width" : "100%"})]
+    'width': '98%', 
+    'height': button_height, 
+    "fontSize": "11px", 
+    "textAlign": "center", 
+    "border":"1px black solid",
+    'backgroundColor' : '#8B008B'
+}
 
-########################################################################################################################
+control_button_group = [
+    dbc.ButtonGroup(
+        children=[
+            dbc.Button('⚙ Settings', id="btn-open-settings", style = button_style_text),
+            dbc.Button('View Selection', id="btn-open-focus", style = button_style_text),
+            dbc.Button('Show Node Degree ', id='btn-run-degree', n_clicks=0, style = button_style_text),
+            dbc.Button('EgoNet ', id='btn-run-egonet', n_clicks=0, style = button_style_text),
+            dbc.Button('Show Edges for Selection', id="btn-run-clustnet", n_clicks=0, style = button_style_text),  
+            dbc.Button('Augmap', id="btn-push-augmap", n_clicks=0, style = button_style_text),
+            dbc.Button('Spectrum Plot(s)', id='btn_push_spectrum', n_clicks=0, style = button_style_text),
+            dbc.Button('Fragmap', id="btn_push_fragmap", n_clicks=0, style = button_style_text),
+            dbc.Button('Metadata Table', id="btn_push_meta", n_clicks=0, style = button_style_text)
+        ],
+        vertical=True, 
+        style = {"width" : "100%"}
+    )
+]
+
+####################################################################################################################
 # good themes: VAPOR, UNITED, SKETCHY is the coolest by far ; see more:  https://bootswatch.com/
 app=Dash(external_stylesheets=[dbc.themes.UNITED])
-app.layout=html.Div([
-    # ROW 1: Title & hover response
-    dbc.Row(
-        [
-        dbc.Col([html.H1([html.B("specXplore prototype")], 
-                         style={"margin-bottom": "0em", "font-size" : "20pt"})], width=6),
-        ]
-    ),
 
-    dbc.Row(
-        [
-        dbc.Col(control_button_group, width = 2),
-        dbc.Col([cyto.Cytoscape( 
-            id='cytoscape-tsne', elements=GLOBAL_DATA.initial_node_elements, 
-            stylesheet = GLOBAL_DATA.initial_style,
-            layout={'name':'preset', 'animate':False, 'fit': False}, boxSelectionEnabled=True,
-            style={'width':'100%', 'height':'80vh', "border":"1px black solid", "bg":"#feeff4", 'minZoom':0.1, 'maxZoom':2})], 
-            width=10) 
-        ], 
-        style={"margin": "0px"}, className="g-0"),
-    #html.Br(),
-    #dbc.Button("Open Focus", id="btn-open-focus", n_clicks=0),
-    settings_panel,
-    selection_focus_panel,
-    dcc.Store(id='session_data_update_trigger', data = None),
-    dcc.Store(id="edge_threshold", data=0.9),
-    dcc.Store(id="expand_level", data=int(1)),
-    dcc.Store(id='maximum-number-of-nodes', data = int(9999)),
-    dcc.Store(id="selected_class_level_store", data= GLOBAL_DATA.available_classes[0]),
-    dcc.Store(id='selected_class_level_assignments_store', data=[GLOBAL_DATA.available_classes[0]]),
-    dcc.Store(id='node_elements_store', data = GLOBAL_DATA.initial_node_elements),
-    dcc.Store(id='colorblind_friendly_boolean_store', data = False),
-    #html.Br(),
-    dbc.Row(
-        [
-        dbc.Col([html.Tbody("Hover Info: placeholder for cyto hover information")], id = "hover-info-panel",
-            style={"font-size" : "8pt", "border":"1px black solid"}),
-        dbc.Col(
-            [
-            dcc.Markdown(id="warning-messages-panel1", style={"font-size" : "8pt", "border":"1px black solid"}),
-            dcc.Markdown(id="warning-messages-panel2", style={"font-size" : "8pt", "border":"1px black solid"})
-            ], width=4), 
-        dbc.Col([html.Div(id="legend_panel", style={"width":"100%", "border":"1px black solid"})], width=8)
-        ], className="g-0"), 
-    dbc.Row(
-        [
-        dbc.Col([html.Div(id="details_panel", style={"width":"100%", "height":"90vh", "border":"1px black solid"})], width=12)
-        ], className="g-0"),
+app.layout=html.Div(
+    children=[
+        # ROW 1: Title & hover response
+        dbc.Row(
+            children = [
+                dbc.Col(
+                    children = [
+                        html.H1(
+                            children = [
+                                html.B("specXplore prototype")
+                            ], 
+                            style={"margin-bottom": "0em", "font-size" : "20pt"}
+                        )
+                    ], 
+                    width=6),
+            ]
+        ),
+        dbc.Row(
+            children = [
+                dbc.Col(control_button_group, width = 2),
+                dbc.Col(
+                    children = [
+                        cyto.Cytoscape( 
+                            id='cytoscape-tsne', 
+                            elements=GLOBAL_DATA.initial_node_elements, 
+                            stylesheet = GLOBAL_DATA.initial_style,
+                            layout={
+                                'name':'preset', 
+                                'animate':False, 
+                                'fit': False}, 
+                            boxSelectionEnabled=True,
+                            style={
+                                'width':'100%', 
+                                'height':'80vh', 
+                                "border":"1px black solid", 
+                                "bg":"#feeff4", 
+                                'minZoom':0.1, 
+                                'maxZoom':2})
+                    ], 
+                    width=10
+                ) 
+            ], 
+            style={"margin": "0px"}, 
+            className="g-0"),
+        settings_panel,
+        selection_focus_panel,
+        dcc.Store(id='session_data_update_trigger', data = None),
+        dcc.Store(id="edge_threshold", data=0.9),
+        dcc.Store(id="expand_level", data=int(1)),
+        dcc.Store(id='maximum-number-of-nodes', data = int(9999)),
+        dcc.Store(id="selected_class_level_store", data= GLOBAL_DATA.available_classes[0]),
+        dcc.Store(id='selected_class_level_assignments_store', data=[GLOBAL_DATA.available_classes[0]]),
+        dcc.Store(id='node_elements_store', data = GLOBAL_DATA.initial_node_elements),
+        dcc.Store(id='colorblind_friendly_boolean_store', data = False),
+        #html.Br(),
+        dbc.Row(
+            children = [
+                dbc.Col(
+                    children = [
+                        html.Tbody("Hover Info: placeholder for cyto hover information")
+                    ], 
+                    id = "hover-info-panel",
+                    style={"font-size" : "8pt", "border":"1px black solid"}),
+                dbc.Col(
+                    children = [
+                        dcc.Markdown(
+                            id="warning-messages-panel1", 
+                            style={"font-size" : "8pt", "border":"1px black solid"}),
+                        dcc.Markdown(
+                            id="warning-messages-panel2", 
+                            style={"font-size" : "8pt", "border":"1px black solid"})
+                    ], 
+                    width=4), 
+                dbc.Col(
+                    children = [
+                        html.Div(id="legend_panel", style={"width":"100%", "border":"1px black solid"})
+                    ], 
+                    width=8)
+                ], 
+            className="g-0"), 
+        dbc.Row(
+            children = [
+                dbc.Col(
+                    children = [
+                        html.Div(
+                            id="details_panel", 
+                            style={"width":"100%", "height":"90vh", "border":"1px black solid"})
+                    ], 
+                    width=12)
+            ], 
+            className="g-0"
+        ),
     ], 
     style={"width" : "100%"},
-    )
+)
 
-########################################################################################################################
+####################################################################################################################
 # cytoscape update callbacks
 
 @app.callback(
@@ -239,9 +333,9 @@ app.layout=html.Div([
     State('cytoscape-tsne', 'stylesheet'), # <-- for persistency
     prevent_initial_call=True)
 def cytoscape_trigger(
-    n_clicks1, 
-    n_clicks2,
-    n_clicks3,
+    _n_clicks1, 
+    _n_clicks2,
+    _n_clicks3,
     spec_id_selection, 
     classes_to_be_highlighted,
     all_class_level_assignments, 
@@ -319,7 +413,7 @@ def cytoscape_trigger(
             f"  \n❌More than one node selected. Select single spectrum as egonode.")
 
     if btn == 'btn-run-degree':
-        styles, legend_plot = degree_visualization.generate_degree_colored_elements(
+        styles, legend_plot = degree_map.generate_degree_colored_elements(
             GLOBAL_DATA.sources, GLOBAL_DATA.targets, GLOBAL_DATA.values, threshold)
         if styles and legend_plot:
             styles = GLOBAL_DATA.initial_style + styles
@@ -351,7 +445,7 @@ def cytoscape_trigger(
     
     return elements, styles, zoom_level, pan_location, legend_panel, warning_messages
     
-########################################################################################################################
+####################################################################################################################
 # Set focus ids and open focus menu
 @app.callback(
     Output('spectrum-iloc-focus-dropdown', 'value'),
@@ -361,7 +455,11 @@ def cytoscape_trigger(
     State("spectrum-iloc-focus-dropdown", "options"),
     #prevent_initial_call=True
 )
-def displaySelectedNodeData(selection_data, empty_trigger, old_options):
+def displaySelectedNodeData(
+    selection_data, 
+    _empty_trigger, 
+    old_options):
+
     btn = ctx.triggered_id
     if btn == 'session_data_update_trigger':
         new_options = GLOBAL_DATA.get_spectrum_iloc_list()
@@ -387,7 +485,7 @@ def toggle_offcanvas(n1, is_open):
         return not is_open
     return is_open
 
-########################################################################################################################
+####################################################################################################################
 # open settings panel
 @app.callback(
     Output("offcanvas-settings", "is_open"),
@@ -400,7 +498,7 @@ def toggle_offcanvas(n1, is_open):
         return not is_open
     return is_open
 
-########################################################################################################################
+####################################################################################################################
 # details panel triggers
 @app.callback(
     Output('details_panel', 'children'),
@@ -416,7 +514,12 @@ def toggle_offcanvas(n1, is_open):
     prevent_initial_call=True
 )
 def details_trigger(
-    btn_fragmap_n_clicks, btn_meta_n_clicks, btn_augmap_n_clicks, btn_spectrum_n_clicks, selection_data, threshold,
+    btn_fragmap_n_clicks, 
+    btn_meta_n_clicks, 
+    btn_augmap_n_clicks, 
+    btn_spectrum_n_clicks, 
+    selection_data, 
+    threshold,
     colorblind_boolean, top_k_fragmap):
     """ Wrapper function that calls fragmap generation modules. """
     warning_message = ""
@@ -463,7 +566,7 @@ def details_trigger(
     return panel, warning_message
 
 
-########################################################################################################################
+####################################################################################################################
 # update edge threshold
 @app.callback(
     Output("edge_threshold", "data"),
@@ -477,7 +580,7 @@ def update_threshold_trigger_handler(n_submit, new_threshold):
     new_threshold, new_placeholder=data_transfer.update_threshold(new_threshold)
     return new_threshold, new_placeholder
 
-########################################################################################################################
+####################################################################################################################
 # mouseover node information display
 # dbc.Col([html.P("Hover Info: placeholder for cyto hover information")], id = "hover-info-panel")
 @app.callback(
@@ -509,7 +612,7 @@ def displaymouseoverData(data, selected_class_level):
             ]
         return information_string_list
 
-########################################################################################################################
+#####################################################################################################################
 # expand level control setting
 @app.callback(
     Output("expand_level", "data"),
@@ -535,7 +638,7 @@ def max_degree_trigger_handler(n_submit, new_max_degree):
 "input-maximum-number-of-nodes"
 
 
-########################################################################################################################
+#####################################################################################################################
 # CLASS SELECTION UPDATE ------------------------------------------------------
 @app.callback(
     Output("selected_class_level_store", "data"), 
@@ -546,9 +649,9 @@ def max_degree_trigger_handler(n_submit, new_max_degree):
     Output('node_elements_store', 'data'),
     Output("select_class_level_dropdown", "value"),
     Input("select_class_level_dropdown", "value"),
-    Input('session_data_update_trigger', 'data') # empty, global data strctures updated which require selected_class_level_assignments_store to update
+    Input('session_data_update_trigger', 'data') # empty, global data structures updated which require selected_class_level_assignments_store to update
 )
-def class_update_trigger_handler(selected_class : str, empty_trigger : None):
+def class_update_trigger_handler(selected_class : str, _ : None):
     """ Wrapper Function that construct class dcc.store data. """
     class_levels = list(GLOBAL_DATA.class_dict.keys())
     btn = ctx.triggered_id
@@ -567,7 +670,7 @@ def class_update_trigger_handler(selected_class : str, empty_trigger : None):
     Input("edge_threshold", "data"),
     Input('session_data_update_trigger', 'data')
 )
-def update_histogram(threshold, empty_trigger):
+def update_histogram(threshold : float, _ : None) -> go.Figure:
     fig = go.Figure()
     fig.add_trace(go.Histogram(
         y=GLOBAL_DATA.values, opacity = 0.6, 
@@ -586,8 +689,8 @@ def update_histogram(threshold, empty_trigger):
 
 
 @app.callback(Output('session_data_update_trigger', 'data'),
-              Input('upload-data', 'value'),
-              Input('scaler_id', 'value'))
+            Input('upload-data', 'value'),
+            Input('scaler_id', 'value'))
 def update_session_data(filename : str, scaler : Union[int, float]) -> dict:    
     '''
     Session data update handling function. Triggers when a new data path is provided or a new coordinate scaling value
@@ -595,18 +698,24 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
     session data. This is to avoid having to json serialize potentially large specXplore objects.
 
     Parameters:
+    -----------
         filename: a string with absolute or relative filepath to data.
         scaler: an integer scaler between 0.01 and 9999. This setting is used to rescale x and y coordinates from
-          the standard normal range to a larger value range for less overlap of nodes. 
+        the standard normal range to a larger value range for less overlap of nodes.
+
     Modifies:
+    ---------
         The global variable GLOBAL_DATA is modified by this function.
+    
     Returns: 
+    --------
         An empty dictionary. 
     
     Details:
+    --------
     Two cases are recognized:
-      1) If the scaler triggers the function: update the specXplore object without reloading the data
-      2) If the upload triggers, update the specXplore by importing data and using scaler_id value
+    1) If the scaler triggers the function: update the specXplore object without reloading the data
+    2) If the upload triggers, update the specXplore by importing data and using scaler_id value
     '''
     # 
     trigger_component = ctx.triggered_id
@@ -651,5 +760,6 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
 def update_output(on_off_state):
     return on_off_state
 
-if __name__ == '__main__':
-    app.run_server(debug=True, port="8999")
+
+if __name__ == "__main__":    
+    app.run(debug=True, port="8999")
