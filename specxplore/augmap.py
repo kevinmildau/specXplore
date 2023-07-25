@@ -23,7 +23,12 @@ def reorder_matrix(ordered_index : List[int], similarity_matrix : np.ndarray) ->
     out_similarity_matrix = similarity_matrix[ordered_index,:][:,ordered_index]
     return out_similarity_matrix
 
-def generate_edge_list(idx : List[int], all_possible_edges : List[List[int]], similarity_matrix : np.ndarray, threshold : float) -> List[List[int]]:
+def generate_edge_list(
+        idx : List[int], 
+        all_possible_edges : List[List[int]], 
+        similarity_matrix : np.ndarray, 
+        threshold : float
+        ) -> List[List[int]]:
     """ Function generates edge list from pairwise similarity matrix and threshold while abiding by idx ordering. """
     # developer note
     # Input is a list of integer locations idx, a list of lists where each sublist contains two integer identifiers, 
