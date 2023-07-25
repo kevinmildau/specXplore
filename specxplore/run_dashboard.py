@@ -1,23 +1,26 @@
 from dash import dcc, html, ctx, dash_table, Dash
 from dash.dependencies import Input, Output, State
+
 import dash_daq as daq
 import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
-from specxplore import egonet
-from specxplore import augmap
-from specxplore import clustnet
-from specxplore import fragmap
-from specxplore import data_transfer
-from specxplore import spectrum_plot
-from specxplore import degree_map
-from specxplore import other_utils
-import pickle
-import plotly.graph_objects as go
-import os
-import numpy as np
+
+import specxplore
+from specxplore import egonet, augmap, clustnet, fragmap, data_transfer, specplot, degree_map, other_utils
+import specxplore.datastructures
 from specxplore.constants import COLORS
+
+import pickle
+
+import plotly.graph_objects as go
+
+import os
+
+import numpy as np
+
+
 from typing import Union
-import specxplore.specxplore_data
+
 
 specxplore_input_file = '/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore-illustrative-examples/data/data_wheat_output/specxplore_wheat.pickle'
 with open(specxplore_input_file, 'rb') as handle:
@@ -550,15 +553,15 @@ def details_trigger(
         if len(selection_data) == 1:
             panel = dcc.Graph(
                 id="specplot", 
-                figure=spectrum_plot.generate_single_spectrum_plot(GLOBAL_DATA.spectra[selection_data[0]]))
+                figure=specplot.generate_single_spectrum_plot(GLOBAL_DATA.spectra[selection_data[0]]))
         if len(selection_data) == 2:
             panel = dcc.Graph(
                 id="specplot", 
-                figure=spectrum_plot.generate_mirror_plot(
+                figure=specplot.generate_mirror_plot(
                     GLOBAL_DATA.spectra[selection_data[0]], GLOBAL_DATA.spectra[selection_data[1]]))
         if len(selection_data) > 2:
             spectra = [GLOBAL_DATA.spectra[i] for i in selection_data]
-            panel = spectrum_plot.generate_multiple_spectra_figure_div_list(spectra)
+            panel = specplot.generate_multiple_spectra_figure_div_list(spectra)
     else:
         panel = []
         warning_message = (
@@ -742,7 +745,7 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
         with open(filename, 'rb') as handle:
             specxplore_object = pickle.load(handle) 
         # assess compatibility of output
-        if isinstance(specxplore_object, specxplore.specxplore_data.specxplore_session_data):
+        if isinstance(specxplore_object, specxplore.datastructures.specxplore_session_data):
             GLOBAL_DATA = specxplore_object
             GLOBAL_DATA.scale_coordinate_system(scaler)
             print("Session data updated.")
@@ -759,7 +762,6 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
 )
 def update_output(on_off_state):
     return on_off_state
-
 
 if __name__ == "__main__":    
     app.run(debug=True, port="8999")
