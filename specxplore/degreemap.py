@@ -63,17 +63,11 @@ def generate_plotly_bar_legend_for_colorscale(degrees_binned, colors):
     """
     Generates a ploty bar graph figure object with color to degree mapping to serve as legend for the cytoscape graph.
     """
-    #tickvals = np.linspace(np.min(degrees_binned), np.max(degrees_binned), num=5, dtype=np.int64)
-    #y = np.repeat([1], len(degrees_binned))
     
     fig = go.Figure()
     for idx, col in enumerate(colors):
         fig.add_bar(x=[degrees_binned[idx]], y = [1], marker_color = col, showlegend = False, name=col)
 
-    #fig = px.bar(
-    #    x=degrees_binned, y = y, color=degrees_binned, 
-    #    color_discrete_map = { value : color for value, color in zip(list(degrees_binned), list(colors))},
-    #    labels = {"x" : "Node Degree"})
     fig.update_layout(barmode='group', bargap=0, bargroupgap=0, yaxis = {
         'showgrid': False, # thin lines in the background
         'zeroline': False, # thick line at x=0

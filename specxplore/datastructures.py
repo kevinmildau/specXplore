@@ -20,6 +20,7 @@ from scipy.spatial.distance import pdist, squareform
 from scipy.stats import pearsonr, spearmanr  
 from sklearn.manifold import TSNE
 import plotly.graph_objects as go
+import plotly.express
 
 @dataclass
 class KmedoidGridEntry():
@@ -41,6 +42,8 @@ class KmedoidGridEntry():
             f"k = {self.k}, silhoutte_score = {self.silhouette_score}, \n"
             f"cluster_assignment = {', '.join(self.cluster_assignments[0:7])}...")
         return custom_print
+    
+
 @dataclass
 class TsneGridEntry():
     """ 
@@ -107,47 +110,72 @@ class Spectrum:
     def __post_init__(self):
         """ Assert that data provided to constructor is valid. """
         assert self.intensities.shape == self.mass_to_charge_ratios.shape, (
-            "Intensities (array) and mass to charge ratios (array) must be equal shape.")
-        if (self.intensity_aggregate_list) and (self.mass_to_charge_ratio_aggregate_list):
+            "Intensities (array) and mass to charge ratios (array) must be equal shape."
+        )
+        if (
+            self.intensity_aggregate_list 
+            and self.mass_to_charge_ratio_aggregate_list
+            ):
             self.is_binned_spectrum = True
             assert len(self.mass_to_charge_ratio_aggregate_list) == len(self.intensity_aggregate_list), (
-                "Bin data lists of lists must be of equal length.")
+                "Bin data lists of lists must be of equal length."
+            )
             for x,y in zip(self.intensity_aggregate_list, self.mass_to_charge_ratio_aggregate_list):
-                assert len(x) == len(y), ("Sub-lists of aggregate lists must be of equal length, i.e. for each"
-                    " mass-to-charge-ratio there must be an intensity value at equal List[sublist] position.")
+                assert len(x) == len(y), (
+                    "Sub-lists of aggregate lists must be of equal length, i.e. for each"
+                    " mass-to-charge-ratio there must be an intensity value at equal List[sublist] position."
+                )
 
 @dataclass
 class specxplore_session_data:
-    ''' specxplore_session_data is a constructor class that allow creating all variables for running specxplore 
-    dashboards. It comprises of a initiator making use of a matchms spectrum list and a path to a model folder
-    to construct pairwise similarity matrices, define spectrum_iloc and feature_id mapping, and constructs
-    the list of specXplore spectra used within the dashboard visualizations. Any spectra data processing is assumed
-    to have been done before initating the specxplore_session_data object.
+    ''' 
+    specxplore_session_data is a constructor class that allow creating all variables for running specxplore dashboards. 
     
-    A number of essential variables for specXplore are left as None after initition and have to be constructed
-    using additional information. The sequence of calls in general is as follows:
+    It comprises of a initiator making use of a matchms spectrum list and a path to a model folder to construct pairwise 
+    similarity matrices, define spectrum_iloc and feature_id mapping, and constructs the list of specXplore spectra used 
+    within the dashboard visualizations. Any spectra data processing is assumed to have been done before initating the 
+    specxplore_session_data object.
+    
+    Usage Workflow:
+    ---------------
 
-    1) Run the tsne-grid and select a tsne coordinate system using self.attach_tsne_grid() and 
+    A number of essential variables for specXplore are left as None after initition and have to be constructed using 
+    additional information. The expected sequence of calls is as follows:
+
+    0) Initiate the session_data object using the constructor and matchms spectrum list.
+    1) Run the tsne-grid and select a tsne coordinate system using 
+       self.attach_tsne_grid() and 
        self.select_tsne_coordinates()
     2) Run the kmedoid-grid and select a single or range of k classifications to add to the class table via
-       self.attach_kmedoid_grid() and self.select_kmedoid_cluster_assignments()
-    3) Attach any metadata from ms2query or elsewhere via self.attach_addon_data_to_metadata()
-    4) Attach any additional class table variables via self.attach_addon_data_to_class_table()
+       self.attach_kmedoid_grid() and 
+       self.select_kmedoid_cluster_assignments()
+    3) Attach any metadata from ms2query or elsewhere via 
+       self.attach_addon_data_to_metadata()
+    4) Attach any additional class table variables via 
+       self.attach_addon_data_to_class_table()
     5) Initialize dashboard visual and network variables once all is information included into the session data via
        self.initialize_specxplore_session()
-    
+
+    Note the in all above calls, 'self' has to be replaced with the chosen variable name for the session data object.
     '''
-    def __init__(self,spectra_list_matchms: List[matchms.Spectrum], models_and_library_folder_path : str):
+    def __init__(
+            self,
+            spectra_list_matchms: List[matchms.Spectrum], 
+            models_and_library_folder_path : str
+            ):
         ''' Constructs Basic Scaffold for specXplore session without coordinate system or any metadata. '''
         
         # Making sure that the spectra provided are valid and contain all required information:
         for spectrum in spectra_list_matchms:
             assert spectrum is not None, (
-                "None object detected in spectrum list. All spectra must be valid matchms.Spectrum instances.")
+                "None object detected in spectrum list. All spectra must be valid matchms.Spectrum instances."
+            )
             assert spectrum.get("feature_id") is not None, (
-                "All spectra must have valid feature id entries.")
+                "All spectra must have valid feature id entries."
+            )
             assert spectrum.get("precursor_mz") is not None, (
-                "All spectra must have valid precursor_mz value.")
+                "All spectra must have valid precursor_mz value."
+            )
         feature_ids = [str(spec.get("feature_id")) for spec in spectra_list_matchms]
         assert len(feature_ids) == len(set(feature_ids)), ("All feature_ids must be unique.")
         
@@ -157,16 +185,20 @@ class specxplore_session_data:
 
         # Construct pairwise similarity matrices from matchms spectra
         self.scores_spec2vec = specxplore.importing.compute_similarities_s2v(
-            spectra_list_matchms, models_and_library_folder_path)
+            spectra_list_matchms, models_and_library_folder_path
+        )
         self.scores_modified_cosine = specxplore.importing.compute_similarities_cosine(
-            spectra_list_matchms, cosine_type="ModifiedCosine")
+            spectra_list_matchms, 
+            cosine_type="ModifiedCosine"
+        )
         self.scores_ms2deepscore = specxplore.importing.compute_similarities_ms2ds(
-            spectra_list_matchms, models_and_library_folder_path)
+            spectra_list_matchms, models_and_library_folder_path
+        )
 
-        # Initialize data tables to none
+        # Initialize data tables to None
         self.metadata_table = copy.deepcopy(self.init_table)
         self.tsne_coordinates_table = None
-        self.class_table = None # includes feature_id and spectrum_iloc inside specXplore, but getter only returns classification table
+        self.class_table = None # includes feature_id and spectrum_iloc inside specXplore, but getter only returns classes part of table
         self.highlight_table = None
 
         self.class_dict = None 
@@ -177,26 +209,40 @@ class specxplore_session_data:
     
     def initialize_specxplore_session(self) -> None:
         ''' Wrapper for cosmetic and quantitative network variable initialization based on input data. '''
+
         self.initialize_specxplore_dashboard_variables()
         self.construct_derived_network_variables()
         self.initial_node_elements = utils.initialize_cytoscape_graph_elements(
-            self.tsne_coordinates_table, self.selected_class_data, self.highlight_table['highlight_bool'].to_list())
+            self.tsne_coordinates_table, 
+            self.selected_class_data, 
+            self.highlight_table['highlight_bool'].to_list()
+        )
         return None
 
 
-    def initialize_specxplore_dashboard_variables(self):
+    def initialize_specxplore_dashboard_variables(self) -> None:
         ''' Construct variables derived from input that are used inside the dashboard. 
-        These will be internal, private style variables, left accessible to the user however. '''
+        
+        These will be internal, private style variables, left accessible to the user however. 
+        '''
+        
         class_table = self.get_class_table()
-        self.class_dict = {elem : list(class_table[elem]) for elem in class_table.columns} 
+        self.class_dict = {
+            elem : list(class_table[elem]) 
+            for elem in class_table.columns
+        } 
         self.available_classes = list(self.class_dict.keys())
         self.selected_class_data = self.class_dict[self.available_classes[0]] # initialize default
         self.initial_style = SELECTED_NODES_STYLE + GENERAL_STYLE + SELECTION_STYLE
+        return None
     
 
     def construct_derived_network_variables(self) -> None:
         ''' Construct the edge lists and include init styles for specxplor dashboard '''
-        sources, targets, values = specxplore_data_cython.construct_long_format_sim_arrays(self.scores_ms2deepscore)  
+
+        sources, targets, values = datastructures_cython.construct_long_format_sim_arrays(
+            self.scores_ms2deepscore
+        )  
         ordered_index = np.argsort(-values)
         sources = sources[ordered_index]
         targets = targets[ordered_index]
@@ -207,109 +253,170 @@ class specxplore_session_data:
         return None
     
     def attach_addon_data_to_metadata(self, addon_data : pd.DataFrame) -> None:
-        self.metadata_table = attach_columns_via_feature_id(self.metadata_table, addon_data)
+        """ Attach additional metadata contained within pd.DataFrame to existing metadata via feature_id overlap. """
+        # Metadata table always initiated to init_table
+        self.metadata_table = attach_columns_via_feature_id(
+            self.metadata_table, 
+            addon_data
+        )
         return None
     
 
     def attach_addon_data_to_class_table(self, addon_data : pd.DataFrame) -> None:
+        """ 
+        Attach additional classdata contained within pd.DataFrame to existing class_table via feature_id overlap. 
+        """
+        # Class table may not have been initiated
         if self.class_table is None:
             self.class_table = copy.deepcopy(self.init_table)
-        self.class_table = remove_white_space_from_df(attach_columns_via_feature_id(self.class_table, addon_data))
+        self.class_table = remove_white_space_from_df(
+            attach_columns_via_feature_id(self.class_table, addon_data)
+        )
         return None
 
 
-    def attach_run_tsne_grid(self, perplexity_values : List[int], random_states : Union[List, None] = None) -> None:
-        # Generate and attach t-SNE grid
+    def attach_run_tsne_grid(
+            self, 
+            perplexity_values : List[int], 
+            random_states : Union[List, None] = None
+            ) -> None:
+        """ Generate and attach t-SNE grid """
+        
         distance_matrix = convert_similarity_to_distance(self.scores_ms2deepscore)
-        self.tsne_grid = run_tsne_grid(distance_matrix, perplexity_values, random_states)
+        self.tsne_grid = run_tsne_grid(
+            distance_matrix, 
+            perplexity_values, 
+            random_states
+        )
         print_tsne_grid(self.tsne_grid)
         return None
 
 
-    def attach_kmedoid_grid(self, k_values : List[int], random_states : Union[List, None] = None) -> None:
+    def attach_kmedoid_grid(
+            self, k_values : List[int], 
+            random_states : Union[List, None] = None
+            ) -> None:
+        """ Generate and attach kmedoid grid """
+
         distance_matrix = convert_similarity_to_distance(self.scores_ms2deepscore)
-        self.kmedoid_grid = run_kmedoid_grid(distance_matrix, k_values, random_states) 
+        self.kmedoid_grid = run_kmedoid_grid(
+            distance_matrix, 
+            k_values, 
+            random_states
+        ) 
         print_kmedoid_grid(self.kmedoid_grid)
         return None
 
 
     def select_tsne_coordinates(self, scalar_iloc : int) -> None:
         """ Select a tsne coordinate system from kmedoid grid via iloc in grid list. """
+
         assert self.tsne_grid is not None, (
             'No tsne grid detected. Run attach_tsne_grid to be able to'
-            ' be able select a kmedoid grid entry.')
+            ' be able select a kmedoid grid entry.'
+        )
         assert isinstance(scalar_iloc, int), 'scalar_iloc must be single type int variable'
         assert scalar_iloc in [i for i in range(0, len(self.tsne_grid))]
+        
         # construct tsne table
         if self.tsne_coordinates_table is None:
             self.tsne_coordinates_table = copy.deepcopy(self.init_table)
+        
         # Extract relevant tsne_grid entry & attach coordinates
         tsne_entry = self.tsne_grid[scalar_iloc]
-        # only t-sne coordinates are overwritten
+
+        # only t-sne coordinates are written / overwritten
         self.tsne_coordinates_table ['x'] = tsne_entry.x_coordinates
         self.tsne_coordinates_table ['y'] = tsne_entry.y_coordinates
         return None
 
 
-    def select_kmedoid_cluster_assignments(self, iloc_list : List[int]):
+    def select_kmedoid_cluster_assignments(self, iloc_list : List[int]) -> None:
         """ Select one or more kmedoid k levels for class table via ilocs in grid list. """
+        
         assert isinstance(iloc_list, list), 'iloc list must be type list. If only one value, use [value]'
         assert self.kmedoid_grid is not None, (
             'No kmedoid grid detected. Run attach_kmedoid_grid to be able to'
-            ' be able select a kmedoid grid entry.')
+            ' be able select a kmedoid grid entry.'
+        )
         for iloc in iloc_list:
             assert isinstance(iloc, int), 'iloc must be single type int variable'
             assert iloc in [i for i in range(0, len(self.kmedoid_grid))]
+        
         # construct kmedoid class table / attach to class_tablw
         if self.class_table is None:
             self.class_table = copy.deepcopy(self.init_table)
         
         selected_subgrid = [self.kmedoid_grid[iloc] for iloc in iloc_list]
-        kmedoid_table = pd.DataFrame({"K = " + str(elem.k) : elem.cluster_assignments for elem in selected_subgrid})
-        
-        kmedoid_table = kmedoid_table.loc[:, ~kmedoid_table.columns.isin(self.class_table.columns.to_list())]
+        kmedoid_table = pd.DataFrame(
+            data = {
+                "K = " + str(elem.k) : elem.cluster_assignments 
+                for elem in selected_subgrid
+            }
+        )
+        kmedoid_table = kmedoid_table.loc[
+            :, 
+            ~kmedoid_table.columns.isin(
+                self.class_table.columns.to_list()
+            )
+        ]
         self.class_table = pd.concat([self.class_table, kmedoid_table], axis=1, join='inner')
         return None
     
 
-    def reset_class_table(self):
+    def reset_class_table(self) -> None:
         """ Resets specXplore class_table entry to None. """
         self.class_table = None
         return None
     
 
-    def reset_metadata_table(self):
+    def reset_metadata_table(self) -> None:
         """ Resets specXplore class_table entry to None. """
-        self.metadata_table = None
+        self.metadata_table = self.init_table
         return None
     
 
-    def get_tsne_coordinates_table(self):
+    def get_tsne_coordinates_table(self) -> pd.DataFrame:
         ''' Getter for t-sne coordinates table that attaches the highlight table if available or adds a default. '''
-        # return tsne table, add in the highlight table if not none, if none, add a highlight all false column
+
         assert self.tsne_coordinates_table is not None, 'tsne_coordinates_table does not exist and cannot be returned.'
+        
         output_table = copy.deepcopy(self.tsne_coordinates_table)
-        if self.highlight_table is None:
+        if self.highlight_table is None: # no features selected for highlighting
             output_table['highlight_bool'] = False
         else:
-            output_table['highlight_bool'] = copy.deepcopy(self.highlight_table["highlight_bool"])
+            output_table['highlight_bool'] = copy.deepcopy(
+                self.highlight_table["highlight_bool"]
+            )
         return output_table
     
 
-    def get_class_table(self):
+    def get_class_table(self) -> pd.DataFrame:
+        """ Returns class table for use within specXplore; omits spectrum_iloc and feature_id columns. """
+
         assert self.class_table is not None, 'class_table does not exist and cannot be returned.'
-        output_table = copy.deepcopy(self.class_table.loc[:, ~self.class_table.columns.isin( ["spectrum_iloc", "feature_id"])])
+        output_table = copy.deepcopy(
+            self.class_table.loc[
+                :, 
+                ~self.class_table.columns.isin( ["spectrum_iloc", "feature_id"] )
+            ]
+        )
         return output_table
     
 
-    def get_metadata_table(self):
+    def get_metadata_table(self) -> pd.DataFrame:
+        """ Returns a copy of the metadata table. """
         assert self.metadata_table is not None, 'class_table does not exist and cannot be returned.'
         output_table = copy.deepcopy(self.metadata_table)
         return output_table
     
     
-    def construct_highlight_table(self, feature_ids : List[str]) -> None:
-        ''' Construct the table of features considered knowns or standards for visual highlighting in specXplore overview. 
+    def construct_highlight_table(
+            self, 
+            feature_ids : List[str]
+            ) -> None:
+        ''' 
+        Construct the table of features considered knowns or standards for visual highlighting in specXplore overview. 
         
         Input:
             feature_id: list of str entries specifying the feature_ids worth highlighting in specXplore. Usually 
@@ -322,35 +429,71 @@ class specxplore_session_data:
             are available.
         Requires a init table and feature_ids designated for highlighting.
         '''
+
         feature_set = set(feature_ids)
         highlight_table = copy.deepcopy(self.init_table)
-        highlight_table['highlight_bool'] = [elem in feature_set for elem in self.init_table["feature_id"]]
+        highlight_table['highlight_bool'] = [
+            elem in feature_set 
+            for elem in self.init_table["feature_id"]
+        ]
         self.highlight_table = highlight_table
         return None
     
 
     def get_spectrum_iloc_list(self) -> List[int]:
         """ Return list of all spectrum_iloc """
+
         return self.init_table['spectrum_iloc'].to_list()
 
     def check_and_save_to_file(self, filepath : str) -> None:
         """ Saves specxplore data object using pickle provided all data elements available."""
-        assert self.class_table is not None, 'class_table not found. incomplete specxplore object cannot be saved or loaded'
-        assert self.highlight_table is not None, 'highlight_table not found. incomplete specxplore object cannot be saved or loaded'
-        assert self.metadata_table is not None, 'metadata_table not found. incomplete specxplore object cannot be saved or loaded'
-        assert self.tsne_coordinates_table is not None, 'tsne_coordinates_table not found. incomplete specxplore object cannot be saved or loaded'
-        assert self.values is not None, 'values not found. incomplete specxplore object cannot be saved or loaded'
-        assert self.targets is not None, 'targets not found. incomplete specxplore object cannot be saved or loaded'
-        assert self.sources is not None, 'sources not found. incomplete specxplore object cannot be saved or loaded'
+
+        assert self.class_table is not None, (
+            'class_table not found. incomplete specxplore object cannot be saved or loaded'
+            'Run and select k-medoid classification or provide classification table.'
+        )
+        assert self.highlight_table is not None, (
+            'highlight_table not found. incomplete specxplore object cannot be saved or loaded'
+        )
+        assert self.metadata_table is not None, (
+            'metadata_table not found. incomplete specxplore object cannot be saved or loaded'
+            'Initialize metadata table.'
+        )
+        assert self.tsne_coordinates_table is not None, (
+            'Variable tsne_coordinates_table not found. Incomplete specxplore object cannot be saved or loaded.'
+            'Select and attach t-SNE x y coordinate system for features.'
+        )
+        assert self.values is not None, (
+            'Variable values not found. Incomplete specxplore object cannot be saved or loaded'
+            'Initalize specxplore object before attempting save.'
+        )
+        assert self.targets is not None, (
+            'Variable targets not found. Incomplete specxplore object cannot be saved or loaded.'
+            'Initalize specxplore object before attempting save.'
+        )
+        assert self.sources is not None, (
+            'Variable sources not found. Incomplete specxplore object cannot be saved or loaded.'
+            'Initalize specxplore object before attempting save.'
+        )
         with open(filepath, 'wb') as file:
             pickle.dump(self, file)
         return None
 
 
-    def save_selection_to_file(self, filepath : str, selection_idx : List[int]) -> None:
-        ''' Functions copies current session_data objects and replaces all member variables with subselection
+    def save_selection_to_file(
+            self, 
+            filepath : str, 
+            selection_idx : List[int]
+            ) -> None:
+        ''' 
+        Functions copies current session_data objects and replaces all member variables with subselection
         before saving to file. Overwriting a copy is done to avoid making the user facing constructor more 
-        complicated (overloading not possible in python)'''
+        complicated (overloading not possible in python)
+
+        Selection_idx correspond to selected spectrum_iloc in the current specXplore session data.
+
+        Beware: tsne coordinates will not be optimal for arbitrary data sub-selections.
+        '''
         
         assert len(selection_idx) >= 2, "specXplore object requires at least 2 spectra to be selected."
 
@@ -375,58 +518,82 @@ class specxplore_session_data:
         init_table.reset_index(drop=True, inplace=True)
         highlight_table['spectrum_iloc'] = new_spectrum_iloc
         highlight_table.reset_index(drop=True, inplace=True)
-        
         spectra = copy.deepcopy(self.spectra) # make a deep copy to detach from actual spectrum list
         spectra = [self.spectra[idx] for idx in selection_idx] # subset spectrum list
-
-
+        
+        # Create a coopy of the current session and overwrite variables
+        # Current specXplore session data constructor lacks constructor for member variables available already!
         new_specxplore_session = copy.deepcopy(self)
         new_specxplore_session.scores_ms2deepscore = scores_ms2deepscore
         new_specxplore_session.scores_modified_cosine = scores_modified_cosine
         new_specxplore_session.scores_spec2vec = scores_spec2vec
-        new_specxplore_session.tsne_coordinates_table = tsne_coordinates_table # beware: tsne coordinates not optimal for sub-selection
+        new_specxplore_session.tsne_coordinates_table = tsne_coordinates_table
         new_specxplore_session.metadata_table = metadata_table
         new_specxplore_session.class_table = class_table
         new_specxplore_session.init_table = init_table
         new_specxplore_session.highlight_table = highlight_table
         new_specxplore_session.spectra = spectra
         new_specxplore_session.initialize_specxplore_session()
-        
         with open(filepath, "wb") as file:
             pickle.dump(new_specxplore_session, file)
         return None
     
 
-    def save_pairwise_similarity_matrices_to_file(self, run_name : str, directory_path : str) -> None:
+    def save_pairwise_similarity_matrices_to_file(
+            self, 
+            run_name : str, 
+            directory_path : str
+            ) -> None:
         """ Saves the three similarity matrices to file with a run_name prefix to the specified directory. The output 
         format is a .npy object that can be loaded using numpy.load.
         """
-        np.save(os.path.join(directory_path, run_name, "ms2ds.npy"), self.scores_ms2deepscore, allow_pickle=False)
-        np.save(os.path.join(directory_path, run_name, "modcos.npy"), self.scores_modified_cosine, allow_pickle=False)
-        np.save(os.path.join(directory_path, run_name, "s2v.npy"), self.scores_spec2vec, allow_pickle=False)
+        np.save(
+            os.path.join(directory_path, run_name, "ms2ds.npy"), 
+            self.scores_ms2deepscore, 
+            allow_pickle=False
+        )
+        np.save(
+            os.path.join(directory_path, run_name, "modcos.npy"), 
+            self.scores_modified_cosine, 
+            allow_pickle=False
+        )
+        np.save(
+            os.path.join(directory_path, run_name, "s2v.npy"), 
+            self.scores_spec2vec, 
+            allow_pickle=False
+        )
         return None
     
     def scale_coordinate_system(self, scaler : float):
         """ Applies scaling to coordinate system in tsne_coordinates_table """
+
         assert not np.isclose([scaler], [0], rtol=1e-05, atol=1e-08, equal_nan=False)[0], (
-            'Scaling with 0 or near 0 not allowed; likely loss of data!')
+            'Scaling with 0 or near 0 not allowed; likely loss of data!'
+        )
         self.tsne_coordinates_table["x"] = utils.scale_array_to_minus1_plus1(
-             self.tsne_coordinates_table["x"].to_numpy()) * scaler
+             self.tsne_coordinates_table["x"].to_numpy()
+             ) * scaler
         self.tsne_coordinates_table["y"] = utils.scale_array_to_minus1_plus1(
-             self.tsne_coordinates_table["y"].to_numpy()) * scaler
+             self.tsne_coordinates_table["y"].to_numpy()
+             ) * scaler
 
 
-def convert_matchms_spectra_to_specxplore_spectra(spectra = List[matchms.Spectrum]) -> List[Spectrum]:
-  """ Converts list of matchms.Spectrum objects to list of specxplore_data.Spectrum objects. """
-  spectra_converted = [
-      Spectrum(
-        mass_to_charge_ratios = spec.peaks.mz, 
-        precursor_mass_to_charge_ratio = float(spec.get("precursor_mz")), 
-        spectrum_iloc = idx, 
-        intensities = spec.peaks.intensities, 
-        feature_id=spec.get("feature_id")) 
-      for idx, spec in enumerate(spectra)]
-  return spectra_converted
+def convert_matchms_spectra_to_specxplore_spectra(
+        spectra = List[matchms.Spectrum]
+        ) -> List[Spectrum]:
+    """ Converts list of matchms.Spectrum objects to list of specxplore_data.Spectrum objects. """
+    spectra_converted = [
+        Spectrum(
+            mass_to_charge_ratios = spec.peaks.mz, 
+            precursor_mass_to_charge_ratio = float(spec.get("precursor_mz")), 
+            spectrum_iloc = idx, 
+            intensities = spec.peaks.intensities, 
+            feature_id=spec.get("feature_id")    
+        ) 
+        for idx, spec 
+        in enumerate(spectra)
+    ]
+    return spectra_converted
 
 
 def construct_init_table(spectra : List[Spectrum]) -> pd.DataFrame:
@@ -440,11 +607,19 @@ def construct_init_table(spectra : List[Spectrum]) -> pd.DataFrame:
         init_table: a pandas.DataFrame with two columns: a string column for feature_id, and a int column for 
         spectrum_iloc.
     '''
+
     spectrum_ilocs = [spec.spectrum_iloc for spec in spectra]
     feature_ids = [spec.feature_id for spec in spectra] 
+
     assert spectrum_ilocs == [iloc for iloc in range(0, len(spectra))], (
-        "spectrum iloc must equal sequence from 0 to number of spectra")
-    init_table = pd.DataFrame({"feature_id" : feature_ids, "spectrum_iloc" : spectrum_ilocs})
+        "spectrum iloc must equal sequence from 0 to number of spectra"
+    )
+    init_table = pd.DataFrame(
+        data = {
+            "feature_id" : feature_ids, 
+            "spectrum_iloc" : spectrum_ilocs
+        }
+    )
     init_table["feature_id"] = init_table["feature_id"].astype("string")
     return init_table
 
@@ -452,14 +627,22 @@ def construct_init_table(spectra : List[Spectrum]) -> pd.DataFrame:
 def load_specxplore_object_from_pickle(filepath : str) -> specxplore_session_data:
     with open(filepath, 'rb') as file:
         specxplore_object = pickle.load(file) 
-    assert isinstance(specxplore_object, specxplore_session_data)
+    assert isinstance(specxplore_object, specxplore_session_data), (
+        'Provided data must be a specxplore_session_data object!'
+    )
     return specxplore_object
 
 
-def filter_spectrum_top_k_intensity_fragments(input_spectrum : Spectrum, k : int) -> Spectrum:
+def filter_spectrum_top_k_intensity_fragments(
+        input_spectrum : Spectrum, 
+        k : int
+        ) -> Spectrum:
     """ Filter unbinned Spectrum object to top-K highest intensity fragments for display in fragmap. """
+
     assert k >= 1, 'k must be larger or equal to one.'
-    assert input_spectrum.is_binned_spectrum == False, "filter_spectrum_top_k_intensity_fragments() requires unbinned spectrum."
+    assert input_spectrum.is_binned_spectrum == False, (
+        "filter_spectrum_top_k_intensity_fragments() requires unbinned spectrum."
+    )
     spectrum = copy.deepcopy(input_spectrum)
     if spectrum.intensities.size > k:
         index_of_k_largest_intensities = np.argpartition(spectrum.intensities, -k)[-k:]
@@ -470,9 +653,10 @@ def filter_spectrum_top_k_intensity_fragments(input_spectrum : Spectrum, k : int
             precursor_mass_to_charge_ratio = spectrum.precursor_mass_to_charge_ratio,
             spectrum_iloc = spectrum.spectrum_iloc, 
             feature_id = spectrum.feature_id, 
-            intensities = intensities)
+            intensities = intensities
+        )
     return(spectrum)
-        
+
 
 @dataclass(frozen=True)
 class SpectraDF:
@@ -501,23 +685,39 @@ class SpectraDF:
     _expected_column_types : Tuple = field(
         default=(np.int64, np.double, np.double, object, object, bool, bool), 
         compare = False, hash = False, repr=False )    
+    
+
     def __post_init__(self):
         """ Assert that data provided to constructor is valid. """
+
         assert isinstance(self._data, pd.DataFrame), "Data must be a pandas.DataFrame"
-        expected_column_types = dict(zip(self._expected_columns, self._expected_column_types))
+        expected_column_types = dict(
+            zip(
+                self._expected_columns, 
+                self._expected_column_types
+            )
+        )
         assert_column_set(self._data.columns.to_list(), self._expected_columns)
         assert_column_types(self._data.dtypes.to_dict(), expected_column_types)
+
+
     def get_data(self):
         """ Return a copy of the data frame object stored in SpectraDF instance. """
+
         return copy.deepcopy(self._data)
+    
+
     def get_column_as_np(self, column_name):
         """ Return a copy of a specific column from SpectraDF as numpy array. """
-        assert column_name in self._expected_columns, f"Column {column_name} not a member of SpectraDF data frame."
+
+        assert column_name in self._expected_columns, ( 
+            f"Column {column_name} not a member of SpectraDF data frame."
+        )
         array = self._data[column_name].to_numpy(copy=True)
         return array
 
 
-def assert_column_types(type_dict_provided , type_dict_expected ) -> None:
+def assert_column_types(type_dict_provided , type_dict_expected) -> None:
     """ 
     Assert types for keys in type_dict match those for key in expected.
 
@@ -532,7 +732,8 @@ def assert_column_types(type_dict_provided , type_dict_expected ) -> None:
     for key in type_dict_provided:
         assert type_dict_provided[key] == type_dict_expected[key], (
             f"Provided dtype for column {key} is {type_dict_provided[key]},"
-            f" but requires {type_dict_expected[key]}")
+            f" but requires {type_dict_expected[key]}"
+        )
     return None
 
 
@@ -548,13 +749,18 @@ def assert_column_set(columns_provided : List[str], columns_expected : List[str]
     Raises:
         ValueError: if column sets provided don't match.
     """
+
     set_provided = set(columns_provided)
     set_expected = set(columns_expected)
     assert set_provided == set_expected, ("Initialization error, provided columns do not match expected set.")
     return None
 
 
-def run_tsne_grid(distance_matrix : np.ndarray, perplexity_values : List[int], random_states : Union[List, None] = None) -> List[TsneGridEntry]:
+def run_tsne_grid(
+        distance_matrix : np.ndarray,
+        perplexity_values : List[int], 
+        random_states : Union[List, None] = None
+        ) -> List[TsneGridEntry]:
     """ Runs t-SNE embedding routine for every provided perplexity value in perplexity_values list.
 
     Parameters:
@@ -564,22 +770,39 @@ def run_tsne_grid(distance_matrix : np.ndarray, perplexity_values : List[int], r
     Returns: 
         A list of TsneGridEntry objects containing grid results. 
     """
+
     if random_states is None:
         random_states = [ 0 for _ in perplexity_values ]
     output_list = []
     for idx, perplexity in enumerate(perplexity_values):
-        model = TSNE(metric="precomputed", random_state = random_states[idx], init = "random", perplexity = perplexity)
+        model = TSNE(
+            metric="precomputed", 
+            random_state = random_states[idx], 
+            init = "random", 
+            perplexity = perplexity
+        )
         z = model.fit_transform(distance_matrix)
+        
         # Compute embedding quality
         dist_tsne = squareform(pdist(z, 'seuclidean'))
         spearman_score = np.array(spearmanr(distance_matrix.flat, dist_tsne.flat))[0]
         pearson_score = np.array(pearsonr(distance_matrix.flat, dist_tsne.flat))[0]
-        output_list.append(TsneGridEntry(perplexity, z[:,0], z[:,1], pearson_score, spearman_score, random_states[idx]))
+        output_list.append(
+            TsneGridEntry(
+                perplexity, 
+                z[:,0], 
+                z[:,1], 
+                pearson_score, 
+                spearman_score, 
+                random_states[idx]
+            )
+        )
     return output_list
 
 
 def render_tsne_fitting_results_in_browser(tsne_list : List[TsneGridEntry]) -> None:
     """ Plots pearson and spearman scores vs perplexity for each entry in list of TsneGridEntry objects. """
+    
     pearson_scores = [x.spearman_score for x in tsne_list]
     spearman_scores = [x.pearson_score for x in tsne_list]
     perplexities = [x.perplexity for x in tsne_list]
@@ -599,15 +822,19 @@ def convert_similarity_to_distance(similarity_matrix : np.ndarray) -> np.ndarray
 
     Developer Note:
         spec2vec scores do not appear to be in this range.
-
     """
+
     distance_matrix = 1.- similarity_matrix
     distance_matrix = np.round(distance_matrix, 6) # Round to deal with floating point issues
     distance_matrix = np.clip(distance_matrix, a_min = 0, a_max = 1) # Clip to deal with floating point issues
     return distance_matrix
 
 
-def run_kmedoid_grid(distance_matrix : np.ndarray, k_values : List[int], random_states : Union[List, None] = None) -> List[KmedoidGridEntry]:
+def run_kmedoid_grid(
+        distance_matrix : np.ndarray, 
+        k_values : List[int], 
+        random_states : Union[List, None] = None
+        ) -> List[KmedoidGridEntry]:
     """ Runs k-medoid clustering for every value in k_values. 
     
     Parameters:
@@ -617,32 +844,60 @@ def run_kmedoid_grid(distance_matrix : np.ndarray, k_values : List[int], random_
     Returns: 
         A list of KmedoidGridEntry objects containing grid results.
     """
+
     if random_states is None:
         random_states = [ 0 for _ in k_values ]
     output_list = []
     for k in k_values:
         assert isinstance(k, int), (
-            "k must be python int object. KMedoids module requires strict Python int object (np.int64 rejected!)")
+            "k must be python int object. KMedoids module requires strict Python int object (np.int64 rejected!)"
+        )
     for idx, k in enumerate(k_values):
-        cluster = KMedoids(n_clusters=k, metric='precomputed', random_state=random_states[idx], method = "fasterpam")  
+        cluster = KMedoids(
+            n_clusters=k, 
+            metric='precomputed', 
+            random_state=random_states[idx], 
+            method = "fasterpam"
+        )  
         cluster_assignments = cluster.fit_predict(distance_matrix)
-        cluster_assignments = ["km_" + str(elem) for elem in cluster_assignments] # string conversion
-        score = silhouette_score(X = distance_matrix, labels = cluster_assignments, metric= "precomputed")
-        output_list.append(KmedoidGridEntry(k, cluster_assignments, score, random_states[idx]))
+        cluster_assignments_strings = [
+            "km_" + str(elem) 
+            for elem in cluster_assignments
+        ]
+        score = silhouette_score(
+            X = distance_matrix, 
+            labels = cluster_assignments_strings, 
+            metric= "precomputed"
+        )
+        output_list.append(
+            KmedoidGridEntry(
+                k, 
+                cluster_assignments_strings, 
+                score, 
+                random_states[idx]
+            )
+        )
     return output_list
 
 
-def render_kmedoid_fitting_results_in_browser(kmedoid_list : List[KmedoidGridEntry]) -> None:
+def render_kmedoid_fitting_results_in_browser(
+        kmedoid_list : List[KmedoidGridEntry]
+        ) -> None:
     """ Plots Silhouette Score vs k for each entry in list of KmedoidGridEntry objects. """
     scores = [x.silhouette_score for x in kmedoid_list]
     ks = [x.k for x in kmedoid_list]
-    fig = px.scatter(x = ks, y = scores)
-    fig.update_layout(xaxis_title="K (Number of Clusters)", yaxis_title="Silhouette Score")
+    fig = plotly.express.scatter(x = ks, y = scores)
+    fig.update_layout(
+        xaxis_title="K (Number of Clusters)", 
+        yaxis_title="Silhouette Score"
+    )
     fig.show(renderer = "browser")
     return None
 
 
 def print_kmedoid_grid(grid : List[KmedoidGridEntry]) -> None:
+    """ Prints all values in kmedoid grid in readable format. """
+
     print("iloc Number-of-Clusters Silhouette-Score")
     for iloc, elem in enumerate(grid):
         print(iloc, elem.k, round(elem.silhouette_score, 3))
@@ -650,6 +905,8 @@ def print_kmedoid_grid(grid : List[KmedoidGridEntry]) -> None:
 
 
 def print_tsne_grid(grid : List[TsneGridEntry]) -> None:   
+    """ Prints all values in tsne grid in readable format. """
+
     print('iloc Perplexity Pearson-score Spearman-score')
     for iloc, elem in enumerate(grid):
         print(iloc, elem.perplexity, round(elem.pearson_score, 3), round(elem.spearman_score, 3))
@@ -668,21 +925,28 @@ def attach_columns_via_feature_id(init_table : pd.DataFrame, addon_data : pd.Dat
     Output: 
         extended_init_table: pandas.DataFrame with feature_id column and additional columns from addon_data. Any NA values
             produced are replaced with strings that read: "not available". Any entries are converted to string.
-
     """
+
     assert "feature_id" in init_table.columns, "feature_id column must be available in metadata"
     assert "feature_id" in addon_data.columns, "feature_id column must be available in addon_data"
-    # there is no decent means of checking whether a pandas data frame is of proper type string apparently
-    assert init_table["feature_id"].dtype == addon_data["feature_id"].dtype == 'string', "feature_id column must be of the same type."
-
-    
+    assert (init_table["feature_id"].dtype 
+            == addon_data["feature_id"].dtype 
+            == 'string'), (
+        "feature_id column must be of the same type."
+    )
     extended_init_table = copy.deepcopy(init_table)
     extended_init_table = extended_init_table.merge(
         addon_data.loc[:, ~addon_data.columns.isin(['spectrum_iloc'])],
-        left_on = "feature_id", right_on = "feature_id", how = "left")
+        left_on = "feature_id", 
+        right_on = "feature_id", 
+        how = "left"
+    )
     extended_init_table.reset_index(inplace=True, drop=True)
     extended_init_table = extended_init_table.astype('string')
-    extended_init_table = extended_init_table.replace(to_replace=np.nan, value = "not available")
+    extended_init_table = extended_init_table.replace(
+        to_replace=np.nan, 
+        value = "not available"
+    )
     return extended_init_table
 
 
