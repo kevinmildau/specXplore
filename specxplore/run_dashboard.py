@@ -552,7 +552,7 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
         with open(filename, "rb") as handle:
             specxplore_object = pickle.load(handle) 
         # assess compatibility of output
-        if isinstance(specxplore_object, importing.specxplore_session):
+        if isinstance(specxplore_object, importing.SessionData):
             GLOBAL_DATA = specxplore_object
             GLOBAL_DATA.scale_coordinate_system(scaler)
             print("Session data updated.")
