@@ -349,20 +349,6 @@ def compute_similarities_cosine(spectrum_list:List[matchms.Spectrum], cosine_typ
     return scores
 
 
-
-def compose_function(*func) -> object: 
-    """ Generic function composer making use of functools reduce. 
-    
-    Parameters:
-        *func: Any number n of input functions to be composed.
-    Returns: 
-        A new function object.
-    """
-    def compose(f, g):
-        return lambda x : f(g(x))   
-    return reduce(compose, func, lambda x : x)
-
-
 def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray) -> np.ndarray:
     """ 
     Function extracts similarity matrix from matchms cosine scores array.

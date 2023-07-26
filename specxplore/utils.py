@@ -1,5 +1,6 @@
 import numpy as np
 from functools import reduce
+import re
 
 def standardize_array(array : np.ndarray):
     # mean centering and deviation scaling
@@ -27,25 +28,6 @@ def initialize_cytoscape_graph_elements(tsne_df, selected_class_data, highlight_
         }
     return nodes
 
-def compose_function(*func): 
-    """ Generic function composer making use of functools reduce. 
-    
-    :param *func: Any number n of input functions to be composed.
-    :returns: A new function object.
-
-    Notes:
-    Works well in conjunction with functools:partial, where functions can be composed using functions with partially
-    filled arguments. This is especially useful for small processing pipelines that are locally defined. e.g:
-    threshold_filter_07 = partial(threshold_filter_array, threshold = 0.7)
-    extract_top_5 = partial(extract_top_from_array, top_number = 5)
-    pipeline = compose(threshold_filter_07, extract_top_5)
-    Where pipeline is now a function with one argument (array) based on partial functions with default arguments set.
-    """
-    def compose(f, g):
-        return lambda x : f(g(x))   
-    return reduce(compose, func, lambda x : x)
-
-import re
 
 def extract_hex_from_rgb_string(rgb_string):
     """ Extracts hex code from rgb string.
@@ -71,7 +53,9 @@ def extract_hex_from_rgb_string(rgb_string):
     print(extract_hex_from_rgb_string(txt))
     """
     floats = re.findall(
-        "[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", rgb_string)
+        "[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", 
+        rgb_string
+    )
     ints = [round(float(elem)) for elem in floats]
     ints = [255 if (elem > 255) else elem for elem in ints]
     ints = [0 if (elem < 0) else elem for elem in ints]
@@ -109,15 +93,18 @@ def update_expand_level(new_expand_level):
     if (new_expand_level 
         and new_expand_level >= lower_limit 
         and new_expand_level <= upper_limit
-        and isinstance(new_expand_level, int)):
+        and isinstance(new_expand_level, int)
+        ):
         new_placeholder = (
             f'Expand Level {lower_limit} =< thr <= {upper_limit},'
-            f'current: {new_expand_level}')
+            f'current: {new_expand_level}'
+        )
         return new_expand_level, new_placeholder
     else:
         default_expand_level = 1
         default_placeholder = (
-            f'Expand Level {lower_limit} =< thr <= {upper_limit},')
+            f'Expand Level {lower_limit} =< thr <= {upper_limit},'
+        )
         return default_expand_level,  default_placeholder
 
 def update_threshold(new_threshold):
@@ -135,10 +122,12 @@ def update_threshold(new_threshold):
     """
     if (new_threshold 
         and new_threshold < 1 and new_threshold > 0
-        and isinstance(new_threshold, float)):
+        and isinstance(new_threshold, float)
+        ):
         new_placeholder = (
             'Threshold 0 < thr < 1,' 
-            f'current: {new_threshold}')
+            f'current: {new_threshold}'
+        )
         return new_threshold, new_placeholder
     else:
         default_threshold = 0.9
@@ -163,16 +152,20 @@ def update_max_degree(new_max_degree):
     """
     lower_limit = 1
     upper_limit = 9999
-    if (new_max_degree 
+    if (
+        new_max_degree 
         and new_max_degree >= lower_limit 
         and new_max_degree <= upper_limit
-        and isinstance(new_max_degree, int)):
+        and isinstance(new_max_degree, int)
+        ):
         new_placeholder = (
             f'Maximum Node Degree {lower_limit} =< thr <= {upper_limit},'
-            f'current: {new_max_degree}')
+            f'current: {new_max_degree}'
+        )
         return new_max_degree, new_placeholder
     else:
         default_expand_level = 9999
         default_placeholder = (
-            f'Maximum Node Degree {lower_limit} =< thr <= {upper_limit},')
+            f'Maximum Node Degree {lower_limit} =< thr <= {upper_limit},'
+        )
         return default_expand_level,  default_placeholder
