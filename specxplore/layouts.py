@@ -1,5 +1,5 @@
 from specxplore import identifiers
-from dash import html, dcc
+from dash import html, dcc, Dash
 import dash_bootstrap_components as dbc
 import dash_daq as daq
 import dash_cytoscape
@@ -297,3 +297,19 @@ LAYOUT_ROW_TITLE = dbc.Row(
     ]
 )
 
+def initialize_layout(app : Dash) -> None:
+    """ Initializes dash app layout for specxplore session. """
+
+    app.layout = html.Div(
+        children=[
+            LAYOUT_ROW_TITLE,
+            LAYOUT_ROW_MAIN_PANEL_AND_BUTTONS, 
+            SETTINGS_PANEL,
+            SELECTION_FOCUS_PANEL,
+            LAYOUT_STORE_CONTAINERS,
+            LAYOUT_ROW_MESSAGES_AND_HOVER,
+            LAYOUT_ROW_DETAILS_PANEL,
+        ], 
+        style={"width" : "100%"},
+    )
+    return None
