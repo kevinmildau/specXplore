@@ -570,9 +570,19 @@ def details_trigger(
     max_number_augmap = 500
     max_number_fragmap = 40
     max_number_specplot = 25
-    if btn == "btn_push_fragmap" and selection_data and len(selection_data) >= 2 and len(selection_data) <= max_number_fragmap:
+
+    if (
+        btn == "btn_push_fragmap" 
+        and selection_data 
+        and len(selection_data) >= 2 
+        and len(selection_data) <= max_number_fragmap
+        ):
         panel = fragmap.generate_fragmap_panel(selection_data, GLOBAL_DATA.spectra, top_k_fragmap)
-    elif btn == "btn_push_meta" and selection_data:
+    
+    elif (
+        btn == "btn_push_meta" 
+        and selection_data
+        ):
         tmpdf = GLOBAL_DATA.metadata_table.iloc[selection_data]
         #tmpdf = GLOBAL_DATA.tsne_coordinates_table.iloc[selection_data]
         panel = dash_table.DataTable(
@@ -585,27 +595,45 @@ def details_trigger(
             sort_action="native",
             page_size=10,
             style_table={"overflowX": "auto"},)
-    elif btn == "btn-push-augmap" and selection_data and len(selection_data) >= 2 and len(selection_data) <= max_number_augmap:
+    
+    elif (
+        btn == "btn-push-augmap" 
+        and selection_data 
+        and len(selection_data) >= 2 
+        and len(selection_data) <= max_number_augmap
+        ):
         panel = augmap.generate_augmap_panel(
-            selection_data, GLOBAL_DATA.scores_ms2deepscore, GLOBAL_DATA.scores_modified_cosine , GLOBAL_DATA.scores_spec2vec, 
-            threshold, colorblind_boolean)
+            selection_data, 
+            GLOBAL_DATA.scores_ms2deepscore, 
+            GLOBAL_DATA.scores_modified_cosine , 
+            GLOBAL_DATA.scores_spec2vec, 
+            threshold, colorblind_boolean
+        )
+        
     elif btn == "btn_push_spectrum" and selection_data and len(selection_data) <=max_number_specplot:
         if len(selection_data) == 1:
             panel = dcc.Graph(
                 id="specplot", 
-                figure=specplot.generate_single_spectrum_plot(GLOBAL_DATA.spectra[selection_data[0]]))
+                figure=specplot.generate_single_spectrum_plot(
+                    GLOBAL_DATA.spectra[selection_data[0]]
+                )
+            )
         if len(selection_data) == 2:
             panel = dcc.Graph(
                 id="specplot", 
                 figure=specplot.generate_mirror_plot(
-                    GLOBAL_DATA.spectra[selection_data[0]], GLOBAL_DATA.spectra[selection_data[1]]))
+                    GLOBAL_DATA.spectra[selection_data[0]], 
+                    GLOBAL_DATA.spectra[selection_data[1]]
+                )
+            )
         if len(selection_data) > 2:
             spectra = [GLOBAL_DATA.spectra[i] for i in selection_data]
             panel = specplot.generate_multiple_spectra_figure_div_list(spectra)
     else:
         panel = []
         warning_message = (
-            "  \n❌ Insufficient or too many spectra selected for requested details view.")
+            "  \n❌ Insufficient or too many spectra selected for requested details view."
+        )
     return panel, warning_message
 
 
