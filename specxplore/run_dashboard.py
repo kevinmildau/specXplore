@@ -346,7 +346,7 @@ app.layout=html.Div(
     Input(identifiers.DROPDOWN_CLASSES_TO_BE_HIGHLIGHTED, "value"),
     Input(identifiers.STORE_CLASSES_TO_BE_HIGHLIGHTED, "data"),
     Input(identifiers.STORE_NODE_ELEMENTS, "data"),
-    Input(identifiers.STORE_EMPTY_SESSION_DATA_TRIGGER, "data"),  # empty session data used as dash trigger only
+    Input(identifiers.STORE_EMPTY_SESSION_DATA_TRIGGER, "data"),  
     State(identifiers.STORE_MAXIMUM_NODE_DEGREE, "data"),
     State(identifiers.STORE_EDGE_THRESHOLD, "data"),
     State(identifiers.STORE_HOP_DISTANCE, "data"),
@@ -520,7 +520,7 @@ def cytoscape_trigger(
     Output(identifiers.DROPDOWN_FOCUS_SPECTRUM_ILOC_SELECTION, "value"),
     Output(identifiers.DROPDOWN_FOCUS_SPECTRUM_ILOC_SELECTION, "options"),
     Input(identifiers.CYTOSCAPE_MAIN_PANEL, "selectedNodeData"),
-    Input(identifiers.STORE_EMPTY_SESSION_DATA_TRIGGER, "data"),  # empty session data used as dash trigger only
+    Input(identifiers.STORE_EMPTY_SESSION_DATA_TRIGGER, "data"),  
     State(identifiers.DROPDOWN_FOCUS_SPECTRUM_ILOC_SELECTION, "options"),
     #prevent_initial_call=True
 )
@@ -749,7 +749,7 @@ def max_degree_trigger_handler(_, new_max_degree):
     Output(identifiers.STORE_NODE_ELEMENTS, "data"),
     Output(identifiers.DROPDOWN_SELECT_CLASS_LEVEL, "value"),
     Input(identifiers.DROPDOWN_SELECT_CLASS_LEVEL, "value"),
-    Input(identifiers.STORE_EMPTY_SESSION_DATA_TRIGGER, "data") # empty session data used as dash trigger only
+    Input(identifiers.STORE_EMPTY_SESSION_DATA_TRIGGER, "data") 
 )
 def class_update_trigger_handler(
         selected_class : str, 

@@ -150,14 +150,14 @@ class Spectrum:
                 )
 
 @dataclass
-class session_data:
+class SessionData:
     ''' 
-    session_data is a constructor class that allow creating all variables for running specxplore dashboards. 
+    SessionData is a constructor class that allow creating all variables for running specxplore dashboards. 
     
     It comprises of a initiator making use of a matchms spectrum list and a path to a model folder to construct pairwise 
     similarity matrices, define spectrum_iloc and feature_id mapping, and constructs the list of specXplore spectra used 
     within the dashboard visualizations. Any spectra data processing is assumed to have been done before initating the 
-    session_data object.
+    SessionData object.
     
     Usage Workflow:
     ---------------
@@ -165,7 +165,7 @@ class session_data:
     A number of essential variables for specXplore are left as None after initition and have to be constructed using 
     additional information. The expected sequence of calls is as follows:
 
-    0) Initiate the session_data object using the constructor and matchms spectrum list.
+    0) Initiate the SessionData object using the constructor and matchms spectrum list.
     1) Run the tsne-grid and select a tsne coordinate system using 
        self.attach_tsne_grid() and 
        self.select_tsne_coordinates()
@@ -509,7 +509,7 @@ class session_data:
             selection_idx : List[int]
             ) -> None:
         ''' 
-        Functions copies current session_data objects and replaces all member variables with subselection
+        Functions copies current SessionData objects and replaces all member variables with subselection
         before saving to file. Overwriting a copy is done to avoid making the user facing constructor more 
         complicated (overloading not possible in python)
 
@@ -647,11 +647,11 @@ def construct_init_table(spectra : List[Spectrum]) -> pd.DataFrame:
     return init_table
 
 
-def load_specxplore_object_from_pickle(filepath : str) -> session_data:
+def load_specxplore_object_from_pickle(filepath : str) -> SessionData:
     with open(filepath, 'rb') as file:
         specxplore_object = pickle.load(file) 
-    assert isinstance(specxplore_object, session_data), (
-        'Provided data must be a session_data object!'
+    assert isinstance(specxplore_object, SessionData), (
+        'Provided data must be a SessionData object!'
     )
     return specxplore_object
 
