@@ -1,7 +1,7 @@
 import plotly.graph_objects as go
 import numpy as np
 from typing import List
-from specxplore.datastructures import Spectrum
+from specxplore.importing import Spectrum
 from dash import dcc
 
 PLOT_LAYOUT_SETTINGS = {
