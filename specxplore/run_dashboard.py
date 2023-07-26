@@ -3,9 +3,7 @@ from dash.dependencies import Input, Output, State
 import dash_daq as daq
 import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
-import specxplore
-from specxplore import degreemap, egonet, augmap, fragmap, netview, utils, specplot, identifiers
-import specxplore.importing
+from specxplore import degreemap, egonet, augmap, fragmap, netview, utils, specplot, identifiers, importing
 from specxplore.constants import COLORS
 
 import pickle
@@ -850,7 +848,7 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
         with open(filename, "rb") as handle:
             specxplore_object = pickle.load(handle) 
         # assess compatibility of output
-        if isinstance(specxplore_object, specxplore.importing.specxplore_session):
+        if isinstance(specxplore_object, importing.specxplore_session):
             GLOBAL_DATA = specxplore_object
             GLOBAL_DATA.scale_coordinate_system(scaler)
             print("Session data updated.")
