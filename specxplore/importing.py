@@ -7,7 +7,7 @@ from typing import List, TypedDict, Tuple, Dict, NamedTuple, Union
 import copy
 from specxplore import importing_cython
 from specxplore import utils
-from specxplore.netview import SELECTED_NODES_STYLE, GENERAL_STYLE, SELECTION_STYLE
+from specxplore.constants import SELECTED_NODES_STYLE, GENERAL_STYLE, NETVIEW_STYLE
 import os
 import json 
 import pickle
@@ -256,7 +256,7 @@ class SessionData:
         } 
         self.available_classes = list(self.class_dict.keys())
         self.selected_class_data = self.class_dict[self.available_classes[0]] # initialize default
-        self.initial_style = SELECTED_NODES_STYLE + GENERAL_STYLE + SELECTION_STYLE
+        self.initial_style = SELECTED_NODES_STYLE + GENERAL_STYLE + NETVIEW_STYLE
         return None
     
 
