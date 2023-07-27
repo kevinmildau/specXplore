@@ -217,14 +217,13 @@ def cytoscape_trigger(
     return elements, styles, zoom_level, pan_location, node_degree_legend, warning_messages
     
 
-# Set focus ids and open focus menu
 @app.callback(
     Output(identifiers.DROPDOWN_FOCUS_SPECTRUM_ILOC_SELECTION, "value"),
     Output(identifiers.DROPDOWN_FOCUS_SPECTRUM_ILOC_SELECTION, "options"),
     Input(identifiers.CYTOSCAPE_MAIN_PANEL, "selectedNodeData"),
     Input(identifiers.STORE_EMPTY_SESSION_DATA_TRIGGER, "data"),  
     State(identifiers.DROPDOWN_FOCUS_SPECTRUM_ILOC_SELECTION, "options"),
-    #prevent_initial_call=True
+    prevent_initial_call=True
 )
 def displaySelectedNodeData(
     selection_data, 
@@ -249,7 +248,7 @@ def displaySelectedNodeData(
     Output(identifiers.PANEL_OFFCANVAS_FOCUS_SPECTRUM_ILOC_SELECTION, "is_open"),
     Input(identifiers.BUTTON_OPEN_FOCUS, "n_clicks"),
     State(identifiers.PANEL_OFFCANVAS_FOCUS_SPECTRUM_ILOC_SELECTION, "is_open"),
-    #prevent_initial_call=True
+    prevent_initial_call=True
 )
 def toggle_offcanvas(n1, is_open):
     if n1:
@@ -262,7 +261,7 @@ def toggle_offcanvas(n1, is_open):
     Output(identifiers.PANEL_OFFCANVAS_SETTINGS, "is_open"),
     Input(identifiers.BUTTON_OPEN_SETTINGS, "n_clicks"),
     State(identifiers.PANEL_OFFCANVAS_SETTINGS, "is_open"),
-    #prevent_initial_call=True
+    prevent_initial_call=True
 )
 def toggle_offcanvas(n1, is_open):
     if n1:
@@ -282,7 +281,7 @@ def toggle_offcanvas(n1, is_open):
     State(identifiers.STORE_EDGE_THRESHOLD, "data"),
     State(identifiers.STORE_COLORBLIND_BOOLEAN, "data"),
     State(identifiers.INPUT_TOP_K_FRAGMENT_LIMIT_FOR_FRAGMAP, "value"),
-    #prevent_initial_call=True
+    prevent_initial_call=True
 )
 def details_trigger(
         _btn_fragmap_n_clicks, 
@@ -377,7 +376,7 @@ def details_trigger(
     Output(identifiers.INPUT_EDGE_THRESHOLD, "placeholder"),
     Input(identifiers.INPUT_EDGE_THRESHOLD, "n_submit"),
     Input(identifiers.INPUT_EDGE_THRESHOLD, "value"),
-    #prevent_initial_call=True
+    prevent_initial_call=True
 )
 def update_threshold_trigger_handler(_n_submit, new_threshold):
     new_threshold, new_placeholder=utils.update_threshold(new_threshold)
@@ -390,7 +389,7 @@ def update_threshold_trigger_handler(_n_submit, new_threshold):
     Output(identifiers.PANEL_HOVER_INFO, "children"),
     Input(identifiers.CYTOSCAPE_MAIN_PANEL, "mouseoverNodeData"),
     State(identifiers.DROPDOWN_SELECT_CLASS_LEVEL, "value"),
-    #prevent_initial_call=True
+    prevent_initial_call=True
 )
 def displaymouseoverData(data, selected_class_level):
     """ Callback Function renders class table information and id for hovered over node in text panel."""
