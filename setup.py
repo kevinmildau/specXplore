@@ -1,4 +1,5 @@
 #cython: language_level=3
+# python3 setup.py install
 from setuptools import setup, Extension
 from Cython.Build import cythonize
 import os
@@ -6,9 +7,9 @@ import os
 directory_name = './specxplore'
 module_name_list = [
     'egonet_cython', 
-    'clustnet_cython', 
-    'data_transfer_cython', 
-    'specxplore_data_cython']
+    'netview_cython', 
+    'utils_cython', 
+    'importing_cython']
 module_paths = [
      Extension(
         f'specxplore.{name}',
@@ -38,7 +39,9 @@ setup(
         'pandas',
         'cython',
         'scipy',
-        "protobuf<=3.20.2"
+        'protobuf<=3.20.2', # older version needed for ms2query to be importable
+        'dash_daq',
+        'dash_bootstrap_components'
         ],
         extras_require={
             'dev': ['pytest']}

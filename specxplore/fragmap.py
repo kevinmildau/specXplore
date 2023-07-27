@@ -2,18 +2,16 @@ from dash import html, dcc
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-import matchms
-from specxplore.specxplore_data import Spectrum, SpectraDF, filter_spectrum_top_k_intensity_fragments
+from specxplore.importing import Spectrum, SpectraDF, filter_spectrum_top_k_intensity_fragments
 from typing import List, Union
 import copy
-from specxplore.compose import compose_function
-from functools import partial
-from warnings import warn
 
 # TODO: REFACTOR THE PANEL GENERATOR
 def generate_fragmap_panel(
         spectrum_identifier_list : List[int], 
-        all_spectra_list : List[Spectrum], top_k : int) -> html.Div:
+        all_spectra_list : List[Spectrum], 
+        top_k : int
+        ) -> html.Div:
     """ 
     Generate fragmap panel.
 
@@ -25,6 +23,7 @@ def generate_fragmap_panel(
     Raises:
         None.
     """
+
     if not spectrum_identifier_list or len(spectrum_identifier_list) < 2:
         empty_output_panel = [html.H6(("Select focus data and press generate fragmap button for fragmap."))]
         return empty_output_panel
@@ -35,7 +34,7 @@ def generate_fragmap_panel(
     spectrum_bin_template = [
         round(x, 1) 
         for x in list(np.arange(0, 1000 + mass_to_charge_ratio_step_size, mass_to_charge_ratio_step_size))]
-    fragmap = generate_fragmap(selected_spectra, 0.0, 1, 0, 1000, spectrum_bin_template, 0, top_k, 200)
+    fragmap = generate_fragmap(selected_spectra, 0.0, 1, 0, 1000, spectrum_bin_template, top_k)
     fragmap_output_panel = [dcc.Graph(id = "fragmap-panel", figure=fragmap, style={
         "width":"100%","height":"100%", "border":"1px grey solid"})]
     return(fragmap_output_panel)
@@ -53,6 +52,7 @@ def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> SpectraDF:
     Returns: 
         SpectraDF object with long format pandas data frame with all data needed for plotting fragmap.
     """
+
     # Check that all information required for data frame creation is present in spectrum object
     for spectrum in spectrum_list:
         assert spectrum.is_binned_spectrum == True, "spectrum list to pandas expects binned spectra as input."
@@ -61,7 +61,7 @@ def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> SpectraDF:
     # Add spectra to data frame list
     for spectrum in spectrum_list:
         n_repeats = len(spectrum.mass_to_charge_ratios)
-        spectrum_identifier_repeated = np.repeat(spectrum.identifier, n_repeats)
+        spectrum_identifier_repeated = np.repeat(spectrum.spectrum_iloc, n_repeats)
         is_binned_spectrum_repeated = np.repeat(spectrum.is_binned_spectrum, n_repeats)
         is_neutral_loss_repeated = np.repeat(spectrum.is_neutral_loss, n_repeats)
         tmp_df = pd.DataFrame({
@@ -102,6 +102,7 @@ def bin_spectrum(spectrum : Spectrum, bin_map : np.ndarray) -> Spectrum:
 
         intensity_aggregate_list -> List with sub lists of all intensity values joined into single bin.
     """
+
     mz_values = copy.deepcopy(spectrum.mass_to_charge_ratios)
     assert (max(mz_values) <= max(bin_map)) and (min(mz_values) >= min(bin_map)), ("All mz values in spectrum must be" 
         f" within range of bin_map, i.e. {min(bin_map)} and {max(bin_map)}")
@@ -140,7 +141,8 @@ def bin_spectrum(spectrum : Spectrum, bin_map : np.ndarray) -> Spectrum:
     output_spectrum = Spectrum(
         mass_to_charge_ratios=np.array(mass_to_charge_ratio_list),
         precursor_mass_to_charge_ratio=copy.deepcopy(spectrum.precursor_mass_to_charge_ratio),
-        identifier=copy.deepcopy(spectrum.identifier),
+        spectrum_iloc=copy.deepcopy(spectrum.spectrum_iloc),
+        feature_id=copy.deepcopy(spectrum.feature_id),
         intensities=np.array(intensity_list),
         intensity_aggregate_list=intensity_aggregate_list,
         mass_to_charge_ratio_aggregate_list=mass_to_charge_ratio_aggregate_list,
@@ -165,7 +167,8 @@ def compute_neutral_loss_spectrum(spectrum: Spectrum) -> Spectrum:
     neutral_loss_spectrum = Spectrum(
         mass_to_charge_ratios = neutral_losses_mass_to_charge_ratios, 
         precursor_mass_to_charge_ratio = copy.deepcopy(spectrum.precursor_mass_to_charge_ratio), 
-        identifier = copy.deepcopy(spectrum.identifier),
+        spectrum_iloc = copy.deepcopy(spectrum.spectrum_iloc),
+        feature_id= copy.deepcopy(spectrum.feature_id),
         intensities = neutral_losses_intensities,
         is_neutral_loss = True)
     return neutral_loss_spectrum
@@ -187,14 +190,15 @@ def generate_prevalence_filtered_df(
     be visualized. A re-introduction step for any observed fragments could be added via joining the is_loss = False
     row subset of the dataframe with the filtered set (inner join).
     """
+
     assert n_min_occurrences >=1 and isinstance(n_min_occurrences, int), (
         "n_min_occurrences must be an integer above or equal to 1.")
     if spectra_df == None: 
         return None
     output_df = spectra_df.get_data()
-    if n_min_occurrences > np.unique(output_df["spectrum_identifier"]).size:
-        warn("n_min_occurrences exceeds number of spectra. Return None.", UserWarning)
-        return None
+    #if n_min_occurrences > np.unique(output_df["spectrum_identifier"]).size:
+    #    warn("n_min_occurrences exceeds number of spectra. Return None.", UserWarning)
+    #    return None
     output_df = output_df.groupby('mass_to_charge_ratio').filter(lambda x: len(x) >= n_min_occurrences)
     # TODO: Consider adding optional rejoin of filtered out real spectra with is_loss == False subset inner join. 
     #       Beware of issues empty df issues with this approach however.
@@ -204,7 +208,10 @@ def generate_prevalence_filtered_df(
     return SpectraDF(output_df)
 
 def generate_mz_range_filtered_df(
-    spectra_df : Union[SpectraDF, None], mz_min : float, mz_max : float) -> Union[SpectraDF, None]:
+        spectra_df : Union[SpectraDF, None], 
+        mz_min : float, 
+        mz_max : float
+        ) -> Union[SpectraDF, None]:
     """ 
     Generate copy of spectrum_df with rows filtered to have mz values in specified range.
     
@@ -218,6 +225,7 @@ def generate_mz_range_filtered_df(
     Raises:
         ValueError: if mz_min > mz_max.    
     """
+
     assert mz_min < mz_max, "mz_min must be strictly smaller than mz_max"
     output_df = spectra_df.get_data()
 
@@ -231,7 +239,9 @@ def generate_mz_range_filtered_df(
     return SpectraDF(output_df)
 
 def generate_intensity_filtered_df(
-    spectra_df : Union[SpectraDF, None], intensity_min : float) -> Union[SpectraDF, None]:
+        spectra_df : Union[SpectraDF, None], 
+        intensity_min : float
+        ) -> Union[SpectraDF, None]:
     """ 
     Generate copy of spectrum_df with fragments filtered by minimum intensity. 
     
@@ -241,6 +251,7 @@ def generate_intensity_filtered_df(
     Returns:
         SpectraDF or None
     """
+
     output_df = spectra_df.get_data()
     if output_df is None or output_df.empty: # no data provided, return None
         return None
@@ -251,8 +262,6 @@ def generate_intensity_filtered_df(
     output_df.reset_index(inplace=True, drop=True)
     return SpectraDF(output_df)
 
-
-# TODO: subdivide and make single level of abstraction.
 
 def generate_order_index(value_series : pd.Series) -> np.ndarray:
     """ Generate rank order List for data im value_series. 
@@ -280,8 +289,10 @@ def list_to_string(input_list : List) -> str:
     return ' & '.join(map(str, input_list))
 
 def generate_hovertext_addon_labels(
-    mass_to_charge_ratio_aggregate_series : pd.Series, intensity_aggregate_series : pd.Series, 
-    is_neutral_loss_series : pd.Series) -> List[str]:
+        mass_to_charge_ratio_aggregate_series : pd.Series, 
+        intensity_aggregate_series : pd.Series, 
+        is_neutral_loss_series : pd.Series
+        ) -> List[str]:
     """ 
     Helper function used in get_heatmap. Generates list of hovertext strings for each element in fragmap scatter.
 
@@ -293,6 +304,7 @@ def generate_hovertext_addon_labels(
         List[str] with hover-text addons.
 
     """
+
     hover_text_list = []
     for mz, intensity, is_loss in zip(mass_to_charge_ratio_aggregate_series.tolist(), 
         intensity_aggregate_series.tolist(), is_neutral_loss_series.tolist()):
@@ -303,7 +315,10 @@ def generate_hovertext_addon_labels(
             hover_text_list.append(f"Original loss value(s): {list_to_string(np.round(mz,3))}")
     return hover_text_list
 
-def generate_neutral_loss_marker_shapes(mz_bin_index : pd.Series, spec_index : pd.Series) -> List[go.layout.Shape]:
+def generate_neutral_loss_marker_shapes(
+        mz_bin_index : pd.Series, 
+        spec_index : pd.Series
+        ) -> List[go.layout.Shape]:
     """ Helper Function for get_heatmap. Generate maker shapes for neutral loss visualization in Fragmap. """
     radius = 0.25 # Fixed value, must be below 0.5 to guarantee circle marker is contained within heatmap cell
     static_shape_setting_kwargs = {'type': 'circle', 'xref': 'x', 'yref': 'y', 'fillcolor': '#882255', 'opacity' : 0.5}
@@ -313,8 +328,13 @@ def generate_neutral_loss_marker_shapes(mz_bin_index : pd.Series, spec_index : p
     return neutral_loss_marker_shapes
 
 def generate_fragmap_figure_object(
-    heatmap_trace, neutral_loss_marker_shapes, y_axis_tickvals, y_axis_ticktext, x_axis_tickvals, 
-    x_axis_ticktext) -> go.Figure:
+        heatmap_trace, 
+        neutral_loss_marker_shapes, 
+        y_axis_tickvals, 
+        y_axis_ticktext, 
+        x_axis_tickvals, 
+        x_axis_ticktext
+        ) -> go.Figure:
     """ Helper function for get_heatmap(). Assembles fragmap figure from traces and axis information. """
     fragmap_figure = go.Figure(data=[heatmap_trace])
     fragmap_figure.update_layout(
@@ -399,7 +419,9 @@ def get_heatmap(spectra_df: Union[SpectraDF, None]):
     return fragmap_figure
 
 def join_spectradf(
-    spectrum_df : Union[SpectraDF, None], losses_df : Union[SpectraDF, None]) -> Union[SpectraDF, None]:
+        spectrum_df : Union[SpectraDF, None], 
+        losses_df : Union[SpectraDF, None]
+        ) -> Union[SpectraDF, None]:
     """ Joins spectra and losses data frames together provided they are not both None. """
     if spectrum_df is not None:
         spectrum_pandas = spectrum_df.get_data()
@@ -414,9 +436,14 @@ def join_spectradf(
     return SpectraDF(pd.concat([spectrum_pandas, losses_pandas]))
 
 def generate_fragmap(
-    spectrum_list : List[Spectrum], relative_intensity_threshold : float, prevalence_threshold : int,
-    mass_to_charge_ratio_minimum : float, mass_to_charge_ratio_maximum : float, bin_map : List[float],
-    root_spectrum_identifier : int, top_k : int, max_number_of_binned_fragments : int = 200) -> None:
+        spectrum_list : List[Spectrum], 
+        relative_intensity_threshold : float, 
+        prevalence_threshold : int,
+        mass_to_charge_ratio_minimum : float, 
+        mass_to_charge_ratio_maximum : float, 
+        bin_map : List[float],
+        top_k : int, 
+        ) -> None:
     """ Processes list of spectra and generates fragmap graph. 
 
     :param spectrum_list: List of Spectrum objects with mass_to_charge_ratios and intensities arrays.
@@ -429,11 +456,6 @@ def generate_fragmap(
         cut.
     :param bin_map: List with sequence of mass to charge ratio values to be used for binning. Usually a sequence from
         0 to 1000 in steps of 0.1, e.g. 0, 0.1, 0.2, 0.3 ... 999.8, 999.9, 1000.
-    :param root_spectrum_identifier: Spectrum identifier for spectrum to be used as lowest entry in fragmap.
-    :param max_number_of_binned_fragments: Maximum number of binned fragments per Spectrum considered. If, after all
-        other filtering steps, a spectrum exceeds this number of fragments, the spectrum is truncated to the fragments
-        with the largest 200 intensities (i.e. low intensity noise fragment removal). Deactivating this behavior can be 
-        achieved by setting the max number of fragments very high (e.g. 9999), but may lead to unreadable fragmaps.
     """
     # TODO: CONSIDER: prefilter spectra to size 200 before doing all data processing. Requires additional input?
 
@@ -447,15 +469,13 @@ def generate_fragmap(
     # construct spectra df and neutral loss df
     spectra_df = spectrum_list_to_pandas(binned_spectrum_list)
     losses_df = spectrum_list_to_pandas(neutral_loss_spectrum_list)
-
-    # Compose filter pipeline function using provided settings
-    filter_pipeline_spectra = compose_function(
-        partial(generate_intensity_filtered_df, intensity_min=relative_intensity_threshold),
-        partial(generate_mz_range_filtered_df, 
-            mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum))
     
     # Apply filters for mz and intensity values
-    filtered_spectra_df = filter_pipeline_spectra(spectra_df)
+    filtered_spectra_df = generate_intensity_filtered_df(
+        spectra_df, relative_intensity_threshold)
+    filtered_spectra_df = generate_mz_range_filtered_df(
+        spectra_df,  mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum)
+    
     filtered_losses_df = generate_mz_range_filtered_df(
         losses_df, mz_min = mass_to_charge_ratio_minimum, mz_max = mass_to_charge_ratio_maximum)
 
