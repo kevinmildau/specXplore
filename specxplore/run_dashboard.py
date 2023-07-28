@@ -11,10 +11,13 @@ import numpy as np
 from typing import Union
 
 # Load Initial Data State (to be migrated to within package data structure)
-specxplore_input_file = "/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore-illustrative-examples/data/data_wheat_output/specxplore_wheat.pickle"
-with open(specxplore_input_file, "rb") as handle:
-    GLOBAL_DATA = pickle.load(handle) 
-    GLOBAL_DATA.scale_coordinate_system(400)
+
+global GLOBAL_DATA
+#GLOBAL_DATA = importing.load_default_app_data()
+#specxplore_input_file = "/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore-illustrative-examples/data/data_wheat_output/specxplore_wheat.pickle"
+#with open(specxplore_input_file, "rb") as handle:
+#    GLOBAL_DATA = pickle.load(handle) 
+#    GLOBAL_DATA.scale_coordinate_system(400)
 
 # possible themes: VAPOR, UNITED, SKETCHY; see more:  https://bootswatch.com/
 app=Dash(external_stylesheets=[dbc.themes.UNITED])
@@ -561,15 +564,14 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
         ...
     return {"None": None}
 
-def attach_colorblind_toggle_callback(app : Dash) -> None:
-    @app.callback(
-        Output(identifiers.STORE_COLORBLIND_BOOLEAN, "data"),
-        Input(identifiers.SWITCH_AUGMAP_COLORBLIND_CHANGE, "on")
-    )
-    def update_output(on_off_state):
-        return on_off_state
 
-attach_colorblind_toggle_callback(app)
+@app.callback(
+    Output(identifiers.STORE_COLORBLIND_BOOLEAN, "data"),
+    Input(identifiers.SWITCH_AUGMAP_COLORBLIND_CHANGE, "on")
+)
+def update_output(on_off_state):
+    return on_off_state
+
 
 if __name__ == "__main__":    
-    app.run(debug=True, port="8999")
+    app.run(debug=True, port="8050")

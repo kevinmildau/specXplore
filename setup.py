@@ -5,6 +5,7 @@ from Cython.Build import cythonize
 import os
 
 directory_name = './specxplore'
+
 module_name_list = [
     'egonet_cython', 
     'netview_cython', 
@@ -21,6 +22,8 @@ module_paths = [
 setup(
     name='specxplore',
     ext_modules=cythonize(module_paths, compiler_directives = {'language_level': '3'}),
+    include_package_data=True, 
+    package_data={"specxplore" : [os.path.join("specxplore", "data", "default_app_data.pickle")]},
     packages=['specxplore'],
     python_requires='>=3.8',
     version = '0.0.0',
@@ -50,6 +53,5 @@ setup(
 directories = os.listdir(directory_name)
 for item in directories:
     if item.endswith('.cpp'):
-         os.remove(os.path.join(directory_name, item))
-
-
+        os.remove(os.path.join(directory_name, item))
+    
