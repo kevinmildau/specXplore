@@ -2,7 +2,7 @@ from dash import dcc, html, ctx, dash_table, Dash
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 from specxplore import degreemap, egonet, augmap, fragmap, netview, utils, specplot, identifiers, importing, layouts
-from specxplore.constants import COLORS
+from specxplore.constants import COLORS, UNICODE_X
 
 import pickle
 import plotly.graph_objects as go
@@ -11,6 +11,7 @@ import numpy as np
 from typing import Union
 
 global GLOBAL_DATA
+
 
 # possible themes: VAPOR, UNITED, SKETCHY; see more:  https://bootswatch.com/
 app=Dash(external_stylesheets=[dbc.themes.UNITED])
@@ -95,7 +96,7 @@ def cytoscape_trigger(
         styles = GLOBAL_DATA.initial_style + tmp_colors
     if case_too_many_classes_to_be_highlighted:
         warning_messages += (
-            f" \n❌Number of classes selected = {len(classes_to_be_highlighted)}" 
+            f" \n{UNICODE_X}Number of classes selected = {len(classes_to_be_highlighted)}" 
             f"exceeds available colors = {max_colors}."
             " Please select fewer classes for highlighting.")
         classes_to_be_highlighted = classes_to_be_highlighted[0:8]
@@ -124,11 +125,11 @@ def cytoscape_trigger(
         )
         if n_omitted_edges != int(0):
             warning_messages += (
-                f"  \n❌Current settings (threshold, maximum node degree) lead to edge omission." 
+                f"  \n{UNICODE_X}Current settings (threshold, maximum node degree) lead to edge omission." 
                 f" {n_omitted_edges} edges with lowest edge weight removed from visualization."
             )
     if case_generate_clustnet_fails_because_no_selection:
-        warning_messages += (f"\n❌ No nodes selected, no edges can be rendered.")
+        warning_messages += (f"\n{UNICODE_X} No nodes selected, no edges can be rendered.")
     
     case_generate_egonet = (
         btn == identifiers.BUTTON_RUN_EGONET 
@@ -157,15 +158,15 @@ def cytoscape_trigger(
         )
         if n_omitted_edges != int(0):
             warning_messages += (
-                f"  \n❌Current settings (threshold, maximum node degree, hop distance) lead to edge omission."
+                f"  \n{UNICODE_X}Current settings (threshold, maximum node degree, hop distance) lead to edge omission."
                 f"{n_omitted_edges} edges removed from visualization. These either exceeded maximum node degrees "
                 "in branching tree or were low similarity edges removed to avoid exceeding maximum edge numbers."
             )
     if case_generate_egonet_fails_because_no_selection:
-        warning_messages += (f"  \n❌ No node selected, no edges can be shown.")
+        warning_messages += (f"  \n{UNICODE_X} No node selected, no edges can be shown.")
     if case_generate_egonet_fails_because_multiselection:
         warning_messages += (
-            f"  \n❌More than one node selected. Select single spectrum as egonode."
+            f"  \n{UNICODE_X}More than one node selected. Select single spectrum as egonode."
         )
 
     if btn == identifiers.BUTTON_RUN_DEGREE_MAP:
@@ -182,7 +183,7 @@ def cytoscape_trigger(
             ]
         else:
             styles = GLOBAL_DATA.initial_style
-            warning_messages += (f"  \n❌ Threshold too stringent. All node degrees are zero.")
+            warning_messages += (f"  \n{UNICODE_X} Threshold too stringent. All node degrees are zero.")
     case_change_node_selection_but_keep_style = (
         btn == identifiers.DROPDOWN_FOCUS_SPECTRUM_ILOC_SELECTION
         and spec_id_selection
@@ -362,7 +363,7 @@ def details_trigger(
     else:
         panel = []
         warning_message = (
-            "  \n❌ Insufficient or too many spectra selected for requested details view."
+            "  \n{UNICODE_X} Insufficient or too many spectra selected for requested details view."
         )
     return panel, warning_message
 
