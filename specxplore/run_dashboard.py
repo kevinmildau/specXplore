@@ -10,14 +10,7 @@ import os
 import numpy as np
 from typing import Union
 
-# Load Initial Data State (to be migrated to within package data structure)
-
 global GLOBAL_DATA
-#GLOBAL_DATA = importing.load_default_app_data()
-#specxplore_input_file = "/Users/kevinmildau/Dropbox/univie/Project embedding a molecular network/development/specxplore-illustrative-examples/data/data_wheat_output/specxplore_wheat.pickle"
-#with open(specxplore_input_file, "rb") as handle:
-#    GLOBAL_DATA = pickle.load(handle) 
-#    GLOBAL_DATA.scale_coordinate_system(400)
 
 # possible themes: VAPOR, UNITED, SKETCHY; see more:  https://bootswatch.com/
 app=Dash(external_stylesheets=[dbc.themes.UNITED])
