@@ -123,7 +123,6 @@ class Spectrum:
     intensities : np.ndarray
     feature_id : np.string_
 
-    # TDOD fix tuple to list of list
     mass_to_charge_ratio_aggregate_list : field(default_factory=tuple) = ()
     intensity_aggregate_list : field(default_factory=tuple) = ()
     is_binned_spectrum : bool = False
