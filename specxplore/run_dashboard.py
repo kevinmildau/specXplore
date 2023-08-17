@@ -321,7 +321,6 @@ def details_trigger(
                 color="white", 
                 border = "1px solid black" 
             ),
-            #style_data=dict(backgroundColor="white"),
             sort_action="native",
             page_size=10,
             style_table={"overflowX": "auto"},
