@@ -591,13 +591,18 @@ class SessionData:
         assert not np.isclose([scaler], [0], rtol=1e-05, atol=1e-08, equal_nan=False)[0], (
             'Scaling with 0 or near 0 not allowed; likely loss of data!'
         )
-        self.tsne_coordinates_table["x"] = utils.scale_array_to_minus1_plus1(
+        self.tsne_coordinates_table["x"] = scale_array_to_minus1_plus1(
              self.tsne_coordinates_table["x"].to_numpy()
              ) * scaler
-        self.tsne_coordinates_table["y"] = utils.scale_array_to_minus1_plus1(
+        self.tsne_coordinates_table["y"] = scale_array_to_minus1_plus1(
              self.tsne_coordinates_table["y"].to_numpy()
              ) * scaler
 
+
+def scale_array_to_minus1_plus1(array : np.ndarray) -> np.ndarray:
+    """ Rescales array to lie between -1 and 1."""
+    out = 2.*(array - np.min(array))/np.ptp(array)-1
+    return out
 
 def convert_matchms_spectra_to_specxplore_spectra(
         spectra = List[matchms.Spectrum]
