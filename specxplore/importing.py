@@ -19,8 +19,6 @@ from scipy.stats import pearsonr, spearmanr
 from sklearn.manifold import TSNE
 import plotly.graph_objects as go
 import plotly.express
-
-
 import matchms.utils 
 import json
 import urllib
@@ -40,9 +38,6 @@ import pandas as pd
 from collections import namedtuple
 from networkx import read_graphml
 from networkx.readwrite import json_graph
-
-
-
 
 @dataclass
 class KmedoidGridEntry():
@@ -228,6 +223,7 @@ class SessionData:
         self.initial_style = None
         self.initial_node_elements = None
     
+
     def initialize_specxplore_session(self) -> None:
         ''' Wrapper for cosmetic and quantitative network variable initialization based on input data. '''
 
@@ -273,6 +269,7 @@ class SessionData:
         self.values = values
         return None
     
+
     def attach_addon_data_to_metadata(self, addon_data : pd.DataFrame) -> None:
         """ Attach additional metadata contained within pd.DataFrame to existing metadata via feature_id overlap. """
         # Metadata table always initiated to init_table
@@ -982,7 +979,11 @@ def remove_white_space_from_df(input_df : pd.DataFrame) -> pd.DataFrame:
     White space removal is essential for accurate chemical classification parsing in node highlighting of specXplore.
     '''
     output_df = copy.deepcopy(input_df)
-    output_df = input_df.replace(to_replace=" ", value = "_", regex=True)
+    output_df = input_df.replace(to_replace = " ", value = "_", regex=True)
+    output_df = output_df.replace(to_replace = ";", value = "--", regex=True)
+    output_df = output_df.replace(to_replace = ",", value = "", regex=True)
+    output_df = output_df.replace(to_replace = ",", value = "", regex=True)
+    output_df = output_df.replace(to_replace = '\W', value = '', regex = True)  # any remaining non numeric or letter removed
     return output_df
 
 
