@@ -114,7 +114,7 @@ def cytoscape_trigger(
         elements, styles, n_omitted_edges = netview.generate_cluster_node_link_diagram_cythonized(
             GLOBAL_DATA.tsne_coordinates_table, 
             spec_id_selection,
-            GLOBAL_DATA.scores_ms2deepscore, 
+            GLOBAL_DATA.primary_score, 
             all_class_level_assignments,
             threshold, 
             GLOBAL_DATA.sources, 
@@ -334,10 +334,12 @@ def details_trigger(
         ):
         panel = augmap.generate_augmap_panel(
             selection_data, 
-            GLOBAL_DATA.scores_ms2deepscore, 
-            GLOBAL_DATA.scores_modified_cosine , 
-            GLOBAL_DATA.scores_spec2vec, 
-            threshold, colorblind_boolean
+            GLOBAL_DATA.primary_score, 
+            GLOBAL_DATA.secondary_score , 
+            GLOBAL_DATA.tertiary_score, 
+            threshold, 
+            colorblind_boolean,
+            GLOBAL_DATA.score_names
         )
         
     elif btn == identifiers.BUTTON_RUN_SPECPLOT and selection_data and len(selection_data) <=max_number_specplot:
