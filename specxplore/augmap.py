@@ -128,8 +128,8 @@ def construct_rectangle_marker_shapes(
 
 def generate_overlay_markers(
         idx, 
-        similarity_matrix_1, 
-        similarity_matrix_2, 
+        primary_score, 
+        secondary_score, 
         threshold, 
         colorblind = False
         ):
@@ -143,16 +143,16 @@ def generate_overlay_markers(
 
     all_possible_edges = list(
         itertools.combinations(
-            iterable = np.arange(0, similarity_matrix_1.shape[1]), 
+            iterable = np.arange(0, primary_score.shape[1]), 
             r = 2
         )
     )
     # Construct circle markers for similarity matrix 1
     shapes_circles = construct_circle_marker_shapes(
-        idx, color, all_possible_edges, threshold, similarity_matrix_1)
+        idx, color, all_possible_edges, threshold, primary_score)
     # Construct rectangle markers for similarity matrix 2
     shapes_rectangles = construct_rectangle_marker_shapes(
-        idx, color, all_possible_edges, threshold, similarity_matrix_2)
+        idx, color, all_possible_edges, threshold, secondary_score)
     return shapes_circles, shapes_rectangles
 
 def construct_redblue_diverging_coloscale(threshold):
@@ -185,10 +185,11 @@ def generate_heatmap_colorscale(threshold, colorblind = False):
 
 def generate_heatmap_trace(
         ids, 
-        similarity_matrix_1, 
-        similarity_matrix_2, 
-        similarity_matrix_3, 
-        colorscale
+        primary_score, 
+        secondary_score, 
+        tertiary_score, 
+        colorscale,
+        score_names
         ):
     """ Returns main heatmap trace for AugMap. """
 
@@ -196,13 +197,13 @@ def generate_heatmap_trace(
         go.Heatmap(
             x=ids, 
             y=ids, 
-            z = similarity_matrix_1, 
+            z = primary_score, 
             type = 'heatmap', 
-            customdata= np.dstack((similarity_matrix_2, similarity_matrix_3)),
+            customdata= np.dstack((secondary_score, tertiary_score)),
             hovertemplate=(
-                'X: %{x}<br>Y: %{y}<br>MS2DeepScore: %{z:.4f}<br>'
-                'Mod.Cosine:%{customdata[0]:.4f}<br>'
-                'Spec2Vec: %{customdata[1]:.4f}<extra></extra>'
+                ('X: %{x}<br>Y: %{y}<br>' + score_names[0] + ': %{z:.4f}<br>')
+                (score_names[1] + ':%{customdata[0]:.4f}<br>')
+                (score_names[2] + ': %{customdata[1]:.4f}<extra></extra>')
             ),
             colorscale=colorscale, 
             zmin = 0, 
@@ -215,11 +216,12 @@ def generate_heatmap_trace(
 
 def generate_augmap_graph(
         clust_selection,
-        similarity_matrix_ms2ds, 
-        similarity_matrix_modified_cosine, 
-        similarity_matrix_s2v, 
+        primary_score, 
+        secondary_score, 
+        tertiary_score, 
         threshold, 
-        colorblind = False
+        score_names,
+        colorblind = False,
         ):
     """ Constructs augmap figure object from provided data and threshold settings. """
     
@@ -228,17 +230,17 @@ def generate_augmap_graph(
     n_elements = len(idx_iloc_list)
     
     # Extract similarity matrices for selection
-    similarity_matrix_1 = extract_sub_matrix(idx_iloc_list, similarity_matrix_ms2ds)
-    similarity_matrix_2 = extract_sub_matrix(idx_iloc_list, similarity_matrix_modified_cosine)
-    similarity_matrix_3 = extract_sub_matrix(idx_iloc_list, similarity_matrix_s2v)
+    primary_score = extract_sub_matrix(idx_iloc_list, primary_score)
+    secondary_score = extract_sub_matrix(idx_iloc_list, secondary_score)
+    tertiary_score = extract_sub_matrix(idx_iloc_list, tertiary_score)
 
-    # Generate optimal order index based on ms2ds similarity matrix
-    ordered_index = generate_optimal_leaf_ordering_index(similarity_matrix_1)
+    # Generate optimal order index based on primary similarity matrix
+    ordered_index = generate_optimal_leaf_ordering_index(primary_score)
 
     # Reorder similarity matrices according to optimal leaf ordering
-    similarity_matrix_1 = reorder_matrix(ordered_index, similarity_matrix_1)
-    similarity_matrix_2 = reorder_matrix(ordered_index, similarity_matrix_2)
-    similarity_matrix_3 = reorder_matrix(ordered_index, similarity_matrix_3)
+    primary_score = reorder_matrix(ordered_index, primary_score)
+    secondary_score = reorder_matrix(ordered_index, secondary_score)
+    tertiary_score = reorder_matrix(ordered_index, tertiary_score)
 
     # Reorder ids and idx according to optimal leaf ordering (computed above)
     idx_iloc_array = np.array(idx_iloc_list)[ordered_index]
@@ -248,17 +250,18 @@ def generate_augmap_graph(
     colorscale = generate_heatmap_colorscale(threshold, colorblind)
     heatmap_trace = generate_heatmap_trace(
         ids_string_list, 
-        similarity_matrix_1, 
-        similarity_matrix_2, 
-        similarity_matrix_3, 
-        colorscale
+        primary_score, 
+        secondary_score, 
+        tertiary_score, 
+        colorscale,
+        score_names
     )
     
     # Generate overlay markers
     shapes1, shapes2 = generate_overlay_markers(
         np.arange(0, n_elements), 
-        similarity_matrix_2, 
-        similarity_matrix_3, 
+        secondary_score, 
+        tertiary_score, 
         threshold, colorblind
     )
     
@@ -280,11 +283,12 @@ def generate_augmap_graph(
 
 def generate_augmap_panel(
         spectrum_ids, 
-        similarity_matrix_ms2ds, 
-        similarity_matrix_modified_cosine, 
-        similarity_matrix_s2v, 
+        primary_score, 
+        secondary_score, 
+        tertiary_score, 
         threshold, 
-        colorblind_boolean
+        colorblind_boolean,
+        score_names
         ):
     """ Class generators for augmap and places augmap figure into dash compatible container."""
     
@@ -293,10 +297,11 @@ def generate_augmap_panel(
         return [ html.H6("Provide at least 2 spec_ids for AugMap.") ]
     augmap_figure = generate_augmap_graph(
         spectrum_ids, 
-        similarity_matrix_ms2ds, 
-        similarity_matrix_modified_cosine, 
-        similarity_matrix_s2v, 
+        primary_score, 
+        secondary_score, 
+        tertiary_score, 
         threshold,
+        score_names,
         colorblind_boolean
     )
     augmap_panel = html.Div(
