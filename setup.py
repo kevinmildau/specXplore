@@ -1,5 +1,6 @@
 #cython: language_level=3
 # python3 setup.py install
+# From package directory and right environment, install package using: "pip install -e ."   
 from setuptools import setup, Extension
 from Cython.Build import cythonize
 import os
