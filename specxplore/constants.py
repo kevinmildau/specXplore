@@ -2,7 +2,8 @@
 COLORS = ["#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D", "#666666"]
 
 UNICODE_X = "❌"
-
+UNICODE_SQUARE = "□"
+UNICODE_DOT = "●"
 # Netview parameters
 NODE_SIZE = "10"
 EDGE_SIZE = "1"
