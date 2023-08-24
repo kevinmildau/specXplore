@@ -184,7 +184,7 @@ class SessionData:
     def __init__(
             self,
             spectra_list_matchms: List[matchms.Spectrum], 
-            models_and_library_folder_path : str,
+            models_and_library_folder_path : Union[str, None] = None,
             primary_score : Union[np.array, None] = None,
             secondary_score : Union[np.array, None] = None,
             tertiary_score : Union[np.array, None] = None,
@@ -211,32 +211,47 @@ class SessionData:
         self.spectra = convert_matchms_spectra_to_specxplore_spectra(spectra_list_matchms)
         self.init_table = construct_init_table(self.spectra)
 
-        # 
+         
         if (
-                primary_score != None or secondary_score != None or tertiary_score != None
-            ) and (
-                score_names == ["ms2deepscore", "modified_cosine", "spec2vec"]
-            ):
+                (isinstance(primary_score, np.ndarray) or 
+                 isinstance(secondary_score, np.ndarray) or 
+                 isinstance(tertiary_score, np.ndarray)) and  
+                list(score_names) == ["ms2deepscore", "modified_cosine", "spec2vec"]
+             ):
             warnings.warn((
                 "Custom scores provided yet score_names is default. Score names may be wrong!"
                 " When providing custom scores make sure to update"
-                " score names to reflect the scores provided.")
+               " score names to reflect the scores provided.")
             )
         
+        if (
+                (not isinstance(primary_score, np.ndarray) or not isinstance(tertiary_score, np.ndarray)) and
+                models_and_library_folder_path == None
+            ):
+            warnings.warn(
+                ("Primary and secondary score matrices are not provided yet no library path is provided."
+                 " Default method pairwise similarities can only be computed"
+                 " with provided pre-trained models.")
+            )
+
+
         # Construct default pairwise similarity matrices from matchms spectra if none provided
-        if primary_score == None:
-            self.primary_score = compute_similarities_ms2ds(
+        if not isinstance(primary_score, np.ndarray):
+            primary_score = compute_similarities_ms2ds(
                 spectra_list_matchms, models_and_library_folder_path
             )
-        if secondary_score == None:
-            self.secondary_score = compute_similarities_cosine(
+        if not isinstance(secondary_score, np.ndarray):
+            secondary_score = compute_similarities_cosine(
             spectra_list_matchms, 
             cosine_type="ModifiedCosine"
         )
-        if tertiary_score == None:
-            self.tertiary_score = compute_similarities_s2v(
+        if not isinstance(tertiary_score, np.ndarray):
+            tertiary_score = compute_similarities_s2v(
             spectra_list_matchms, models_and_library_folder_path
         )
+        self.primary_score = primary_score
+        self.secondary_score = secondary_score
+        self.tertiary_score = tertiary_score
         self.score_names = score_names
 
         # Initialize data tables to None
