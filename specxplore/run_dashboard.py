@@ -364,7 +364,7 @@ def details_trigger(
     else:
         panel = []
         warning_message = (
-            "  \n{UNICODE_X} Insufficient or too many spectra selected for requested details view."
+            f"  \n{UNICODE_X} Insufficient or too many spectra selected for requested details view."
         )
     return panel, warning_message
 
