@@ -5,7 +5,7 @@ import itertools
 from dash import html, dcc
 import plotly.express as px
 from typing import List
-
+from specxplore.constants import UNICODE_DOT, UNICODE_SQUARE
 def generate_optimal_leaf_ordering_index(similarity_matrix : np.ndarray):
     """ Function generates optimal leaf ordering index for given similarity matrix. """
 
@@ -200,10 +200,17 @@ def generate_heatmap_trace(
             z = primary_score, 
             type = 'heatmap', 
             customdata= np.dstack((secondary_score, tertiary_score)),
-            hovertemplate=(
-                ('X: %{x}<br>Y: %{y}<br>' + score_names[0] + ': %{z:.4f}<br>')
-                (score_names[1] + ':%{customdata[0]:.4f}<br>')
-                (score_names[2] + ': %{customdata[1]:.4f}<extra></extra>')
+            hovertemplate = ''.join([
+                    'X: %{x}<br>Y: %{y}<br>', 
+                    score_names[0], # primary score
+                    ': %{z:.4f}<br>',
+                    UNICODE_DOT, 
+                    score_names[1], # secondary score
+                    ':%{customdata[0]:.4f}<br>',
+                    UNICODE_SQUARE,
+                    score_names[2], # tertiary score
+                    ': %{customdata[1]:.4f}<extra></extra>'  
+                ]
             ),
             colorscale=colorscale, 
             zmin = 0, 
