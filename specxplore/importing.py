@@ -38,6 +38,7 @@ import pandas as pd
 from collections import namedtuple
 from networkx import read_graphml
 from networkx.readwrite import json_graph
+import warnings
 
 @dataclass
 class KmedoidGridEntry():
@@ -151,6 +152,12 @@ class SessionData:
     similarity matrices, define spectrum_iloc and feature_id mapping, and constructs the list of specXplore spectra used 
     within the dashboard visualizations. Any spectra data processing is assumed to have been done before initating the 
     SessionData object.
+
+    SessionData contains three scores, primary_score, secondary_score, and tertiary_score. The primary_score is used
+    for t-SNE embedding, k-medoid clustering, and network variable construction. Secondary and tertiary scores are 
+    merely added for comparative purposes. The default scores are ms2deepscore as primary score, modified_cosine as
+    secondary score, and spec2vec as tertiary score. Score names are stored in self.score_names and must be manually
+    added when using custom score input.
     
     Usage Workflow:
     ---------------
@@ -177,39 +184,75 @@ class SessionData:
     def __init__(
             self,
             spectra_list_matchms: List[matchms.Spectrum], 
-            models_and_library_folder_path : str
+            models_and_library_folder_path : Union[str, None] = None,
+            primary_score : Union[np.array, None] = None,
+            secondary_score : Union[np.array, None] = None,
+            tertiary_score : Union[np.array, None] = None,
+            score_names : List[str] = [
+                "ms2deepscore", "modified_cosine", "spec2vec"
+            ]
             ):
-        ''' Constructs Basic Scaffold for specXplore session without coordinate system or any metadata. '''
+        ''' 
+        Constructs Basic Scaffold for specXplore session without coordinate system or any metadata.
+
+        If no input provided, specXplore session initialized the primary, secondary, and tertiary scores to be the 
+        default ms2deepscore, modified_cosine, and spec2vec scores making use of the user provided model file paths. In
+        case of different similarity matrices (matchms.Scores.score, numpy arrays) being provided, the user should also 
+        score_names list to the corresponding scores. 
         
-        # Making sure that the spectra provided are valid and contain all required information:
-        for spectrum in spectra_list_matchms:
-            assert spectrum is not None, (
-                "None object detected in spectrum list. All spectra must be valid matchms.Spectrum instances."
-            )
-            assert spectrum.get("feature_id") is not None, (
-                "All spectra must have valid feature id entries."
-            )
-            assert spectrum.get("precursor_mz") is not None, (
-                "All spectra must have valid precursor_mz value."
-            )
-        feature_ids = [str(spec.get("feature_id")) for spec in spectra_list_matchms]
-        assert len(feature_ids) == len(set(feature_ids)), ("All feature_ids must be unique.")
+        '''
+        
+        # Data checking
+        check_spectrum_information_availability(spectra_list_matchms)
+        featrue_ids = extract_feature_ids_from_spectra(spectra_list_matchms)
+        check_feature_id_uniqueness(featrue_ids)
         
         # Convert spectra for specXplore visualization modules
         self.spectra = convert_matchms_spectra_to_specxplore_spectra(spectra_list_matchms)
         self.init_table = construct_init_table(self.spectra)
 
-        # Construct pairwise similarity matrices from matchms spectra
-        self.scores_spec2vec = compute_similarities_s2v(
-            spectra_list_matchms, models_and_library_folder_path
-        )
-        self.scores_modified_cosine = compute_similarities_cosine(
+         
+        if (
+                (isinstance(primary_score, np.ndarray) or 
+                 isinstance(secondary_score, np.ndarray) or 
+                 isinstance(tertiary_score, np.ndarray)) and  
+                list(score_names) == ["ms2deepscore", "modified_cosine", "spec2vec"]
+             ):
+            warnings.warn((
+                "Custom scores provided yet score_names is default. Score names may be wrong!"
+                " When providing custom scores make sure to update"
+               " score names to reflect the scores provided.")
+            )
+        
+        if (
+                (not isinstance(primary_score, np.ndarray) or not isinstance(tertiary_score, np.ndarray)) and
+                models_and_library_folder_path == None
+            ):
+            warnings.warn(
+                ("Primary and secondary score matrices are not provided yet no library path is provided."
+                 " Default method pairwise similarities can only be computed"
+                 " with provided pre-trained models.")
+            )
+
+
+        # Construct default pairwise similarity matrices from matchms spectra if none provided
+        if not isinstance(primary_score, np.ndarray):
+            primary_score = compute_similarities_ms2ds(
+                spectra_list_matchms, models_and_library_folder_path
+            )
+        if not isinstance(secondary_score, np.ndarray):
+            secondary_score = compute_similarities_cosine(
             spectra_list_matchms, 
             cosine_type="ModifiedCosine"
         )
-        self.scores_ms2deepscore = compute_similarities_ms2ds(
+        if not isinstance(tertiary_score, np.ndarray):
+            tertiary_score = compute_similarities_s2v(
             spectra_list_matchms, models_and_library_folder_path
         )
+        self.primary_score = primary_score
+        self.secondary_score = secondary_score
+        self.tertiary_score = tertiary_score
+        self.score_names = score_names
 
         # Initialize data tables to None
         self.metadata_table = copy.deepcopy(self.init_table)
@@ -258,7 +301,7 @@ class SessionData:
         ''' Construct the edge lists and include init styles for specxplor dashboard '''
 
         sources, targets, values = importing_cython.construct_long_format_sim_arrays(
-            self.scores_ms2deepscore
+            self.primary_score
         )  
         ordered_index = np.argsort(-values)
         sources = sources[ordered_index]
@@ -300,7 +343,7 @@ class SessionData:
             ) -> None:
         """ Generate and attach t-SNE grid """
         
-        distance_matrix = convert_similarity_to_distance(self.scores_ms2deepscore)
+        distance_matrix = convert_similarity_to_distance(self.primary_score)
         self.tsne_grid = run_tsne_grid(
             distance_matrix, 
             perplexity_values, 
@@ -316,7 +359,7 @@ class SessionData:
             ) -> None:
         """ Generate and attach kmedoid grid """
 
-        distance_matrix = convert_similarity_to_distance(self.scores_ms2deepscore)
+        distance_matrix = convert_similarity_to_distance(self.primary_score)
         self.kmedoid_grid = run_kmedoid_grid(
             distance_matrix, 
             k_values, 
@@ -516,9 +559,9 @@ class SessionData:
         assert len(selection_idx) >= 2, "specXplore object requires at least 2 spectra to be selected."
 
         # subset data structures
-        scores_ms2deepscore = self.scores_ms2deepscore[selection_idx, :][:, selection_idx].copy()
-        scores_spec2vec = self.scores_spec2vec[selection_idx, :][:, selection_idx].copy()
-        scores_modified_cosine = self.scores_modified_cosine[selection_idx, :][:, selection_idx].copy()
+        primary_score = self.primary_score[selection_idx, :][:, selection_idx].copy()
+        tertiary_score = self.tertiary_score[selection_idx, :][:, selection_idx].copy()
+        secondary_score = self.secondary_score[selection_idx, :][:, selection_idx].copy()
         
         tsne_coordinates_table = self.tsne_coordinates_table.iloc[selection_idx].copy()
         
@@ -542,9 +585,9 @@ class SessionData:
         # Create a coopy of the current session and overwrite variables
         # Current specXplore session data constructor lacks constructor for member variables available already!
         new_specxplore_session = copy.deepcopy(self)
-        new_specxplore_session.scores_ms2deepscore = scores_ms2deepscore
-        new_specxplore_session.scores_modified_cosine = scores_modified_cosine
-        new_specxplore_session.scores_spec2vec = scores_spec2vec
+        new_specxplore_session.primary_score = primary_score
+        new_specxplore_session.secondary_score = secondary_score
+        new_specxplore_session.tertiary_score = tertiary_score
         new_specxplore_session.tsne_coordinates_table = tsne_coordinates_table
         new_specxplore_session.metadata_table = metadata_table
         new_specxplore_session.class_table = class_table
@@ -566,18 +609,18 @@ class SessionData:
         format is a .npy object that can be loaded using numpy.load.
         """
         np.save(
-            os.path.join(directory_path, run_name, "ms2ds.npy"), 
-            self.scores_ms2deepscore, 
+            os.path.join(directory_path, run_name, self.score_names[0] + ".npy"), 
+            self.primary_score, 
             allow_pickle=False
         )
         np.save(
             os.path.join(directory_path, run_name, "modcos.npy"), 
-            self.scores_modified_cosine, 
+            self.secondary_score, 
             allow_pickle=False
         )
         np.save(
             os.path.join(directory_path, run_name, "s2v.npy"), 
-            self.scores_spec2vec, 
+            self.tertiary_score, 
             allow_pickle=False
         )
         return None
@@ -645,6 +688,31 @@ def construct_init_table(spectra : List[Spectrum]) -> pd.DataFrame:
     )
     init_table["feature_id"] = init_table["feature_id"].astype("string")
     return init_table
+
+
+def check_spectrum_information_availability(spectra : List[matchms.Spectrum]):
+    """ Checks if basic spectrum data contains expected entries. """
+    for spectrum in spectra:
+        assert spectrum is not None, (
+            "None object detected in spectrum list. All spectra must be valid matchms.Spectrum instances."
+        )
+        assert spectrum.get("feature_id") is not None, (
+            "All spectra must have valid feature id entries."
+        )
+        assert spectrum.get("precursor_mz") is not None, (
+            "All spectra must have valid precursor_mz value."
+        )
+    return None
+
+def extract_feature_ids_from_spectra(spectra : List[matchms.Spectrum]) -> List[str]:
+    """ Extract feature ids from list of matchms spectra in string format. """
+    feature_ids = [str(spec.get("feature_id")) for spec in spectra]
+    return feature_ids
+
+def check_feature_id_uniqueness(feature_ids : List[str]) -> None:
+    """ Checks uniqueness of feature_ids required for specXplore session to work. """
+    assert len(feature_ids) == len(set(feature_ids)), ("All feature_ids must be unique.")
+    return None
 
 
 def load_specxplore_object_from_pickle(filepath : str) -> SessionData:
