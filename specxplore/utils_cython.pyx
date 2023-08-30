@@ -12,7 +12,7 @@ from collections import Counter
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 def extract_selected_above_threshold(
-    long[:] source, long[:] target, double[:] value, long[:] selected_indexes, double threshold):
+    long long[:] source, long long[:] target, double[:] value, long long[:] selected_indexes, double threshold):
     """ Loops through similarity arrays and filters down to edges for which both nodes are in the selected indexes array 
     and are above threshold. """
     assert source.size == target.size == value.size, "Input arrays must be of equal size."
@@ -21,8 +21,8 @@ def extract_selected_above_threshold(
     cdef set selected_set = set(selected_indexes)
 
     cdef double[::1] out_value = np.zeros(max_number_edges, dtype=np.double)
-    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
-    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
+    cdef long long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
+    cdef long long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
 
     cdef int index
     cdef int counter = 0
@@ -41,14 +41,14 @@ def extract_selected_above_threshold(
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 def extract_edges_above_threshold(
-    long[:] source, long[:] target, double[:] value, double threshold):
+    long long[:] source, long long[:] target, double[:] value, double threshold):
     """ Cython function loops through similarity list and filters down to
     selection set. """
     #assert source.shape == target.shape == value.shape
     cdef int max_number_edges = int(source.shape[0])
     cdef double[::1] out_value = np.zeros(max_number_edges, dtype=np.double)
-    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
-    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
+    cdef long long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
+    cdef long long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
 
     cdef int index
     cdef int counter = 0
@@ -68,24 +68,24 @@ def extract_edges_above_threshold(
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 def extract_selected_above_threshold_top_k(
-    long[:] source, 
-    long[:] target, 
+    long long[:] source, 
+    long long[:] target, 
     double[:] value, 
-    long[:] selected_indexes, 
+    long long[:] selected_indexes, 
     double threshold,
     int top_k):
     """ Developer function that limits edge connectivity to 25 edges per node max. Follows the order of the full
     edge list in ranking the edges. Also returns the number of omitted edges, 0 if none. 
     
-    Output signature: -> long[:], long[:], double[:], int"""
+    Output signature: -> long long[:], long long[:], double[:], int"""
     assert source.size == target.size == value.size, "Input arrays must be of equal size."
     cdef int max_number_edges = int(source.shape[0])
 
     cdef set selected_set = set(selected_indexes)
 
     cdef double[::1] out_value = np.zeros(max_number_edges, dtype=np.double)
-    cdef long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
-    cdef long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
+    cdef long long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
+    cdef long long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
 
     cdef int index
     cdef int counter = 0
