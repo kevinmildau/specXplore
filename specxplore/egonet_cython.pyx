@@ -11,10 +11,10 @@ from collections import Counter
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 def creating_branching_dict_new(
-        long[:] source, 
-        long[:] target, 
-        long root, 
-        long n_levels, 
+        long long[:] source, 
+        long long[:] target, 
+        long long root, 
+        long long n_levels, 
         int max_edges):
     """
     Function creates edge branching edge lists.
@@ -127,8 +127,8 @@ def creating_branching_dict_new(
 
 def generate_edge_elements_and_styles(
         branching_dict, 
-        long[:] source, 
-        long[:] target, 
+        long long[:] source, 
+        long long[:] target, 
         nodes):
     """ 
     Generates an edge list and style list for a given branching dict.
@@ -139,11 +139,11 @@ def generate_edge_elements_and_styles(
     colors = px.colors.sample_colorscale("Viridis", [n/(n_colors -1) for n in range(n_colors)])
     opacities = np.arange(0.8, 0.4, step = -(0.8 - 0.4) / n_colors)
     # widths = np.arange(5, 0.5, step = -(5 - 0.5) / n_colors)
-    cdef long idx, key, edge
-    cdef long node_count = 0
-    cdef long node_counter = 0
-    cdef long edge_count = 0
-    cdef long edge_counter = 0
+    cdef long long idx, key, edge
+    cdef long long node_count = 0
+    cdef long long node_counter = 0
+    cdef long long edge_count = 0
+    cdef long long edge_counter = 0
     
     for idx, key in enumerate(branching_dict):
         edge_count += len(branching_dict[key]['edges'])
