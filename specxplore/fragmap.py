@@ -61,7 +61,7 @@ def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> SpectraDF:
     # Add spectra to data frame list
     for spectrum in spectrum_list:
         n_repeats = len(spectrum.mass_to_charge_ratios)
-        spectrum_identifier_repeated = np.repeat(spectrum.spectrum_iloc, n_repeats)
+        spectrum_identifier_repeated = np.repeat(np.int64(spectrum.spectrum_iloc), n_repeats)
         is_binned_spectrum_repeated = np.repeat(spectrum.is_binned_spectrum, n_repeats)
         is_neutral_loss_repeated = np.repeat(spectrum.is_neutral_loss, n_repeats)
         tmp_df = pd.DataFrame({
