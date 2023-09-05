@@ -185,3 +185,4 @@ dev_test_complete.pickle
 dev_test_part.pickle
 developer_notes.md
 notebooks/models/ms2query_library.sqlite
+notebooks/models/archive/library_GNPS_15_12_2021.sqlite
