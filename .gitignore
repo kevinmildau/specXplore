@@ -13,7 +13,8 @@ notebooks/models/ms2query_random_forest_model.onnx
 notebooks/models/spec2vec_model_GNPS_15_12_2021.model
 notebooks/models/spec2vec_model_GNPS_15_12_2021.model.syn1neg.npy
 notebooks/models/spec2vec_model_GNPS_15_12_2021.model.wv.vectors.npy
-
+notebooks/models/ms2query_library.sqlite
+notebooks/models/archive/library_GNPS_15_12_2021.sqlite
 
 .ipynb_checkpoints
 build
@@ -184,5 +185,4 @@ cython_debug/
 dev_test_complete.pickle
 dev_test_part.pickle
 developer_notes.md
-notebooks/models/ms2query_library.sqlite
-notebooks/models/archive/library_GNPS_15_12_2021.sqlite
+
