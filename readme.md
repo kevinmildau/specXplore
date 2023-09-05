@@ -42,6 +42,8 @@ Dashboard use in windows subsequently works as described in [Workflow](https://g
 
 ### Jupyter Notebook Pre-processing
 
+Data pre-processing steps and creation of the session data file are described in a tutorialized [jupyter notebook](https://github.com/kevinmildau/specXplore-prototype#jupyter-notebook-pre-processing). for dummy data. Following the steps in this jupyter notebook allows the user to create the basic input file required to run an interactive specxplore session.
+
 ### Dashboard Use
 
 To start the dashboard, follow the install guidelines above and then proceed to use the following code lines in the terminal:
