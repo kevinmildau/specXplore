@@ -75,6 +75,7 @@ def spectrum_list_to_pandas(spectrum_list: List[Spectrum]) -> SpectraDF:
         spectrum_dataframe_list.append(tmp_df)
     # Concatenate data frame list
     output_container = SpectraDF(pd.concat(objs=spectrum_dataframe_list, ignore_index=True))
+    output_container = output_container.astype({"spectrum_identifier": np.int64})
     return output_container
 
 # Pure Function.
