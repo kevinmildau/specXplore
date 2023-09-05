@@ -184,3 +184,4 @@ cython_debug/
 dev_test_complete.pickle
 dev_test_part.pickle
 developer_notes.md
+notebooks/models/ms2query_library.sqlite
