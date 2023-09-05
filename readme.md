@@ -6,7 +6,7 @@
 * [Installation guide - UNIX](https://github.com/kevinmildau/specXplore-prototype#installation-guide---unix)
 * [Installation guide - WINDOWS](https://github.com/kevinmildau/specXplore-prototype#installation-guide---windows)
 * [Workflow](https://github.com/kevinmildau/specXplore-prototype#workflow)
-* [Developer Notes](https://github.com/kevinmildau/developer-notes)
+* [Developer Notes](https://github.com/kevinmildau/specXplore-prototype#developer-notes)
 
 # Overview
 The specXplore workflow is separated into two stages. First, the user needs to process their spectral data in order to create a specXplore.SessionData object. This is done in interactive jupyter notebooks using spectral importing and processing using matchms, and session data creation using specXplores inbuilt methods. The session data object is then saved as a .pickle object to be loaded into the dashboard. Before the specXplore workflow can be used, the package and its dependencies need to be installed.
@@ -23,10 +23,7 @@ pip install "git+https://github.com/kevinmildau/specXplore-prototype.git"
 ```
 ## Installation Guide - WINDOWS
 
-```diff
-**WARNING**
-``` 
-The current version of specXplore does not run on windows machines. Differences in how operating systems handle integer types cause the main view panels to be non-responsive. 
+**WARNING:** The current version of specXplore does not run on windows machines. Differences in how operating systems handle integer types cause the main view panels to be non-responsive. 
 
 Installation of specxplore in windows requires the installation of ANACONDA for python environment management and its terminal, and Microsoft Visual C++ Redistributable for cython backend compulation. Unfortunately, the latter package involves a rather large installation taking up more than 7GB of space. The specXplore developers are not aware of any smaller installs for this in Windows. Once these two packages are installed, installation should work identically to the one in UNIX systems from the ANCONDA terminal.
 
