@@ -6,10 +6,11 @@
 * [Installation guide - UNIX](https://github.com/kevinmildau/specXplore-prototype#installation-guide---unix)
 * [Installation guide - WINDOWS](https://github.com/kevinmildau/specXplore-prototype#installation-guide---windows)
 * [Workflow](https://github.com/kevinmildau/specXplore-prototype#workflow)
-* [Developer Notes](https://github.com/kevinmildau/developer-notes)
+* [Developer Notes](https://github.com/kevinmildau/specXplore-prototype#developer-notes)
 
 # Overview
-The specXplore workflow is separated into two stages. First, the user needs to process their spectral data in order to create a specXplore.SessionData object. This is done in interactive jupyter notebooks using spectral importing and processing using matchms, and session data creation using specXplores inbuilt methods. The session data object is then saved as a .pickle object to be loaded into the dashboard. Before the specXplore workflow can be used, the package and its dependencies need to be installed.
+
+SpecXplore is a python dashboard tool for adjustable LC-MS/MS spectral data exploration. It joins a t-SNE embedding that servers as an overview representation of mass spectral similarities based on ms2deepscore with details-on-demand style interactively triggered overlay and add-on figures, including network views, similarity heatmaps, and fragmentation overview maps. The specXplore workflow is separated into two stages. First, the user needs to process their spectral data in order to create a specXplore.SessionData object. This is done in interactive jupyter notebooks using spectral importing and processing using matchms, and session data creation using specXplores inbuilt methods. The session data object is then saved as a .pickle object to be loaded into the dashboard. Before the specXplore workflow can be used, the package and its dependencies need to be installed.
 
 ## Installation Guide - UNIX
 
@@ -23,10 +24,7 @@ pip install "git+https://github.com/kevinmildau/specXplore-prototype.git"
 ```
 ## Installation Guide - WINDOWS
 
-```diff
-**WARNING**
-``` 
-The current version of specXplore does not run on windows machines. Differences in how operating systems handle integer types cause the main view panels to be non-responsive. 
+**WARNING:** The current version of specXplore does not run on windows machines. Differences in how operating systems handle integer types cause the main view panels to be non-responsive. 
 
 Installation of specxplore in windows requires the installation of ANACONDA for python environment management and its terminal, and Microsoft Visual C++ Redistributable for cython backend compulation. Unfortunately, the latter package involves a rather large installation taking up more than 7GB of space. The specXplore developers are not aware of any smaller installs for this in Windows. Once these two packages are installed, installation should work identically to the one in UNIX systems from the ANCONDA terminal.
 
@@ -44,6 +42,8 @@ Dashboard use in windows subsequently works as described in [Workflow](https://g
 
 ### Jupyter Notebook Pre-processing
 
+Data pre-processing steps and creation of the session data file are described in a tutorialized [jupyter notebook](https://github.com/kevinmildau/specXplore-prototype#jupyter-notebook-pre-processing). for dummy data. Following the steps in this jupyter notebook allows the user to create the basic input file required to run an interactive specxplore session.
+
 ### Dashboard Use
 
 To start the dashboard, follow the install guidelines above and then proceed to use the following code lines in the terminal:
@@ -60,8 +60,17 @@ import specxplore.run_dashboard
 specxplore.run_dashboard.app.run_server()
 ```
 
-This will run specXplore as a local development server that provides all specXplore functionalities. To load in data, open the settings panel and navigate to the final text input widget. Here, copy paste the full filepath (e.g. "/Users/janedoe/Documents/specxplore_session.pickle", each file explorer will have different options for obtaining this file path easily for a file) of the .pickle file containing the specxplore session data. Make sure that only the filepath is pasted, avoiding any quotation marks (i.e. '' or "").  To quit specxplore, navigate to the console with the running server instance and press ctrl+c on the console (UNIX). In addition, enter quit() in the then active python console to terminate the python process. Just closing the console also works.
+This will prompt a command line output specifying the following: "Dash is running on http://127.0.0.1:8050/". Open this link in your browser (Firefox tested) open the empty specXplore dashboard. To load in data, open the settings panel and navigate to the final text input widget. Here, copy paste the full filepath (e.g. "/Users/janedoe/Documents/specxplore_session.pickle", each file explorer will have different options for obtaining this file path easily for a file) of the .pickle file containing the specxplore session data. Make sure that only the filepath is pasted, avoiding any quotation marks (i.e. '' or ""). The data will now be loaded into specXplore and can be interacted with. If the dataset looks highly compressed in the t-SNE overview figure with many nodes overlapping, make use of the scale input above the filepath input and increase the number to get updated scale informaiton. To quit specxplore, navigate to the console with the running server instance and press ctrl+c on the console (UNIX). In addition, enter quit() in the then active python console to terminate the python process. Just closing the console also works.
 
+# Dashboard Commands
+Once the specXplore dashboard is there are a number of possible ways to interact with the visualizations. 
+
+Clicking on a node in the t-SNE overview selects it. Starting a new selection may also reset previously triggered overlays. 
+Hovering over a node will display node information in a textbox below the main t-SNE panel.
+Using ctrl+mouse drag/click one can select more than one node in the t-SNE overview.
+With appropriate node selections made, the various buttons can be used to trigger different overlay or add-on views. Overlay views are directly visualized on top of the t-SNE graph and disappear upon the next overlay visualization request. Add-on views are visualized below the t-SNE overview and the hover text box, and disappear upon the next add-on visualization request.
+
+Changing settings in the settings panel does not immediately cause reruns of the open visualizations. Instead, the button has to be explicitly pressed again to redraw the respective visualization. Note that node selections are not altered when setting new settings, omitting any need to reselect nodes for redrawing.
 
 # Developer Notes
 
