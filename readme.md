@@ -9,7 +9,8 @@
 * [Developer Notes](https://github.com/kevinmildau/specXplore-prototype#developer-notes)
 
 # Overview
-The specXplore workflow is separated into two stages. First, the user needs to process their spectral data in order to create a specXplore.SessionData object. This is done in interactive jupyter notebooks using spectral importing and processing using matchms, and session data creation using specXplores inbuilt methods. The session data object is then saved as a .pickle object to be loaded into the dashboard. Before the specXplore workflow can be used, the package and its dependencies need to be installed.
+
+SpecXplore is a python dashboard tool for adjustable LC-MS/MS spectral data exploration. It joins a t-SNE embedding that servers as an overview representation of mass spectral similarities based on ms2deepscore with details-on-demand style interactively triggered overlay and add-on figures, including network views, similarity heatmaps, and fragmentation overview maps. The specXplore workflow is separated into two stages. First, the user needs to process their spectral data in order to create a specXplore.SessionData object. This is done in interactive jupyter notebooks using spectral importing and processing using matchms, and session data creation using specXplores inbuilt methods. The session data object is then saved as a .pickle object to be loaded into the dashboard. Before the specXplore workflow can be used, the package and its dependencies need to be installed.
 
 ## Installation Guide - UNIX
 
