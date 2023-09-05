@@ -1,0 +1,2 @@
+The model files are too large to be hosted on github. To access the model files, go to the ms2query github repo [ms2query](https://github.com/iomega/ms2query) for the latest links, i.e. [https://zenodo.org/record/6124552](https://zenodo.org/record/6124552) for positive mode, and [https://zenodo.org/record/7104184](https://zenodo.org/record/7104184) for negative mode (Sept. 5, 2023).
+To run the demo, include the model files in a local folder structure as specified in the demo.ipynb example.
