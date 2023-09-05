@@ -13,8 +13,11 @@ def construct_unique_pairwise_indices_array(n_nodes):
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-def construct_long_format_sim_arrays(double[:,::1] similarity_matrix):
-    """ Constructs unqique index pair and value arrays for pairwise similarity matrix 
+def construct_long_format_sim_arrays(
+        double[:,::1] similarity_matrix
+    ):
+    """ 
+    Constructs unqique index pair and value arrays for pairwise similarity matrix.
     
     Returns:
         np.array, np.array, np.array
