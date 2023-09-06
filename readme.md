@@ -12,7 +12,7 @@
 
 SpecXplore is a python dashboard tool for adjustable LC-MS/MS spectral data exploration. It joins a t-SNE embedding that servers as an overview representation of mass spectral similarities based on ms2deepscore with details-on-demand style interactively triggered overlay and add-on figures, including network views, similarity heatmaps, and fragmentation overview maps. The specXplore workflow is separated into two stages. First, the user needs to process their spectral data in order to create a specXplore.SessionData object. This is done in interactive jupyter notebooks using spectral importing and processing using matchms, and session data creation using specXplores inbuilt methods. The session data object is then saved as a .pickle object to be loaded into the dashboard. Before the specXplore workflow can be used, the package and its dependencies need to be installed.
 
-## Installation Guide - UNIX
+## Installation Guide - Mac and Linux
 
 To install specXplore, create a new conda environment with python version 3.8 as in the first code line below. Here, the conda environment is named specxplore_environment, but you are free to choose any name without spaces. Activate this environment using the second line of code, and use pip to install specxplore from github. Note that depending on the operating system, developer tools including pip, python, and conda may need to be installed first. This will be the case if the console indicates that the conda or pip commands are not known. The pip installation may also fail because of a lack of C++ compilers which are not covered by the python package manager. For operating system specific instructions on how to set up compilers required by Cython, please refer to the [Cython Installation Guide](https://cython.readthedocs.io/en/latest/src/quickstart/install.html).
 
@@ -22,7 +22,7 @@ conda activate specxplore_environment
 pip install "git+https://github.com/kevinmildau/specXplore-prototype.git"
 
 ```
-## Installation Guide - WINDOWS
+## Installation Guide - WINDOWS (in development)
 
 **WARNING:** The current version of specXplore does not run on windows machines. Differences in how operating systems handle integer types cause the main view panels to be non-responsive. 
 
