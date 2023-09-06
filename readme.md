@@ -4,7 +4,7 @@
 
 * [Overview](https://github.com/kevinmildau/specXplore-prototype#overview)
 * [Installation guide - macos and linux](https://github.com/kevinmildau/specXplore-prototype#installation-guide---macos-and-linux)
-* [Installation guide - WINDOWS](https://github.com/kevinmildau/specXplore-prototype#installation-guide---windows)
+* [Installation guide - WINDOWS](https://github.com/kevinmildau/specXplore-prototype#installation-guide---windows-(-in-development-))
 * [Workflow](https://github.com/kevinmildau/specXplore-prototype#workflow)
 * [Developer Notes](https://github.com/kevinmildau/specXplore-prototype#developer-notes)
 
@@ -42,7 +42,7 @@ Dashboard use in windows subsequently works as described in [Workflow](https://g
 
 ### Jupyter Notebook Pre-processing
 
-Data pre-processing steps and creation of the session data file are described in a tutorialized [jupyter notebook](https://github.com/kevinmildau/specXplore-prototype/blob/e601141c817a9ea8f9f0654957a718c7da80b8af/notebooks/demo.ipynb). for dummy data. Following the steps in this jupyter notebook allows the user to create the basic input file required to run an interactive specxplore session.
+Data pre-processing steps and creation of the session data file are described in a tutorialized [jupyter notebook](https://github.com/kevinmildau/specXplore-prototype/blob/e601141c817a9ea8f9f0654957a718c7da80b8af/notebooks/demo.ipynb) for dummy data. Following the steps in this jupyter notebook allows the user to create the basic input file required to run an interactive specxplore session.
 
 ### Dashboard Use
 
@@ -60,7 +60,15 @@ import specxplore.run_dashboard
 specxplore.run_dashboard.app.run_server()
 ```
 
-This will prompt a command line output specifying the following: "Dash is running on http://127.0.0.1:8050/". Open this link in your browser (Firefox tested) open the empty specXplore dashboard. To load in data, open the settings panel and navigate to the final text input widget. Here, copy paste the full filepath (e.g. "/Users/janedoe/Documents/specxplore_session.pickle", each file explorer will have different options for obtaining this file path easily for a file) of the .pickle file containing the specxplore session data. Make sure that only the filepath is pasted, avoiding any quotation marks (i.e. '' or ""). The data will now be loaded into specXplore and can be interacted with. If the dataset looks highly compressed in the t-SNE overview figure with many nodes overlapping, make use of the scale input above the filepath input and increase the number to get updated scale informaiton. To quit specxplore, navigate to the console with the running server instance and press ctrl+c on the console (macos & linux). In addition, enter quit() in the then active python console to terminate the python process. Just closing the console also works.
+This will prompt a command line output specifying the following: "Dash is running on http://127.0.0.1:8050/". Open this link in your browser (Firefox tested) to open the empty specXplore dashboard. 
+To load in data, open the settings panel and navigate to the final text input widget. 
+Here, copy paste the full filepath (e.g. "/Users/janedoe/Documents/specxplore_session.pickle", each file explorer will have different options for obtaining this file path easily for a file) of the .pickle file containing the specxplore session data. 
+Make sure that only the filepath is pasted, avoiding any quotation marks (i.e. '' or ""). 
+The data will now be loaded into specXplore and can be interacted with. 
+If the dataset looks highly compressed in the t-SNE overview figure with many nodes overlapping, make use of the scale input above the filepath input and increase the number to get updated scale informaiton. 
+To quit specxplore, navigate to the console with the running server instance and press ctrl+c on the console (macos & linux). 
+In addition, enter quit() in the then active python console to terminate the python process. 
+Just closing the console also works.
 
 # Dashboard Commands
 Once the specXplore dashboard is there are a number of possible ways to interact with the visualizations. 
