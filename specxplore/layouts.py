@@ -288,7 +288,7 @@ LAYOUT_ROW_TITLE = dbc.Row(
             children = [
                 html.H1(
                     children = [
-                        html.B("specXplore prototype")
+                        html.B("specXplore")
                     ], 
                     style={"margin-bottom": "0em", "font-size" : "20pt"}
                 )

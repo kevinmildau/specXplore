@@ -1,5 +1,4 @@
 #cython: language_level=3
-# python3 setup.py install
 # From package directory and right environment, install package using: "pip install -e ."   
 from setuptools import setup, Extension
 from Cython.Build import cythonize
@@ -27,7 +26,7 @@ setup(
     package_data={"specxplore" : [os.path.join("specxplore", "data", "default_app_data.pickle")]},
     packages=['specxplore'],
     python_requires='>=3.8',
-    version = '0.0.0',
+    version = '0.0.1',
     install_requires = [
         'numpy', 
         'ms2query', 
