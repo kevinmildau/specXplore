@@ -4,7 +4,7 @@
 
 * [Overview](https://github.com/kevinmildau/specXplore#overview)
 * [Installation guide - macos and linux](https://github.com/kevinmildau/specXplore#installation-guide---macos-and-linux)
-* [Installation guide - WINDOWS](https://github.com/kevinmildau/specXplore#installation-guide---windows-(-in-development-))
+* [Installation guide - WINDOWS](https://github.com/kevinmildau/specXplore#installation-guide---windows-in-development)
 * [Workflow](https://github.com/kevinmildau/specXplore#workflow)
 * [Developer Notes](https://github.com/kevinmildau/specXplore#developer-notes)
 
