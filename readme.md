@@ -2,11 +2,11 @@
 
 # Contents
 
-* [Overview](https://github.com/kevinmildau/specXplore-prototype#overview)
-* [Installation guide - macos and linux](https://github.com/kevinmildau/specXplore-prototype#installation-guide---macos-and-linux)
-* [Installation guide - WINDOWS](https://github.com/kevinmildau/specXplore-prototype#installation-guide---windows-(-in-development-))
-* [Workflow](https://github.com/kevinmildau/specXplore-prototype#workflow)
-* [Developer Notes](https://github.com/kevinmildau/specXplore-prototype#developer-notes)
+* [Overview](https://github.com/kevinmildau/specXplore#overview)
+* [Installation guide - macos and linux](https://github.com/kevinmildau/specXplore#installation-guide---macos-and-linux)
+* [Installation guide - WINDOWS](https://github.com/kevinmildau/specXplore#installation-guide---windows-(-in-development-))
+* [Workflow](https://github.com/kevinmildau/specXplore#workflow)
+* [Developer Notes](https://github.com/kevinmildau/specXplore#developer-notes)
 
 # Overview
 
@@ -19,7 +19,7 @@ To install specXplore, create a new conda environment with python version 3.8 as
 ```{Bash}
 conda create --name specxplore_environment python=3.8
 conda activate specxplore_environment
-pip install "git+https://github.com/kevinmildau/specXplore-prototype.git"
+pip install "git+https://github.com/kevinmildau/specXplore.git"
 
 ```
 ## Installation Guide - WINDOWS (in development)
@@ -35,14 +35,14 @@ conda activate specxplore_environment
 python
 ```
 
-Dashboard use in windows subsequently works as described in [Workflow](https://github.com/kevinmildau/specXplore-prototype#workflow).
+Dashboard use in windows subsequently works as described in [Workflow](https://github.com/kevinmildau/specXplore#workflow).
 
 
 ## Workflow
 
 ### Jupyter Notebook Pre-processing
 
-Data pre-processing steps and creation of the session data file are described in a tutorialized [jupyter notebook](https://github.com/kevinmildau/specXplore-prototype/blob/e601141c817a9ea8f9f0654957a718c7da80b8af/notebooks/demo.ipynb) for dummy data. Following the steps in this jupyter notebook allows the user to create the basic input file required to run an interactive specxplore session.
+Data pre-processing steps and creation of the session data file are described in a tutorialized [jupyter notebook](https://github.com/kevinmildau/specXplore/blob/e601141c817a9ea8f9f0654957a718c7da80b8af/notebooks/demo.ipynb) for dummy data. Following the steps in this jupyter notebook allows the user to create the basic input file required to run an interactive specxplore session.
 
 ### Dashboard Use
 
