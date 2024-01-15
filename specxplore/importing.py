@@ -1,9 +1,8 @@
 from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
-from collections import namedtuple
 import typing
-from typing import List, TypedDict, Tuple, Dict, NamedTuple, Union
+from typing import List, TypedDict, Tuple, Dict, Union
 import copy
 from specxplore import importing_cython
 from specxplore import utils
@@ -35,9 +34,6 @@ from ms2deepscore.models import load_model
 import copy
 import numpy as np
 import pandas as pd
-from collections import namedtuple
-from networkx import read_graphml
-from networkx.readwrite import json_graph
 import warnings
 
 @dataclass
