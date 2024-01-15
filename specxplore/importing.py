@@ -1163,21 +1163,6 @@ def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray
     return(np.array(sim_data).reshape(tuple_array.shape[0], tuple_array.shape[1]))
 
 
-def extract_molecular_family_assignment_from_graphml(filepath : str) -> pd.DataFrame:
-    """ Function extracts molecular family componentindex for each node in gnps mgf export. Expects that each
-    spectrum is a feature, hence the clustering option in molecular networking must be deactivated. """
-    graph = read_graphml(filepath)
-    data = json_graph.node_link_data(graph)
-    entries = []
-    for node in data['nodes']:
-        entry = {"id" : node['id'], "spectrum_id" : node['SpectrumID'], 'molecular_family' : node['componentindex']}
-        entries.append(entry)
-    df = pd.DataFrame.from_records(entries)
-    df['id'] = df['id'].astype(int)
-    df['idx'] = df['id'] -1
-    df.sort_values(by = "id", inplace=True)
-    df.reset_index(drop = True, inplace=True)
-    return df
 
 def apply_basic_matchms_filters_to_spectra(
         input_spectra : List[matchms.Spectrum],
