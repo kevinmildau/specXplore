@@ -1152,7 +1152,7 @@ def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray
 
     Parameters:
         tuple_array: A single matchms spectrum object.
-    Returns: 
+    Returns:  
         A np.ndarray with shape (n, n) where n is the number of spectra deduced from the dimensions of the input
         array. Each element of the ndarray contains the pairwise similarity value.
     """
@@ -1181,7 +1181,7 @@ def apply_basic_matchms_filters_to_spectra(
     # Normalize intensities, important for similarity measures!
     output_spectra = copy.deepcopy(input_spectra)
     output_spectra = [matchms.filtering.normalize_intensities(spec) for spec in output_spectra]
-    output_spectra = [matchms.filtering.select_by_mz(spec, mz_from = 0, mz_to = 1000) for spec in output_spectra]
+    output_spectra = [matchms.filtering.select_by_mz(spec, mz_from = min_mz, mz_to = max_mz) for spec in output_spectra]
     # Clean spectra by remove very low intensity fragments, noise removal
     output_spectra = [
         matchms.filtering.reduce_to_number_of_peaks(
