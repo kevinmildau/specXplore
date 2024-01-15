@@ -1194,14 +1194,3 @@ def apply_basic_matchms_filters_to_spectra(
     if verbose:
         print("Number of spectra after to filtering: ", len(output_spectra))
     return output_spectra
-
-
-def load_default_app_data() -> SessionData:
-    """ 
-    Function detects package file location, determines relative default data path, and call specxplore data laoder.
-    """
-    
-    this_dir, _ = os.path.split(__file__) # Get path of data.pkl
-    data_path = os.path.join(this_dir, os.path.join("data", "default_app_data.pickle")) # Join with current directory
-    specxplore_object = load_specxplore_object_from_pickle(data_path)
-    return specxplore_object
