@@ -550,6 +550,10 @@ class SessionData:
              ) * scaler
 
 
+def save_numpy_matrix_to_file (array : np.ndarray, filepath : str) -> None:
+    np.save(os.path.join(filepath, ".npy"), array, allow_pickle=False)
+    return None
+
 def scale_array_to_minus1_plus1(array : np.ndarray) -> np.ndarray:
     """ Rescales array to lie between -1 and 1."""
     out = 2.*(array - np.min(array))/np.ptp(array)-1
