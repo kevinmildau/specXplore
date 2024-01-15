@@ -38,7 +38,7 @@ def generate_cluster_node_link_diagram_cythonized(
 
     n_omitted_edges = n_omitted_edges_topk + n_omitted_edges_max_limit
     # Create Edge list
-    edges = netview_cython.create_cluster_edge_list(s,t,selected_nodes_np)
+    edges = netview_cython.create_edge_list_for_selection(s, t, selected_nodes_np)
 
     cluster_set = set(selected_nodes)
     n_nodes = TSNE_DF.shape[0]

@@ -5,13 +5,14 @@ from cython cimport boundscheck, wraparound
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-def create_cluster_edge_list(
+def create_edge_list_for_selection(
     signed long long[:] sources, 
     signed long long[:] targets, 
     signed long long[:] selection
     ):
     """ 
-    Function extracts all sources and targets for specific selection of ids. Threshold independent.
+    Function extracts all sources and targets for specific selection of ids. Threshold independent. Assumes threshold
+    sub-selection already done.
     """
     assert sources.size == targets.size
     edges = [{}] * sources.size
