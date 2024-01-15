@@ -24,6 +24,7 @@ def generate_empty_div_message(plot_type: str) -> html.Div:
 # candidate for cythonization via turning pandas df into two numpy arrays (x coord, y coord)
 # expect minor speed ups since n_nodes < 10_000
 # Impl. Note: all nodes needed for current implementation of generate_edge_elements_and_styles()
+# all nodes needed because styling of all nodes changed regardless of whether they are part of the ego or not.
 def generate_node_list(data_frame : pandas.DataFrame) -> List[Dict]:
     """ Function generates node list of dictionaries for cytoscape elements.
     
@@ -107,7 +108,7 @@ def construct_ego_net_elements_and_styles(
         threshold
     )
     nodes = generate_node_list(data_frame)
-    bdict, n_edges_omitted = egonet_cython.creating_branching_dict_new(
+    bdict, n_edges_omitted = egonet_cython.creating_branching_dict(
         selected_sources, 
         selected_targets, 
         ego_id, 

@@ -9,7 +9,7 @@ from collections import Counter
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-def creating_branching_dict_new(
+def creating_branching_dict(
         signed long long[:] source, 
         signed long long[:] target, 
         signed long long root, 
