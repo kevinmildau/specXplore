@@ -101,7 +101,7 @@ def construct_ego_net_elements_and_styles(
         maximum_number_of_edges):
     """ Function constructs elements for EgoNet cytoscape graph. """
 
-    _, selected_sources, selected_targets = utils_cython.extract_edges_above_threshold(
+    _, selected_sources, selected_targets = utils_cython.extract_edges_above_threshold_from_descending_array(
         sources, 
         targets, 
         values, 
