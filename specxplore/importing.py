@@ -692,11 +692,14 @@ class SpectraDF:
         default=(np.int64, np.double, np.double, object, object, bool, bool), 
         compare = False, hash = False, repr=False )    
     
-
     def __post_init__(self):
-        """ Assert that data provided to constructor is valid. """
-
-        assert isinstance(self._data, pd.DataFrame), "Data must be a pandas.DataFrame"
+        """ Assert that pandas dataframe data provided to constructor has valid specifications. """
+        self.validate()
+    
+    def validate(self):
+        """ Self validate using expected schema components. """
+        assert isinstance(self._data, pd.DataFrame), "Data must be a pandas.DataFrame!"
+        assert self._data.shape[0] >= 1, "No rows detected. Data must not be empty!"
         expected_column_types = dict(
             zip(
                 self._expected_columns, 
