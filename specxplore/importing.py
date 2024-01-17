@@ -1086,12 +1086,42 @@ def apply_basic_matchms_filters_to_spectra(
         input_spectra : List[matchms.Spectrum],
         minimum_number_of_peaks_per_spectrum : int = 3,
         maximum_number_of_peaks_per_spectrum : int = 200,
-        max_mz = 1000,
-        min_mz = 0,
-        verbose = True
+        max_mz : float = 1000,
+        min_mz :float = 0,
+        verbose : bool = True
         ) -> List[matchms.Spectrum]:
     ''' 
-    Applies basic pre-processing of spectra required for specXplore processing.     
+    Applies spectral data pre-processing to copy of input_spectra. Runs a matchms pipeline that ensures the following
+    conditions in step-wise fashion:
+
+        1. peak intensities are normalized
+        2. peaks are filtered to be in range 0 to 1000 m/z in line with model expectations. 
+        3. spectra are excluded if they have less than minimum_number_of_peaks_per_spectrum, and if the spectrum has
+        more than maximum_number_of_peaks_per_spectrum the lowest intensity peaks exceeding the limits are removed. 
+        4. precursor_mz metadata is in expected format
+        5. Any None entries from the list of spectra are removed (None types are produced if spectra are are empty)
+    
+    This is a minimal pre-processing pipeline based on matchms. More extensive pre-processing may be done by the user
+    using functionalities in matchms.
+
+    Parameters:
+        input_spectra : A List[matchms.Spectrum] as loaded into python via matchms. 
+        minimum_number_of_peaks_per_spectrum : An int specifying the minimum number of peaks per spectrum. 
+            Spectra with less peaks are removed.
+        maximum_number_of_peaks_per_spectrum : An int specifying the maximum number of peaks per spectrum. If the 
+            spectrum exceeds this number of peaks, the exceeding number of peaks are removed starting with the lowest
+            intensity ones.
+        max_mz : A float specifying the maximum mass to charge ratio for peaks in a spectrum. Peaks exceeding this value
+            are removed. 
+        min_mz : A float specifying the minimum mass to charge ratio for peaks in a spectrum. Peaks below this value
+            are removed. 
+        verbose : Boolean specifying whether processing effects on spectrum list length are printed to console or not.
+            Defaults to true.
+    Returns:
+        List[matchms.Spectrum] with filters applied. Note that the function will abort if pre-processing leads to empty
+        list.
+
+
     '''
 
     if verbose:
@@ -1104,11 +1134,14 @@ def apply_basic_matchms_filters_to_spectra(
     output_spectra = [
         matchms.filtering.reduce_to_number_of_peaks(
             spec, n_required = minimum_number_of_peaks_per_spectrum, n_max= maximum_number_of_peaks_per_spectrum) 
-        for spec in output_spectra]
+        for spec in output_spectra
+    ]
     # Add precursor mz values to matchms spectrum entry
     output_spectra = [matchms.filtering.add_precursor_mz(spec)  for spec in output_spectra]
     # remove none entries in list (no valid spectrum returned)
     output_spectra = [spec for spec in output_spectra if spec is not None]
+    # Assess whether processing results in legitimate output
+    assert output_spectra != [], "Error: no spectra in output after applying processing."
     if verbose:
         print("Number of spectra after to filtering: ", len(output_spectra))
     return output_spectra
