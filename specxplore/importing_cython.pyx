@@ -7,6 +7,16 @@ from cython cimport boundscheck, wraparound
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 def construct_unique_pairwise_indices_array(signed long long n_nodes):
+    """
+    Constructs numpy contiguous array with pairwise numeric indices of form: 
+        [
+            [value0, value1],
+            [value0, value1],
+            [value0, value1],
+            ...
+        ]
+    such that all unique pairs of indices are made (order independent, no ordered duplications of pairs).
+    """
     cdef signed long long[:, ::1] index_array 
     index_array = np.ascontiguousarray(np.vstack(np.triu_indices(n_nodes, k=1)).T)
     return index_array
@@ -20,7 +30,7 @@ def construct_long_format_sim_arrays(
     Constructs unique index pair and value arrays for pairwise similarity matrix.
     
     Returns:
-        np.array, np.array, np.array
+        np.array (signed long long), np.array (signed long long), np.array (double)
     """
     assert similarity_matrix.shape[0] == similarity_matrix.shape[1], "Similarity Matrix provided must be square."
     cdef signed long long n_nodes = int(similarity_matrix.shape[0])
