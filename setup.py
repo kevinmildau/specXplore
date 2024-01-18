@@ -29,6 +29,7 @@ setup(
     version = '0.0.1',
     install_requires = [
         'numpy', 
+        'jupyter==1',
         'ms2query', 
         'matchms>=0.11.0,<=0.13.0',
         'matchmsextras>=0.3.0,<0.4.0',
