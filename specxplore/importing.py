@@ -1140,3 +1140,155 @@ def apply_basic_matchms_filters_to_spectra(
     if verbose:
         print("Number of spectra after to filtering: ", len(output_spectra))
     return output_spectra
+
+
+@dataclass
+class specxploreImportingPipeline ():
+    """ 
+    Class interface for specXplore importing pipeline functions & storing intermediate data structures for users. 
+    """
+    # All default states set to none. Use attach data to construct the actual data object.
+
+    # MSMS spectral data. The core underlying data of specXplore.
+    spectra_matchms : Union[List[matchms.Spectrum], None] = None
+    spectra_specxplore : Union[List[Spectrum], None] = None
+    
+    # Metadata separated into classification style & generic
+    classificationTable : Union[pd.DataFrame, None] = None
+    metadataTable : Union[pd.DataFrame, None] = None
+
+    # Pairwise Similarity Matrices
+    primary_score : Union[np.ndarray, None] = None
+    secondary_score : Union[np.ndarray, None] = None
+    tertiary_score : Union[np.ndarray, None] = None
+    score_names : List[str] = field(default_factory = lambda: ["ms2deepscore", "spec2vec", "modified-cosine"]) # Default specXplore scores implemented
+    
+    # Embedding grid & coordinates
+    tsne_grid : Union[List[TsneGridEntry], None] = None
+    tsne_coordinates_table : Union[pd.DataFrame, None] = None
+    
+    # K-medoid classification grid
+    kmedoid_grid : Union[List[KmedoidGridEntry], None] = None
+
+    # filepaths
+    input_data_filepath : Union[str, None] = None # the mgf spectral data file
+    model_directory : Union[str, None] = None # needed for both ms2query and similarity matrix computation
+    output_folder : Union[str, None] = None # derived from input_folder or provided
+    output_filename : Union[str, None] = None # date time derived default or provided, auto-overwrite = False
+
+    def attach_spectra_from_file(self, filepath : str) -> None:
+        """ Loads and attaches spectra from provided filepath (pointing to compatible .mgf file) """
+        # assert all required informaiton available for all spectra - most notably feature_id & precursor_mz
+        # attach spectra
+        # DOES NOT APPLY ANY PROCESSING, SIMPLY ATTACHES DATA IF SUITABLE
+        return None
+
+    def run_spectral_processing(self):
+        """ Runs optional but recommended spectral processing on list of matchms spectra. """
+        # apply basic matchms to avoid processing pipeline crashes due to incompatibilities
+        return None
+
+    def run_spectral_similarity_computations(self):
+        """ Runs and attaches spectral similarity measures using self.spectra """
+        return None
+
+    def attach_spectral_sumilarity_arrays(self, primary_score, secondary_score, tertiary_score, score_names):
+        """ Attaches spectral similarity array computed elsewhere & checks compatibility with spectra. """
+        # assert iloc agreement
+        # assert python types & value ranges for scores
+        # warn: order agreement required
+        return None
+
+    def run_ms2query(self, attach_metadata : bool = True, attach_classes : bool = True):
+        """ Runs and attaches ms2query results to pipeline results. """
+        # check file locations not exist
+        # run and create output file (takes time)
+        # check ms2query output file contents for all available information & throw error if incomplete or erroneous
+        # align missing ilocs 
+        # attach metadata if attach_metadata = True
+        # attach classes if attach_classes = True
+        # print output file locations
+        return None
+    
+    def run_tsne_grid(self, perplexities : List[int] = [10, 30, 50]):
+        """ Run the t-SNE grid & attach the results to pipeline instance. """
+        # reduce perplexity list to not exceed len(self.spectra_matchms)
+        # compute distance matrix from primary score
+        # run tsne grid
+        return None
+
+    def select_tsne_settings(self, iloc : int):
+        """ Select particular t-SNE coordinate setting using entry iloc. """
+        # check iloc valid
+        # extract iloc specific coordinates and attach to self
+        return None
+    
+    def run_kmedoid_grid(self, number_of_clusters : List[int] = [10, 30, 50]):
+        """ Run the k-medoid grid & attach the results to pipeline instance. """
+        # reduce number of clusters list to not exceed len(self.spectra_matchms)
+        # compute distance matrix from primary score
+        # run kmedoid grid
+
+
+        return None
+
+    def select_kmedoid_settings(self, ilocs : Union[int, List[int]]):
+        """ Select and attach particular k-medoid clustering assignments using entry iloc or list of ilocs. """
+        # assert input is int or list of int
+        assert isinstance(ilocs, list) or isinstance(ilocs, int), "Unsupported input type, ilocs must be int or list of int!"
+        if isinstance(ilocs, list):
+            for entry in ilocs:
+                assert isinstance(entry, int), "Non-int entry found in ilocs list while all entries must be int!"
+        if type(ilocs) == int:
+            # assert input iloc is withing range
+            # select and attach single assignment lists to classes table
+            pass
+        if type(ilocs) == list:
+            # assert input ilocs are withing range
+            # select and attach all assignment lists to classes table
+            pass
+        return None
+    
+    def attach_metadata_from_data_frame(self, metadata : pd.DataFrame):
+        return None
+    
+    def attach_classes_from_data_frame(self, classes : pd.DataFrame):
+        return None
+    
+    def export_specXplore_session_data(self, filepath : str = None):
+        # if filepath is None, construct filepath automatically using datetime
+        # check if all data available and pass to session_data constructor
+        # pickle session_data object
+        return None
+
+    # methods
+    def attachData (
+            self, 
+            spectra : List[matchms.Spectrum], 
+            classificationData : Union[pd.DataFrame, None], 
+            metadata : Union[pd.DataFrame, None]):
+        # Attach the basic input data required by specXplore.
+        ...
+@dataclass
+class specxploreSessionData ():
+    """ 
+    Class interface for specXplore session data containing all infor needed by the specXplore dashboard. 
+    """
+    # Data Structures
+    
+    def __post_init__ (self):
+        """ Functions applies some basic checks on initiated session data to see whether provided data satisfies
+        frontend assumptions. """
+
+        # assert iloc overlap across all features
+        # assert each iloc has a corresponding feature_id
+        # assert feature_ids unique
+        # TODO: determine additional critical asserts.
+        return None
+    
+    
+    # constructor
+    # getters
+    var = ...
+    def fun(input):
+        ...
