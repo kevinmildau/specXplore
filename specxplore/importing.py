@@ -589,10 +589,8 @@ def construct_init_table(spectra : List[Spectrum]) -> pd.DataFrame:
         init_table: a pandas.DataFrame with two columns: a string column for feature_id, and a int column for 
         spectrum_iloc.
     '''
-
     spectrum_ilocs = [spec.spectrum_iloc for spec in spectra]
     feature_ids = [spec.feature_id for spec in spectra] 
-
     assert spectrum_ilocs == [iloc for iloc in range(0, len(spectra))], (
         "spectrum iloc must equal sequence from 0 to number of spectra"
     )
@@ -632,6 +630,7 @@ def check_feature_id_uniqueness(feature_ids : List[str]) -> None:
 
 
 def load_specxplore_object_from_pickle(filepath : str) -> SessionData:
+    """ Function loads specXplore object from pickle and checks type validity. """
     with open(filepath, 'rb') as file:
         specxplore_object = pickle.load(file) 
     assert isinstance(specxplore_object, SessionData), (
@@ -713,13 +712,11 @@ class SpectraDF:
 
     def get_data(self):
         """ Return a copy of the data frame object stored in SpectraDF instance. """
-
         return copy.deepcopy(self._data)
     
 
     def get_column_as_np(self, column_name):
         """ Return a copy of a specific column from SpectraDF as numpy array. """
-
         assert column_name in self._expected_columns, ( 
             f"Column {column_name} not a member of SpectraDF data frame."
         )
@@ -1121,13 +1118,10 @@ def apply_basic_matchms_filters_to_spectra(
     Returns:
         List[matchms.Spectrum] with filters applied. Note that the function will abort if pre-processing leads to empty
         list.
-
-
     '''
-
     if verbose:
         print("Number of spectra prior to filtering: ", len(input_spectra))
-    # Normalize intensities, important for similarity measures!
+    # Normalize intensities, important for similarity measures
     output_spectra = copy.deepcopy(input_spectra)
     output_spectra = [matchms.filtering.normalize_intensities(spec) for spec in output_spectra]
     output_spectra = [matchms.filtering.select_by_mz(spec, mz_from = min_mz, mz_to = max_mz) for spec in output_spectra]
