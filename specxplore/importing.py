@@ -34,17 +34,18 @@ import warnings
 @dataclass
 class KmedoidGridEntry():
     """ 
-    Container Class for K medoid clustering results.
+    Container Class for K medoid clustering results. Contains a single entry.
 
     Parameters:
         k: the number of clusters set.
         cluster_assignments: List with cluster assignment for each observation.
         silhouette_score: float with clustering silhouette score.
+        random_seed_used : int or float with the random seed used in k-medoid clustering.
     """
     k : int
     cluster_assignments : List[int]
     silhouette_score : float
-    random_seed_used : int
+    random_seed_used : Union[int, float]
     def __str__(self) -> str:
         """ Custom Print Method for kmedoid grid entry producing an easy readable string output. """
         custom_print = (
@@ -56,19 +57,24 @@ class KmedoidGridEntry():
 @dataclass
 class TsneGridEntry():
     """ 
-    Container Class for K medoid clustering results.
+    Container Class for t-SNE embedding optimization results. Contains a single entry.
 
     Parameters:
-        k: the number of clusters aimed for.
-        cluster_assignments: List with cluster assignment for each observation.
-        silhouette_score: float with clustering silhouette score.
+        perplexity : int with perplexity value used in t-SNE optimization.
+        x_coordinates : List[int] x coordinates produced by t-SNE
+        y_coordinates:  List[int] y coordinates produced by t-SNE
+        pearson_score : float representing the pearson correlation between pairwise distances in embedding and 
+            high dimensional space.
+        spearman_score : float representing the spearman correlation between pairwise distances in embedding and 
+            high dimensional space.
+        random_seed_used : int or float with the random seed used in k-medoid clustering.
     """
     perplexity : int
     x_coordinates : List[int]
     y_coordinates:  List[int]
     pearson_score : float
     spearman_score : float
-    random_seed_used : float
+    random_seed_used : Union[int, float]
     def __str__(self) -> str:
         custom_print = (
             f"Perplexity = {self.perplexity}," 
