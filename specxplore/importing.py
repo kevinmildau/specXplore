@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
-import typing
 from typing import List, TypedDict, Tuple, Dict, Union
 import copy
 from specxplore import importing_cython
@@ -13,22 +12,18 @@ import pickle
 import matchms
 from kmedoids import KMedoids
 from sklearn.metrics import silhouette_score
+from sklearn.manifold import TSNE
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import pearsonr, spearmanr  
-from sklearn.manifold import TSNE
 import plotly.graph_objects as go
 import plotly.express
 import matchms.utils 
-import json
-import urllib
-import time
 import os
 import gensim
 from spec2vec import Spec2Vec
 import matchms
 from matchms import calculate_scores
 from matchms.similarity import CosineGreedy, ModifiedCosine, CosineHungarian
-#from ms2query.utils import load_matchms_spectrum_objects_from_file
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model
 import copy
