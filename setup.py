@@ -19,14 +19,19 @@ module_paths = [
         ) 
      for name in module_name_list]
 
+# Read the version string from version.py
+version = {}
+with open(os.path.join('specxplore', 'version.py')) as fp:
+    exec(fp.read(), version)
+
 setup(
     name='specxplore',
+    version = version["__version__"],
     ext_modules=cythonize(module_paths, compiler_directives = {'language_level': '3'}),
     include_package_data=True, 
     package_data={"specxplore" : [os.path.join("specxplore", "data", "default_app_data.pickle")]},
     packages=['specxplore'],
     python_requires='>=3.8,<3.9',
-    version = '0.0.1',
     install_requires = [
         'numpy', 
         'jupyter',
