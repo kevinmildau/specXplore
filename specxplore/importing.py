@@ -172,15 +172,45 @@ class specxploreImportingPipeline ():
         self._spectral_processing_complete = True
         return None
 
-    def run_spectral_similarity_computations(self):
+    def run_spectral_similarity_computations(self, model_directory_path : str = None, force : bool = False):
         """ Runs and attaches spectral similarity measures using self.spectra """
+        assert os.path.isdir(model_directory_path), "model directory path must point to an existing directory!"
+        if force is False:
+            assert (self._add_similarities_complete is not True), (
+                "Error: Similarities were already set. To replace existing scores set Force to True or restart "
+                "the pipeline."
+            )
+        self.primary_score = compute_similarities_ms2ds(self.spectra_matchms, model_directory_path)
+        self.secondary_score = compute_similarities_cosine(self.spectra_matchms, cosine_type="ModifiedCosine")
+        self.tertiary_score = compute_similarities_s2v(self.spectra_matchms, model_directory_path)
+        self._add_similarities_complete = True
+        self._spectral_processing_complete = True # similarity matrices were computed, this step is skipped and locked
         return None
 
-    def attach_spectral_sumilarity_arrays(self, primary_score, secondary_score, tertiary_score, score_names):
+    def attach_spectral_similarity_arrays(
+        self, 
+        primary_score, 
+        secondary_score, 
+        tertiary_score, 
+        score_names : List[str] = ["primary", "secondary", "tertiary"], 
+        verbose : bool = True) -> None:
         """ Attaches spectral similarity array computed elsewhere & checks compatibility with spectra. """
-        # assert iloc agreement
-        # assert python types & value ranges for scores
-        # warn: order agreement required
+        n_spectra = len(self.spectra_matchms)
+        _assert_similarity_matrix(primary_score, n_spectra)
+        _assert_similarity_matrix(secondary_score, n_spectra)
+        _assert_similarity_matrix(tertiary_score, n_spectra)
+        if verbose is True:
+            warnings.warn((
+                "Beware of order misalignment: attach_spectral_similarity_arrays() assumes that the provided score "
+                "matrices align in iloc to feature_id mapping with the spectra list provided. If spectra have been "
+                "reordered in any way this mapping may not hold!"
+            ))
+        self.primary_score = primary_score
+        self.secondary_score = secondary_score
+        self.tertiary_score = tertiary_score
+        self.score_names = score_names
+        self._add_similarities_complete = True
+        self._spectral_processing_complete = True # similarity matrices were computed, this step is skipped and locked
         return None
 
     def run_ms2query(self, attach_metadata : bool = True, attach_classes : bool = True):
@@ -293,6 +323,13 @@ def construct_init_table(spectra : List[Spectrum]) -> pd.DataFrame:
     )
     init_table["feature_id"] = init_table["feature_id"].astype("string")
     return init_table
+
+def _assert_similarity_matrix(scores : np.ndarray, n_spectra : int) -> None:
+    """ Function checks whether similarity matrix corresponds to expected formatting. Aborts code if not. """
+    assert (isinstance(scores, np.ndarray)), "Error: input scores must be type np.ndarray."
+    assert scores.shape[0] == scores.shape[1] == n_spectra, "Error: score dimensions must be square & correspond to n_spectra"
+    assert np.logical_and(scores >= 0, scores <= 1).all(), "Error: all score values must be in range 0 to 1."
+    return None
 
 
 def check_spectrum_information_availability(spectra : List[matchms.Spectrum]):
