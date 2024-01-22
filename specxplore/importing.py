@@ -353,8 +353,8 @@ def extract_feature_ids_from_spectra(spectra : List[matchms.Spectrum]) -> List[s
     # check feature_id set validity
     assert not any(feature_ids) is None, "None type feature ids detected! All spectra must have valid feature_id entry of type string."
     assert not all(feature_ids) is None, "None type feature ids detected! All spectra must have valid feature_id entry of type string."
-    assert all(isinstance(x, str) for x in feature_ids), "Non-string feature_ids detected. All feature_ids must be valid string type."
-    assert not (len(feature_ids) > len(set(feature_ids))), "Non-unique feature_ids detected. All feature_ids must be unique strings."
+    assert all(isinstance(x, str) for x in feature_ids), "Non-string feature_ids detected. All feature_ids for spectra must be valid string type."
+    assert not (len(feature_ids) > len(set(feature_ids))), "Non-unique (duplicate) feature_ids detected. All feature_ids for spectra must be unique strings."
     return feature_ids
 
 
