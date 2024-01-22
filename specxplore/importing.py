@@ -648,8 +648,9 @@ def compute_similarities_cosine(spectrum_list:List[matchms.Spectrum], cosine_typ
         similarity_measure = CosineHungarian()
     elif cosine_type == "CosineGreedy":
         similarity_measure = CosineGreedy()
-    tmp = calculate_scores(spectrum_list, spectrum_list, similarity_measure, is_symmetric=True)
-    scores = extract_similarity_scores_from_matchms_cosine_array(tmp.scores)
+    tmp = calculate_scores(spectrum_list, spectrum_list, similarity_measure, is_symmetric=True, array_type = "numpy")
+    scores = extract_similarity_scores_from_matchms_cosine_array(tmp.to_array())
+    scores = np.clip(scores, a_min = 0, a_max = 1) 
     return scores
 
 
