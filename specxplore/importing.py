@@ -624,8 +624,17 @@ def compute_similarities_s2v(spectrum_list:List[matchms.Spectrum], model_path:st
     filename = _return_model_filepath(model_path, ".model")
     model = gensim.models.Word2Vec.load(filename) # Load s2v model
     similarity_measure = Spec2Vec(model=model)
-    scores_matchms = calculate_scores(spectrum_list, spectrum_list, similarity_measure, is_symmetric=True)
-    scores_ndarray = scores_matchms.scores
+    scores_matchms = calculate_scores(
+        spectrum_list, spectrum_list, similarity_measure, is_symmetric=True, array_type="numpy")
+    scores_ndarray = scores_matchms.to_array()
+    # Dev Note: spec2vec scores appear to be in range -1 to 1 (with floating point errors). For specXplore they must
+    # be in range 0 to 1. Apply linear scaling to put spec2vec scores into range between 0 and 1 
+    # (from their original -1 to 1 range)
+    scores_ndarray = (scores_ndarray + 1) / 2 # linear scaling
+    scores_ndarray = np.clip(scores_ndarray, a_min = 0, a_max = 1) # Clip to deal with floating point issues
+    # Dev Note: note that numeric distance between lowest and highest number in the score vector will be half of the
+    # original value in this approach, e.g. the distance from -1 to 1 is 2, while in the new space 0 to 1 distance is
+    # at most 1. This implies a subtle difference in interpreting this score.
     return scores_ndarray
 
 
