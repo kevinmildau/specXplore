@@ -15,7 +15,7 @@ notebooks/models/spec2vec_model_GNPS_15_12_2021.model.syn1neg.npy
 notebooks/models/spec2vec_model_GNPS_15_12_2021.model.wv.vectors.npy
 notebooks/models/ms2query_library.sqlite
 notebooks/models/archive/library_GNPS_15_12_2021.sqlite
-
+notebooks/models_updated_2024
 .ipynb_checkpoints
 build
 
