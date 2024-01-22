@@ -117,11 +117,28 @@ class specxploreImportingPipeline ():
     output_folder : Union[str, None] = None # derived from input_folder or provided
     output_filename : Union[str, None] = None # date time derived default or provided, auto-overwrite = False
 
+    # Explicit Booleans to track pipeline steps completed successfully. 
+    _step01_data_loaded : bool = False
+
     def attach_spectra_from_file(self, filepath : str) -> None:
-        """ Loads and attaches spectra from provided filepath (pointing to compatible .mgf file) """
-        # assert all required informaiton available for all spectra - most notably feature_id & precursor_mz
-        # attach spectra
-        # DOES NOT APPLY ANY PROCESSING, SIMPLY ATTACHES DATA IF SUITABLE
+        """ 
+        Loads and attaches spectra from provided filepath (pointing to compatible .mgf file). Does not run any pre-
+        processing. While the function does not check spectral data integrity or performs any filtering, it does make sure
+        that unique feature identifiers are available for all spectra provided.
+
+        Parameters
+        filepath : str pointing to a .mgf or .MGF formatted file containing the spectral data. Must have a feature_id entry.
+        Returns
+        Attaches spectrum_matchms to pipeline instance. Returns None.
+        """
+        assert isinstance(filepath, str), f"Error: expected filepath to be string but received {type(filepath)}"
+        assert os.path.isfile(filepath), "Error: supplied filepath does not point to existing file."
+        spectra_matchms = list(matchms.importing.load_from_mgf(filepath))
+        for iloc, elem in enumerate(spectra_matchms):
+            assert isinstance(elem, matchms.Spectrum), f"Error: element {iloc} of loaded spectrum list is not of type matchms.Spectrum!"
+        _ = extract_feature_ids_from_spectra(spectra_matchms) # performs feature_id validity and availability checking
+        self.spectra_matchms = spectra_matchms
+        self._step01_data_loaded = True
         return None
 
     def run_spectral_processing(self):
