@@ -118,8 +118,9 @@ class specxploreImportingPipeline ():
     output_filename : Union[str, None] = None # date time derived default or provided, auto-overwrite = False
 
     # Explicit Booleans to track pipeline steps completed successfully. 
-    _step01_data_loaded : bool = False
-    _spectra_processed : bool = False
+    _spectral_data_loading_complete : bool = False
+    _spectral_processing_complete : bool = False
+    _add_similarities_complete : bool = False
 
     def attach_spectra_from_file(self, filepath : str) -> None:
         """ 
@@ -139,7 +140,7 @@ class specxploreImportingPipeline ():
             assert isinstance(elem, matchms.Spectrum), f"Error: element {iloc} of loaded spectrum list is not of type matchms.Spectrum!"
         _ = extract_feature_ids_from_spectra(spectra_matchms) # performs feature_id validity and availability checking
         self.spectra_matchms = spectra_matchms
-        self._step01_data_loaded = True
+        self._spectral_data_loading_complete = True
         return None
 
     def run_spectral_processing(
@@ -161,14 +162,14 @@ class specxploreImportingPipeline ():
         # apply basic matchms to avoid processing pipeline crashes due to incompatibilities
         assert self.spectra_matchms is not None, "Error: Spectral Processing can only be done if spectral data available."
         if force is False:
-            assert self._spectra_processed is False, (
+            assert self._spectral_processing_complete is False, (
                 "Error: spectral processing was already applied. Re-applying may lead to processing errors unless all "
                 "subsequent steps are re-run as well! To force a rerun, use force = True or re-initalize the pipeline"
                 "instance"
             )
         processed_spectra = generate_processed_spectra(self.spectra_matchms, **kwargs)
         self.spectra_matchms = processed_spectra
-        self._spectra_processed = True
+        self._spectral_processing_complete = True
         return None
 
     def run_spectral_similarity_computations(self):
