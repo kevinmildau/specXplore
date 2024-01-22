@@ -119,6 +119,7 @@ class specxploreImportingPipeline ():
 
     # Explicit Booleans to track pipeline steps completed successfully. 
     _step01_data_loaded : bool = False
+    _spectra_processed : bool = False
 
     def attach_spectra_from_file(self, filepath : str) -> None:
         """ 
@@ -141,9 +142,33 @@ class specxploreImportingPipeline ():
         self._step01_data_loaded = True
         return None
 
-    def run_spectral_processing(self):
-        """ Runs optional but recommended spectral processing on list of matchms spectra. """
+    def run_spectral_processing(
+        self, 
+        force : bool = False, 
+        **kwargs) -> None:
+        """ Runs optional but recommended spectral processing on list of matchms spectra.
+
+        Parameters
+            force : bool that defaults to false and prevents the overwriting on previous spectral processing. This is a
+                safety step to avoid downstream steps becoming incompatible with the spectral data. Set to true or 
+                re-initialize pipeline to rerun spectral processing and rerun any downstream processes.
+            **kwargs For optional processing arguments refer to documentation of generate_processed_spectra()
+        
+        Return
+            Attaches processed spectra_matchms to self. Returns None.
+        """
+
         # apply basic matchms to avoid processing pipeline crashes due to incompatibilities
+        assert self.spectra_matchms is not None, "Error: Spectral Processing can only be done if spectral data available."
+        if force is False:
+            assert self._spectra_processed is False, (
+                "Error: spectral processing was already applied. Re-applying may lead to processing errors unless all "
+                "subsequent steps are re-run as well! To force a rerun, use force = True or re-initalize the pipeline"
+                "instance"
+            )
+        processed_spectra = generate_processed_spectra(self.spectra_matchms, **kwargs)
+        self.spectra_matchms = processed_spectra
+        self._spectra_processed = True
         return None
 
     def run_spectral_similarity_computations(self):
