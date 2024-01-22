@@ -684,11 +684,10 @@ def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray
     return(np.array(sim_data).reshape(tuple_array.shape[0], tuple_array.shape[1]))
 
 
-
-def apply_basic_matchms_filters_to_spectra(
+def generate_processed_spectra(
         input_spectra : List[matchms.Spectrum],
-        minimum_number_of_peaks_per_spectrum : int = 3,
-        maximum_number_of_peaks_per_spectrum : int = 200,
+        minimum_number_of_peaks : int = 5,
+        maximum_number_of_peaks : int = 200,
         max_mz : float = 1000,
         min_mz :float = 0,
         verbose : bool = True
@@ -699,8 +698,8 @@ def apply_basic_matchms_filters_to_spectra(
 
         1. peak intensities are normalized
         2. peaks are filtered to be in range 0 to 1000 m/z in line with model expectations. 
-        3. spectra are excluded if they have less than minimum_number_of_peaks_per_spectrum, and if the spectrum has
-        more than maximum_number_of_peaks_per_spectrum the lowest intensity peaks exceeding the limits are removed. 
+        3. spectra are excluded if they have less than minimum_number_of_peaks, and if the spectrum has
+        more than maximum_number_of_peaks the lowest intensity peaks exceeding the limits are removed. 
         4. precursor_mz metadata is in expected format
         5. Any None entries from the list of spectra are removed (None types are produced if spectra are are empty)
     
@@ -709,9 +708,9 @@ def apply_basic_matchms_filters_to_spectra(
 
     Parameters:
         input_spectra : A List[matchms.Spectrum] as loaded into python via matchms. 
-        minimum_number_of_peaks_per_spectrum : An int specifying the minimum number of peaks per spectrum. 
+        minimum_number_of_peaks : An int specifying the minimum number of peaks per spectrum. 
             Spectra with less peaks are removed.
-        maximum_number_of_peaks_per_spectrum : An int specifying the maximum number of peaks per spectrum. If the 
+        maximum_number_of_peaks : An int specifying the maximum number of peaks per spectrum. If the 
             spectrum exceeds this number of peaks, the exceeding number of peaks are removed starting with the lowest
             intensity ones.
         max_mz : A float specifying the maximum mass to charge ratio for peaks in a spectrum. Peaks exceeding this value
@@ -724,24 +723,25 @@ def apply_basic_matchms_filters_to_spectra(
         List[matchms.Spectrum] with filters applied. Note that the function will abort if pre-processing leads to empty
         list.
     '''
+    # TODO: implement checks; this function would be safer for end users if strict boundary checking was applied on input parameters.
     if verbose:
         print("Number of spectra prior to filtering: ", len(input_spectra))
     # Normalize intensities, important for similarity measures
-    output_spectra = copy.deepcopy(input_spectra)
-    output_spectra = [matchms.filtering.normalize_intensities(spec) for spec in output_spectra]
-    output_spectra = [matchms.filtering.select_by_mz(spec, mz_from = min_mz, mz_to = max_mz) for spec in output_spectra]
+    processed_spectra = copy.deepcopy(input_spectra)
+    processed_spectra = [matchms.filtering.normalize_intensities(spec) for spec in processed_spectra]
+    processed_spectra = [matchms.filtering.select_by_mz(spec, mz_from = min_mz, mz_to = max_mz) for spec in processed_spectra]
     # Clean spectra by remove very low intensity fragments, noise removal
-    output_spectra = [
+    processed_spectra = [
         matchms.filtering.reduce_to_number_of_peaks(
-            spec, n_required = minimum_number_of_peaks_per_spectrum, n_max= maximum_number_of_peaks_per_spectrum) 
-        for spec in output_spectra
+            spec, n_required = minimum_number_of_peaks, n_max= maximum_number_of_peaks) 
+        for spec in processed_spectra
     ]
     # Add precursor mz values to matchms spectrum entry
-    output_spectra = [matchms.filtering.add_precursor_mz(spec)  for spec in output_spectra]
+    processed_spectra = [matchms.filtering.add_precursor_mz(spec)  for spec in processed_spectra]
     # remove none entries in list (no valid spectrum returned)
-    output_spectra = [spec for spec in output_spectra if spec is not None]
+    processed_spectra = [spec for spec in processed_spectra if spec is not None]
     # Assess whether processing results in legitimate output
-    assert output_spectra != [], "Error: no spectra in output after applying processing."
+    assert processed_spectra != [], "Error: no spectra left after applying processing!"
     if verbose:
-        print("Number of spectra after to filtering: ", len(output_spectra))
-    return output_spectra
+        print("Number of spectra after to filtering: ", len(processed_spectra))
+    return processed_spectra
