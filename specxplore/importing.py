@@ -605,8 +605,9 @@ def compute_similarities_ms2ds(spectrum_list:List[matchms.Spectrum], model_path:
     filename = _return_model_filepath(model_path, ".hdf5")
     model = load_model(filename) # Load ms2ds model
     similarity_measure = MS2DeepScore(model)
-    scores_matchms = calculate_scores(spectrum_list, spectrum_list, similarity_measure, is_symmetric=True)
-    scores_ndarray = scores_matchms.scores
+    scores_matchms = calculate_scores(spectrum_list, spectrum_list, similarity_measure, is_symmetric=True, array_type="numpy")
+    scores_ndarray = scores_matchms.to_array()
+    scores_ndarray = np.clip(scores_ndarray, a_min = 0, a_max = 1) # Clip to deal with floating point issues
     return scores_ndarray
 
 
