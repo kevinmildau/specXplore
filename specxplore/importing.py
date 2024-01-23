@@ -212,15 +212,82 @@ class specxploreImportingPipeline ():
         self._spectral_processing_complete = True # similarity matrices were computed, this step is skipped and locked
         return None
 
-    def run_ms2query(self, attach_metadata : bool = True, attach_classes : bool = True):
-        """ Runs and attaches ms2query results to pipeline results. """
-        # check file locations not exist
-        # run and create output file (takes time)
-        # check ms2query output file contents for all available information & throw error if incomplete or erroneous
-        # align missing ilocs 
-        # attach metadata if attach_metadata = True
-        # attach classes if attach_classes = True
-        # print output file locations
+    def _load_ms2query_results(self, filepath : str) -> None:
+        """ Loads ms2query data corresponding to the run of run_ms2query on self.spectra_matchms and attached results
+        to metadata and class tables.
+        Returns 
+        """
+        assert os.path.isfile(filepath), "Error: filepath does not point to existing file!"
+        ms2query_annotation_table = pd.read_csv(filepath)
+
+        # Create a mapping of feature_id to query_number
+        query_number = [iloc for iloc in range(1, len(self.spectra_matchms)+1)]
+        feature_ids = extract_feature_ids_from_spectra(self.spectra_matchms) 
+        query_number_to_iloc_to_feature_id_mapping = pd.DataFrame(
+            {
+                "feature_id": feature_ids, 
+                "query_spectrum_nr" : query_number
+            }
+        )
+        # all ms2query results collected into one table
+        ms2query_annotation_table = ms2query_annotation_table.merge(
+            query_number_to_iloc_to_feature_id_mapping, 
+            how = "left", 
+            on = "query_spectrum_nr"
+        )
+        # Rename ms2query feature identifier column and recast it as string type if not already
+        ms2query_annotation_table["feature_id"] = ms2query_annotation_table["feature_id"].astype("string")
+        # Extract class part
+        classification_table = ms2query_annotation_table.loc[:, [
+            'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent', 'npc_class_results', 'npc_superclass_results',
+            'npc_pathway_results', 'feature_id'
+            ]
+        ]
+        # check requires these tables to be initialized to None. Otherwise an attribute error is produced. 
+        self.attach_classes_from_data_frame(classification_table)
+        self.attach_metadata_from_data_frame(ms2query_annotation_table)
+
+        return None
+
+    def attach_ms2query_results(self, results_filepath : str):
+        """ Function to attach existing ms2query results. Beware: ms2query works with query number identifiers that are
+        the equivalent of specxplore spectrum_iloc +1. Making use of attach requires the matchms spectra list to be equivalent
+        to self.spectra_matchms (same spectra, same processing, same order). """
+        assert os.path.isfile(results_filepath), (
+            f"Error: no file found in provided results_filepath = {results_filepath}"
+        )
+        self._load_ms2query_results(results_filepath)
+        return None
+
+    def run_ms2query(
+        self, 
+        model_directory_path : str, 
+        results_filepath : str = None, 
+        force : bool = False, 
+        ms2querySettings : SettingsRunMS2Query = None) -> None:
+        """ Runs ms2query for all spectra in set and produces an output file in output/ms2query_results.csv if no
+        results_filepath is provided. 
+        
+        Parameters
+            model_directory_path : str path pointing to model and library folder directory
+            results_filepath : str optional path to results filename, defaults to output/ms2query_results.csv
+            force : bool defaults to false and prevents the running of ms2query when a ms2query file already exists.
+            ms2querySettings : SettingsRunMS2Query defaults to None. For control over ms2query settings please refer to 
+                ms2query documentation.
+        Returns
+            Creates ms2query output csv file. Attaches ms2query results to metadata and class tables.
+        """
+        if results_filepath is None:
+            results_filepath = os.path.join("output", "ms2query_results.csv")
+        print(results_filepath)
+        assert not (os.path.isfile(results_filepath) and force is False), (
+            f"MS2Query Results with filepath {results_filepath} already exist. Specify alternative filepath, delete or rename" 
+            " existing file, or rerun run_ms2query with force == True to automatically overwrite the existing file.")
+        if os.path.exists(results_filepath) and force is True:
+            os.remove(results_filepath)
+        ms2library = create_library_object_from_one_dir(model_directory_path)
+        ms2library.analog_search_store_in_csv(self.spectra_matchms, results_filepath, ms2querySettings)
+        self._load_ms2query_results(results_filepath)
         return None
     
     def run_tsne_grid(self, perplexities : List[int] = [10, 30, 50]):
