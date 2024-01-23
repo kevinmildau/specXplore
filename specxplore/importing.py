@@ -344,32 +344,6 @@ def convert_matchms_spectra_to_specxplore_spectra(
     ]
     return spectra_converted
 
-
-def construct_init_table(spectra : List[Spectrum]) -> pd.DataFrame:
-    ''' Creates initialized table for metadata or classification in specXplore. Table is a pandas.DataFrame with
-    string and int columns indicating the feature_id, and spectrum_iloc.
-    
-    Parameters
-        spectra: alist of specxplore.importing.spectrum objects. These should contain spectra with unique feature_ids.
-
-    Returns
-        init_table: a pandas.DataFrame with two columns: a string column for feature_id, and a int column for 
-        spectrum_iloc.
-    '''
-    spectrum_ilocs = [spec.spectrum_iloc for spec in spectra]
-    feature_ids = [spec.feature_id for spec in spectra] 
-    assert spectrum_ilocs == [iloc for iloc in range(0, len(spectra))], (
-        "spectrum iloc must equal sequence from 0 to number of spectra"
-    )
-    init_table = pd.DataFrame(
-        data = {
-            "feature_id" : feature_ids, 
-            "spectrum_iloc" : spectrum_ilocs
-        }
-    )
-    init_table["feature_id"] = init_table["feature_id"].astype("string")
-    return init_table
-
 def _assert_similarity_matrix(scores : np.ndarray, n_spectra : int) -> None:
     """ Function checks whether similarity matrix corresponds to expected formatting. Aborts code if not. """
     assert (isinstance(scores, np.ndarray)), "Error: input scores must be type np.ndarray."
