@@ -27,6 +27,9 @@ from matchms import calculate_scores
 from matchms.similarity import CosineGreedy, ModifiedCosine, CosineHungarian
 from ms2deepscore import MS2DeepScore
 from ms2deepscore.models import load_model
+from ms2query import SettingsRunMS2Query
+from ms2query.run_ms2query import run_ms2query_single_file
+from ms2query.ms2library import create_library_object_from_one_dir
 import copy
 import numpy as np
 import pandas as pd
