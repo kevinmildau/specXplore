@@ -310,6 +310,23 @@ class specxploreImportingPipeline ():
         # Attach the basic input data required by specXplore.
         ...
 
+def _construct_init_table(spectra : List[matchms.Spectrum]) -> pd.DataFrame:
+    ''' Creates initialized table for metadata or classification in specXplore. Table is a pandas.DataFrame with
+    string and int columns indicating the feature_id, and spectrum_iloc.
+    
+    Parameters:
+        spectra : List[matchms.Spectrum] where each spectrum contains a unique feature_identifier (str).
+    Returns:
+        pd.DataFrame with feature_id and spectrum_iloc columns (dtypes: string, int64)
+    '''
+    feature_ids = extract_feature_ids_from_spectra(spectra)
+    spectrum_ilocs = [iloc for iloc in range(0, len(spectra))]
+
+    init_table = pd.DataFrame(data = {"feature_id" : feature_ids,  "spectrum_iloc" : spectrum_ilocs})
+    init_table["feature_id"] = init_table["feature_id"].astype("string")
+    init_table["spectrum_iloc"] = init_table["spectrum_iloc"].astype("int64")
+    return init_table
+
 def convert_matchms_spectra_to_specxplore_spectra(
     spectra = List[matchms.Spectrum]
     ) -> List[Spectrum]:
