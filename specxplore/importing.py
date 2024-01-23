@@ -105,7 +105,8 @@ class specxploreImportingPipeline ():
     primary_score : Union[np.ndarray, None] = None
     secondary_score : Union[np.ndarray, None] = None
     tertiary_score : Union[np.ndarray, None] = None
-    score_names : List[str] = field(default_factory = lambda: ["ms2deepscore", "spec2vec", "modified-cosine"]) # Default specXplore scores implemented
+    # Default specXplore scores implemented
+    score_names : List[str] = field(default_factory = lambda: ["ms2deepscore", "spec2vec", "modified-cosine"]) 
     
     # Embedding grid & coordinates
     tsne_grid : Union[List[TsneGridEntry], None] = None
@@ -128,11 +129,12 @@ class specxploreImportingPipeline ():
     def attach_spectra_from_file(self, filepath : str) -> None:
         """ 
         Loads and attaches spectra from provided filepath (pointing to compatible .mgf file). Does not run any pre-
-        processing. While the function does not check spectral data integrity or performs any filtering, it does make sure
-        that unique feature identifiers are available for all spectra provided.
+        processing. While the function does not check spectral data integrity or performs any filtering, it does make 
+        sure that unique feature identifiers are available for all spectra provided.
 
         Parameters
-        filepath : str pointing to a .mgf or .MGF formatted file containing the spectral data. Must have a feature_id entry.
+        filepath : str pointing to a .mgf or .MGF formatted file containing the spectral data. Must have a 
+            feature_id entry.
         Returns
         Attaches spectrum_matchms to pipeline instance. Returns None.
         """
@@ -162,7 +164,9 @@ class specxploreImportingPipeline ():
         """
 
         # apply basic matchms to avoid processing pipeline crashes due to incompatibilities
-        assert self.spectra_matchms is not None, "Error: Spectral Processing can only be done if spectral data available."
+        assert self.spectra_matchms is not None, (
+            "Error: Spectral Processing can only be done if spectral data available."
+        )
         if force is False:
             assert self._spectral_processing_complete is False, (
                 "Error: spectral processing was already applied. Re-applying may lead to processing errors unless all "
@@ -242,8 +246,8 @@ class specxploreImportingPipeline ():
         ms2query_annotation_table["feature_id"] = ms2query_annotation_table["feature_id"].astype("string")
         # Extract class part
         classification_table = ms2query_annotation_table.loc[:, [
-            'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent', 'npc_class_results', 'npc_superclass_results',
-            'npc_pathway_results', 'feature_id'
+            'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent', 'npc_class_results', 
+            'npc_superclass_results', 'npc_pathway_results', 'feature_id'
             ]
         ]
         # check requires these tables to be initialized to None. Otherwise an attribute error is produced. 
@@ -254,8 +258,8 @@ class specxploreImportingPipeline ():
 
     def attach_ms2query_results(self, results_filepath : str):
         """ Function to attach existing ms2query results. Beware: ms2query works with query number identifiers that are
-        the equivalent of specxplore spectrum_iloc +1. Making use of attach requires the matchms spectra list to be equivalent
-        to self.spectra_matchms (same spectra, same processing, same order). """
+        the equivalent of specxplore spectrum_iloc +1. Making use of attach requires the matchms spectra list to be 
+        equivalent to self.spectra_matchms (same spectra, same processing, same order). """
         assert os.path.isfile(results_filepath), (
             f"Error: no file found in provided results_filepath = {results_filepath}"
         )
@@ -284,8 +288,9 @@ class specxploreImportingPipeline ():
             results_filepath = os.path.join("output", "ms2query_results.csv")
         print(results_filepath)
         assert not (os.path.isfile(results_filepath) and force is False), (
-            f"MS2Query Results with filepath {results_filepath} already exist. Specify alternative filepath, delete or rename" 
-            " existing file, or rerun run_ms2query with force == True to automatically overwrite the existing file.")
+            f"MS2Query Results with filepath {results_filepath} already exist. Specify alternative filepath, " 
+            "delete or rename existing file, or rerun run_ms2query with force == True to automatically overwrite the"
+            "existing file.")
         if os.path.exists(results_filepath) and force is True:
             os.remove(results_filepath)
         ms2library = create_library_object_from_one_dir(model_directory_path)
@@ -316,7 +321,9 @@ class specxploreImportingPipeline ():
     def select_kmedoid_settings(self, ilocs : Union[int, List[int]]):
         """ Select and attach particular k-medoid clustering assignments using entry iloc or list of ilocs. """
         # assert input is int or list of int
-        assert isinstance(ilocs, list) or isinstance(ilocs, int), "Unsupported input type, ilocs must be int or list of int!"
+        assert isinstance(ilocs, list) or isinstance(ilocs, int), (
+            "Unsupported input type, ilocs must be int or list of int!"
+        )
         if isinstance(ilocs, list):
             for entry in ilocs:
                 assert isinstance(entry, int), "Non-int entry found in ilocs list while all entries must be int!"
@@ -334,7 +341,7 @@ class specxploreImportingPipeline ():
         """ Attach additional metadata contained within pd.DataFrame to existing metadata via feature_id overlap. 
         
         Parameters
-            addon_data : pd.DataFrame with feature_id column (subset or superset of those in spectral_data) and additional 
+            addon_data : pd.DataFrame with feature_id column (subset/superset of those in spectral_data) and additional 
                 columns to be included.
         Returns 
             Attaches new data to metadatTable. Returns None.
@@ -352,9 +359,9 @@ class specxploreImportingPipeline ():
         Attach additional classdata contained within pd.DataFrame to existing class_table via feature_id overlap. 
 
         Parameters
-            addon_data : pd.DataFrame with feature_id column (subset or superset of those in spectral_data) and additional 
-                columns to be included. Note that additional data should be suitable categorical data for highlighting 
-                purposes within the specXplore interactive dashboard.
+            addon_data : pd.DataFrame with feature_id column (subset or superset of those in spectral_data) and 
+                additional columns to be included. Note that additional data should be suitable categorical data for
+                highlighting purposes within the specXplore interactive dashboard.
         Returns 
             Attaches new data to metadatTable. Returns None.
         """
@@ -417,7 +424,9 @@ def convert_matchms_spectra_to_specxplore_spectra(
 def _assert_similarity_matrix(scores : np.ndarray, n_spectra : int) -> None:
     """ Function checks whether similarity matrix corresponds to expected formatting. Aborts code if not. """
     assert (isinstance(scores, np.ndarray)), "Error: input scores must be type np.ndarray."
-    assert scores.shape[0] == scores.shape[1] == n_spectra, "Error: score dimensions must be square & correspond to n_spectra"
+    assert scores.shape[0] == scores.shape[1] == n_spectra, (
+        "Error: score dimensions must be square & correspond to n_spectra"
+    )
     assert np.logical_and(scores >= 0, scores <= 1).all(), "Error: all score values must be in range 0 to 1."
     return None
 
@@ -445,10 +454,18 @@ def extract_feature_ids_from_spectra(spectra : List[matchms.Spectrum]) -> List[s
     feature_ids = [str(spec.get("feature_id")) for spec in spectra]
     # check feature_id set validity
     assert not feature_ids == [], "Error: no feature ids detected!"
-    assert not any(feature_ids) is None, "Error: None type feature ids detected! All spectra must have valid feature_id entry of type string."
-    assert not all(feature_ids) is None, "Error: None type feature ids detected! All spectra must have valid feature_id entry of type string."
-    assert all(isinstance(x, str) for x in feature_ids), "Error: Non-string feature_ids detected. All feature_ids for spectra must be valid string type."
-    assert not (len(feature_ids) > len(set(feature_ids))), "Error: Non-unique (duplicate) feature_ids detected. All feature_ids for spectra must be unique strings."
+    assert not any(feature_ids) is None, (
+        "Error: None type feature ids detected! All spectra must have valid feature_id entry of type string."
+    )
+    assert not all(feature_ids) is None, (
+        "Error: None type feature ids detected! All spectra must have valid feature_id entry of type string."
+    )
+    assert all(isinstance(x, str) for x in feature_ids), (
+        "Error: Non-string feature_ids detected. All feature_ids for spectra must be valid string type."
+    )
+    assert not (len(feature_ids) > len(set(feature_ids))), (
+        "Error: Non-unique (duplicate) feature_ids detected. All feature_ids for spectra must be unique strings."
+    )
     return feature_ids
 
 
@@ -617,8 +634,8 @@ def _attach_columns_via_feature_id(init_table : pd.DataFrame, addon_data : pd.Da
         addon_data: pandas.DataFrame object with a feature_id column and additional columns to be merged into metadata. 
             Columns can be of any type.
     Output: 
-        extended_init_table: pandas.DataFrame with feature_id column and additional columns from addon_data. Any NA values
-            produced are replaced with strings that read: "not available". Any entries are converted to string.
+        extended_init_table: pandas.DataFrame with feature_id column and additional columns from addon_data. Any NA 
+            values produced are replaced with strings that read: "not available". Any entries are converted to string.
     """
 
     assert "feature_id" in init_table.columns, "feature_id column must be available in metadata"
@@ -654,7 +671,8 @@ def remove_white_space_from_df(input_df : pd.DataFrame) -> pd.DataFrame:
     output_df = output_df.replace(to_replace = ";", value = "--", regex=True)
     output_df = output_df.replace(to_replace = ",", value = "", regex=True)
     output_df = output_df.replace(to_replace = ",", value = "", regex=True)
-    output_df = output_df.replace(to_replace = '\W', value = '', regex = True)  # any remaining non numeric or letter removed
+    # remove any remaining non numeric or letter
+    output_df = output_df.replace(to_replace = '\W', value = '', regex = True)  
     return output_df
 
 
@@ -698,7 +716,9 @@ def compute_similarities_ms2ds(spectrum_list:List[matchms.Spectrum], model_path:
     filename = _return_model_filepath(model_path, ".hdf5")
     model = load_model(filename) # Load ms2ds model
     similarity_measure = MS2DeepScore(model)
-    scores_matchms = calculate_scores(spectrum_list, spectrum_list, similarity_measure, is_symmetric=True, array_type="numpy")
+    scores_matchms = calculate_scores(
+        spectrum_list, spectrum_list, similarity_measure, is_symmetric=True, array_type="numpy"
+    )
     scores_ndarray = scores_matchms.to_array()
     scores_ndarray = np.clip(scores_ndarray, a_min = 0, a_max = 1) # Clip to deal with floating point issues
     return scores_ndarray
@@ -816,13 +836,16 @@ def generate_processed_spectra(
         List[matchms.Spectrum] with filters applied. Note that the function will abort if pre-processing leads to empty
         list.
     '''
-    # TODO: implement checks; this function would be safer for end users if strict boundary checking was applied on input parameters.
+    # TODO: implement checks; this function would be safer for end users if strict boundary checking was applied on 
+    # input parameters.
     if verbose:
         print("Number of spectra prior to filtering: ", len(input_spectra))
     # Normalize intensities, important for similarity measures
     processed_spectra = copy.deepcopy(input_spectra)
     processed_spectra = [matchms.filtering.normalize_intensities(spec) for spec in processed_spectra]
-    processed_spectra = [matchms.filtering.select_by_mz(spec, mz_from = min_mz, mz_to = max_mz) for spec in processed_spectra]
+    processed_spectra = [
+        matchms.filtering.select_by_mz(spec, mz_from = min_mz, mz_to = max_mz) for spec in processed_spectra
+    ]
     # Clean spectra by remove very low intensity fragments, noise removal
     processed_spectra = [
         matchms.filtering.reduce_to_number_of_peaks(
