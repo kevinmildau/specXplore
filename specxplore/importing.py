@@ -549,7 +549,7 @@ def attach_columns_via_feature_id(init_table : pd.DataFrame, addon_data : pd.Dat
     extended_init_table = extended_init_table.astype('string')
     extended_init_table = extended_init_table.replace(
         to_replace=np.nan, 
-        value = "not available"
+        value = "not_available"
     )
     return extended_init_table
 
