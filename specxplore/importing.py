@@ -136,9 +136,8 @@ class specxploreImportingPipeline ():
         assert isinstance(filepath, str), f"Error: expected filepath to be string but received {type(filepath)}"
         assert os.path.isfile(filepath), "Error: supplied filepath does not point to existing file."
         spectra_matchms = list(matchms.importing.load_from_mgf(filepath))
-        for iloc, elem in enumerate(spectra_matchms):
-            assert isinstance(elem, matchms.Spectrum), f"Error: element {iloc} of loaded spectrum list is not of type matchms.Spectrum!"
-        _ = extract_feature_ids_from_spectra(spectra_matchms) # performs feature_id validity and availability checking
+        check_spectrum_information_availability(spectra_matchms)
+        _ = extract_feature_ids_from_spectra(spectra_matchms) # loads feature_ids to check uniqueness of every entry
         self.spectra_matchms = spectra_matchms
         self._spectral_data_loading_complete = True
         return None
@@ -332,17 +331,20 @@ def _assert_similarity_matrix(scores : np.ndarray, n_spectra : int) -> None:
     return None
 
 
-def check_spectrum_information_availability(spectra : List[matchms.Spectrum]):
-    """ Checks if basic spectrum data contains expected entries. """
+def check_spectrum_information_availability(spectra : List[matchms.Spectrum]) -> None:
+    """ Checks if list of spectral data contains expected entries. Aborts code if not the case. """
     for spectrum in spectra:
+        assert isinstance(spectrum, matchms.Spectrum), (
+            f"Error: item in loaded spectrum list is not of type matchms.Spectrum!"
+        )
         assert spectrum is not None, (
-            "None object detected in spectrum list. All spectra must be valid matchms.Spectrum instances."
+            "Error: None object detected in spectrum list. All spectra must be valid matchms.Spectrum instances."
         )
         assert spectrum.get("feature_id") is not None, (
-            "All spectra must have valid feature id entries."
+            "Error: All spectra must have valid feature_idid entries."
         )
         assert spectrum.get("precursor_mz") is not None, (
-            "All spectra must have valid precursor_mz value."
+            "Error: All spectra must have valid precursor_mz value."
         )
     return None
 
@@ -351,10 +353,11 @@ def extract_feature_ids_from_spectra(spectra : List[matchms.Spectrum]) -> List[s
     # Extract feature ids from matchms spectra. 
     feature_ids = [str(spec.get("feature_id")) for spec in spectra]
     # check feature_id set validity
-    assert not any(feature_ids) is None, "None type feature ids detected! All spectra must have valid feature_id entry of type string."
-    assert not all(feature_ids) is None, "None type feature ids detected! All spectra must have valid feature_id entry of type string."
-    assert all(isinstance(x, str) for x in feature_ids), "Non-string feature_ids detected. All feature_ids for spectra must be valid string type."
-    assert not (len(feature_ids) > len(set(feature_ids))), "Non-unique (duplicate) feature_ids detected. All feature_ids for spectra must be unique strings."
+    assert not feature_ids == [], "Error: no feature ids detected!"
+    assert not any(feature_ids) is None, "Error: None type feature ids detected! All spectra must have valid feature_id entry of type string."
+    assert not all(feature_ids) is None, "Error: None type feature ids detected! All spectra must have valid feature_id entry of type string."
+    assert all(isinstance(x, str) for x in feature_ids), "Error: Non-string feature_ids detected. All feature_ids for spectra must be valid string type."
+    assert not (len(feature_ids) > len(set(feature_ids))), "Error: Non-unique (duplicate) feature_ids detected. All feature_ids for spectra must be unique strings."
     return feature_ids
 
 
