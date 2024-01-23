@@ -260,10 +260,40 @@ class specxploreImportingPipeline ():
             pass
         return None
     
-    def attach_metadata_from_data_frame(self, metadata : pd.DataFrame):
+    def attach_metadata_from_data_frame(self, addon_data : pd.DataFrame) -> None:
+        """ Attach additional metadata contained within pd.DataFrame to existing metadata via feature_id overlap. 
+        
+        Parameters
+            addon_data : pd.DataFrame with feature_id column (subset or superset of those in spectral_data) and additional 
+                columns to be included.
+        Returns 
+            Attaches new data to metadatTable. Returns None.
+        """
+        if self.metadataTable is None:
+            self.metadataTable = _construct_init_table(self.spectra_matchms)
+        self.metadataTable = _attach_columns_via_feature_id(
+            self.metadataTable, 
+            addon_data
+        )
         return None
-    
-    def attach_classes_from_data_frame(self, classes : pd.DataFrame):
+
+    def attach_classes_from_data_frame(self, addon_data : pd.DataFrame) -> None:
+        """ 
+        Attach additional classdata contained within pd.DataFrame to existing class_table via feature_id overlap. 
+
+        Parameters
+            addon_data : pd.DataFrame with feature_id column (subset or superset of those in spectral_data) and additional 
+                columns to be included. Note that additional data should be suitable categorical data for highlighting 
+                purposes within the specXplore interactive dashboard.
+        Returns 
+            Attaches new data to metadatTable. Returns None.
+        """
+        # Class table may not have been initiated
+        if self.classificationTable is None:
+            self.classificationTable = _construct_init_table(self.spectra_matchms)
+        self.classificationTable = remove_white_space_from_df(
+            _attach_columns_via_feature_id(self.classificationTable, addon_data)
+        )
         return None
     
     def export_specXplore_session_data(self, filepath : str = None):
@@ -515,11 +545,10 @@ def print_tsne_grid(grid : List[TsneGridEntry]) -> None:
     for iloc, elem in enumerate(grid):
         print(iloc, elem.perplexity, round(elem.pearson_score, 3), round(elem.spearman_score, 3))
 
-
-def attach_columns_via_feature_id(init_table : pd.DataFrame, addon_data : pd.DataFrame,) -> pd.DataFrame:
+def _attach_columns_via_feature_id(init_table : pd.DataFrame, addon_data : pd.DataFrame,) -> pd.DataFrame:
     """ Attaches addon_data to data frame via join on 'feature_id'. 
     
-    The data frame can be a class table or metadata table and is assumed to be derived from the construct_init_table() 
+    The data frame can be a class table or metadata table and is assumed to be derived from the _construct_init_table() 
     and contain feature_id and spectrum_iloc columns.
     
     Input
