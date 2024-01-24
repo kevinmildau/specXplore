@@ -320,6 +320,8 @@ class specxploreImportingPipeline ():
         # if filepath is None, construct filepath automatically using datetime
         # check if all data available and pass to session_data constructor
         # pickle session_data object
+
+        self.spectra_specxplore = _convert_matchms_spectra_to_specxplore_spectra(self.spectra_matchms)
         return None
     def attachData (
             self, 
