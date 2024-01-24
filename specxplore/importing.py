@@ -7,7 +7,6 @@ from specxplore.session_data import SpecxploreSessionData
 from specxplore.spectrum import Spectrum
 from specxplore import importing_cython
 from specxplore import utils
-from specxplore.constants import SELECTED_NODES_STYLE, GENERAL_STYLE, NETVIEW_STYLE
 import os
 import json 
 import pickle
@@ -284,7 +283,6 @@ class specxploreImportingPipeline ():
             f"Error: must provide iloc in range of tsne grid 0 to {len(self.tsne_grid)}"
         )
         tsne_coordinates_table = _construct_init_table(self.spectra_matchms)
-        print(tsne_coordinates_table, type(tsne_coordinates_table))
         tsne_coordinates_table["x"] = self.tsne_grid[iloc].x_coordinates
         tsne_coordinates_table["y"] = self.tsne_grid[iloc].y_coordinates
         self.tsne_coordinates_table = tsne_coordinates_table
