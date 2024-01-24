@@ -687,6 +687,7 @@ def _print_kmedoid_grid(grid : List[KmedoidGridEntry]) -> None:
         :, ["k", "silhouette_score", "random_seed_used"]
     ]
     kmedoid_results.insert(loc = 0, column = "iloc", value = [iloc for iloc in range(0, len(grid))])
+    print("Kmedoid grid results. Use to inform kmedoid classification selection ilocs.")
     print(kmedoid_results)
     return None
 def _print_tsne_grid(grid : List[TsneGridEntry]) -> None:   
@@ -695,6 +696,7 @@ def _print_tsne_grid(grid : List[TsneGridEntry]) -> None:
         :, ["perplexity", "pearson_score", "spearman_score", "random_seed_used"]
     ]
     tsne_results.insert(loc = 0, column = "iloc", value = [iloc for iloc in range(0, len(grid))])
+    print("T-sne grid results. Use to inform t-sne embedding selection.")
     print(tsne_results)
     return None
 def _attach_columns_via_feature_id(init_table : pd.DataFrame, addon_data : pd.DataFrame,) -> pd.DataFrame:
