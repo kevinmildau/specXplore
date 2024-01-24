@@ -516,12 +516,12 @@ def _plot_tsne_grid(tsne_list : List[TsneGridEntry]) -> None:
     
     pearson_scores = [x.spearman_score for x in tsne_list]
     spearman_scores = [x.pearson_score for x in tsne_list]
-    perplexities = [x.perplexity for x in tsne_list]
+    iloc_perplexity = [ f"{x.perplexity} / {iloc}" for iloc, x in enumerate(tsne_list)]
 
-    trace_spearman = go.Scatter(x = perplexities, y = spearman_scores, name="spearman_score", mode = "markers")
-    trace_pearson = go.Scatter(x = perplexities, y = pearson_scores, name="pearson_score", mode = "markers")
+    trace_spearman = go.Scatter(x = iloc_perplexity, y = spearman_scores, name="spearman_score", mode = "markers")
+    trace_pearson = go.Scatter(x = iloc_perplexity, y = pearson_scores, name="pearson_score", mode = "markers")
     fig = go.Figure([trace_pearson, trace_spearman])
-    fig.update_layout(xaxis_title="Perplexity", yaxis_title="Score")
+    fig.update_layout(xaxis_title="Perplexity / iloc", yaxis_title="Score")
     fig.show()
     return None
 def _convert_similarity_to_distance(similarity_matrix : np.ndarray) -> np.ndarray:
