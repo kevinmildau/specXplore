@@ -547,20 +547,10 @@ def _run_kmedoid_grid(
     Returns: 
         A list of KmedoidGridEntry objects containing grid results.
     """
-
     if random_states is None:
         random_states = [ 0 for _ in k_values ]
     output_list = []
-
-    assert isinstance(k_values, list), (
-        "Error: k values must be a list. If only running one value, specify input as [value]."
-    )
-    for k in k_values: 
-        assert isinstance(k, (int)) and k < distance_matrix.shape[0], (
-            "Error: k values must be python int object. "
-            "KMedoids module requires strict Python int object (np.int64 rejected!). "
-            "K must also be smaller than number of features." 
-        )
+    _check_k_values(k_values, max_k = distance_matrix.shape[0])
     for idx, k in enumerate(k_values):
         cluster = KMedoids(
             n_clusters=k, 
