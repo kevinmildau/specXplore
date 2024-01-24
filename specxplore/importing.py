@@ -34,6 +34,7 @@ import copy
 import numpy as np
 import pandas as pd
 import warnings
+
 @dataclass
 class KmedoidGridEntry():
     """ 
@@ -92,35 +93,23 @@ class specxploreImportingPipeline ():
     Class interface for specXplore importing pipeline functions & storing intermediate data structures for users. 
     """
     # All default states set to none. Use attach data to construct the actual data object.
-
     # MSMS spectral data. The core underlying data of specXplore.
     spectra_matchms : Union[List[matchms.Spectrum], None] = None
     spectra_specxplore : Union[List[Spectrum], None] = None
-    
     # Metadata separated into classification style & generic
     classificationTable : Union[pd.DataFrame, None] = None
     metadataTable : Union[pd.DataFrame, None] = None
-
     # Pairwise Similarity Matrices
     primary_score : Union[np.ndarray, None] = None
     secondary_score : Union[np.ndarray, None] = None
     tertiary_score : Union[np.ndarray, None] = None
     # Default specXplore scores implemented
     score_names : List[str] = field(default_factory = lambda: ["ms2deepscore", "spec2vec", "modified-cosine"]) 
-    
     # Embedding grid & coordinates
     tsne_grid : Union[List[TsneGridEntry], None] = None
     tsne_coordinates_table : Union[pd.DataFrame, None] = None
-    
     # K-medoid classification grid
     kmedoid_grid : Union[List[KmedoidGridEntry], None] = None
-
-    # filepaths
-    input_data_filepath : Union[str, None] = None # the mgf spectral data file
-    model_directory : Union[str, None] = None # needed for both ms2query and similarity matrix computation
-    output_folder : Union[str, None] = None # derived from input_folder or provided
-    output_filename : Union[str, None] = None # date time derived default or provided, auto-overwrite = False
-
     # Explicit Booleans to track pipeline steps completed successfully. 
     _spectral_data_loading_complete : bool = False
     _spectral_processing_complete : bool = False
@@ -141,12 +130,11 @@ class specxploreImportingPipeline ():
         assert isinstance(filepath, str), f"Error: expected filepath to be string but received {type(filepath)}"
         assert os.path.isfile(filepath), "Error: supplied filepath does not point to existing file."
         spectra_matchms = list(matchms.importing.load_from_mgf(filepath))
-        check_spectrum_information_availability(spectra_matchms)
-        _ = extract_feature_ids_from_spectra(spectra_matchms) # loads feature_ids to check uniqueness of every entry
+        _check_spectrum_information_availability(spectra_matchms)
+        _ = _extract_feature_ids_from_spectra(spectra_matchms) # loads feature_ids to check uniqueness of every entry
         self.spectra_matchms = spectra_matchms
         self._spectral_data_loading_complete = True
         return None
-
     def run_spectral_processing(
         self, 
         force : bool = False, 
@@ -157,7 +145,7 @@ class specxploreImportingPipeline ():
             force : bool that defaults to false and prevents the overwriting on previous spectral processing. This is a
                 safety step to avoid downstream steps becoming incompatible with the spectral data. Set to true or 
                 re-initialize pipeline to rerun spectral processing and rerun any downstream processes.
-            **kwargs For optional processing arguments refer to documentation of generate_processed_spectra()
+            **kwargs For optional processing arguments refer to documentation of _generate_processed_spectra()
         
         Return
             Attaches processed spectra_matchms to self. Returns None.
@@ -173,11 +161,10 @@ class specxploreImportingPipeline ():
                 "subsequent steps are re-run as well! To force a rerun, use force = True or re-initalize the pipeline"
                 "instance"
             )
-        processed_spectra = generate_processed_spectra(self.spectra_matchms, **kwargs)
+        processed_spectra = _generate_processed_spectra(self.spectra_matchms, **kwargs)
         self.spectra_matchms = processed_spectra
         self._spectral_processing_complete = True
         return None
-
     def run_spectral_similarity_computations(self, model_directory_path : str = None, force : bool = False):
         """ Runs and attaches spectral similarity measures using self.spectra """
         assert os.path.isdir(model_directory_path), "model directory path must point to an existing directory!"
@@ -186,13 +173,12 @@ class specxploreImportingPipeline ():
                 "Error: Similarities were already set. To replace existing scores set Force to True or restart "
                 "the pipeline."
             )
-        self.primary_score = compute_similarities_ms2ds(self.spectra_matchms, model_directory_path)
-        self.secondary_score = compute_similarities_cosine(self.spectra_matchms, cosine_type="ModifiedCosine")
-        self.tertiary_score = compute_similarities_s2v(self.spectra_matchms, model_directory_path)
+        self.primary_score = _compute_similarities_ms2ds(self.spectra_matchms, model_directory_path)
+        self.secondary_score = _compute_similarities_cosine(self.spectra_matchms, cosine_type="ModifiedCosine")
+        self.tertiary_score = _compute_similarities_s2v(self.spectra_matchms, model_directory_path)
         self._add_similarities_complete = True
         self._spectral_processing_complete = True # similarity matrices were computed, this step is skipped and locked
         return None
-
     def attach_spectral_similarity_arrays(
         self, 
         primary_score, 
@@ -227,7 +213,6 @@ class specxploreImportingPipeline ():
         )
         self._load_ms2query_results(results_filepath)
         return None
-
     def run_ms2query(
         self, 
         model_directory_path : str, 
@@ -259,27 +244,26 @@ class specxploreImportingPipeline ():
         ms2library.analog_search_store_in_csv(self.spectra_matchms, results_filepath, ms2querySettings)
         self._load_ms2query_results(results_filepath)
         return None
-    
-    def run_tsne_grid(self, perplexities : List[int] = [10, 30, 50]):
+    def run_and_attach_tsne_grid(self, perplexity_values : List[int] = [10, 30, 50]) -> None:
         """ Run the t-SNE grid & attach the results to pipeline instance. """
-        # reduce perplexity list to not exceed len(self.spectra_matchms)
-        # compute distance matrix from primary score
-        # run tsne grid
+        # Subset perplexity values
+        perplexity_values = [perplexity for perplexity in perplexity_values if perplexity < len(self.spectra_matchms)]
+        _check_perplexities(perplexity_values, len(self.spectra_matchms))
+        distance_matrix = _convert_similarity_to_distance(self.primary_score)
+        self.tsne_grid = _run_tsne_grid(distance_matrix, perplexity_values)
+        _print_tsne_grid(self.tsne_grid)
         return None
-
     def select_tsne_settings(self, iloc : int):
         """ Select particular t-SNE coordinate setting using entry iloc. """
         # check iloc valid
         # extract iloc specific coordinates and attach to self
         return None
-    
-    def run_kmedoid_grid(self, number_of_clusters : List[int] = [10, 30, 50]):
+    def run_and_attach_kmedoid_grid(self, number_of_clusters : List[int] = [10, 30, 50]):
         """ Run the k-medoid grid & attach the results to pipeline instance. """
         # reduce number of clusters list to not exceed len(self.spectra_matchms)
         # compute distance matrix from primary score
         # run kmedoid grid
         return None
-
     def select_kmedoid_settings(self, ilocs : Union[int, List[int]]):
         """ Select and attach particular k-medoid clustering assignments using entry iloc or list of ilocs. """
         # assert input is int or list of int
@@ -298,7 +282,6 @@ class specxploreImportingPipeline ():
             # select and attach all assignment lists to classes table
             pass
         return None
-    
     def attach_metadata_from_data_frame(self, addon_data : pd.DataFrame) -> None:
         """ Attach additional metadata contained within pd.DataFrame to existing metadata via feature_id overlap. 
         
@@ -315,7 +298,6 @@ class specxploreImportingPipeline ():
             addon_data
         )
         return None
-
     def attach_classes_from_data_frame(self, addon_data : pd.DataFrame) -> None:
         """ 
         Attach additional classdata contained within pd.DataFrame to existing class_table via feature_id overlap. 
@@ -330,17 +312,15 @@ class specxploreImportingPipeline ():
         # Class table may not have been initiated
         if self.classificationTable is None:
             self.classificationTable = _construct_init_table(self.spectra_matchms)
-        self.classificationTable = remove_white_space_from_df(
+        self.classificationTable = _remove_white_space_from_df(
             _attach_columns_via_feature_id(self.classificationTable, addon_data)
         )
         return None
-    
     def export_specXplore_session_data(self, filepath : str = None):
         # if filepath is None, construct filepath automatically using datetime
         # check if all data available and pass to session_data constructor
         # pickle session_data object
         return None
-
     def attachData (
             self, 
             spectra : List[matchms.Spectrum], 
@@ -394,15 +374,14 @@ def _construct_init_table(spectra : List[matchms.Spectrum]) -> pd.DataFrame:
     Returns:
         pd.DataFrame with feature_id and spectrum_iloc columns (dtypes: string, int64)
     '''
-    feature_ids = extract_feature_ids_from_spectra(spectra)
+    feature_ids = _extract_feature_ids_from_spectra(spectra)
     spectrum_ilocs = [iloc for iloc in range(0, len(spectra))]
 
     init_table = pd.DataFrame(data = {"feature_id" : feature_ids,  "spectrum_iloc" : spectrum_ilocs})
     init_table["feature_id"] = init_table["feature_id"].astype("string")
     init_table["spectrum_iloc"] = init_table["spectrum_iloc"].astype("int64")
     return init_table
-
-def convert_matchms_spectra_to_specxplore_spectra(
+def _convert_matchms_spectra_to_specxplore_spectra(
     spectra = List[matchms.Spectrum]
     ) -> List[Spectrum]:
     """ Converts list of matchms.Spectrum objects to list of specxplore.importing.Spectrum objects. """
@@ -418,7 +397,6 @@ def convert_matchms_spectra_to_specxplore_spectra(
         in enumerate(spectra)
     ]
     return spectra_converted
-
 def _assert_similarity_matrix(scores : np.ndarray, n_spectra : int) -> None:
     """ Function checks whether similarity matrix corresponds to expected formatting. Aborts code if not. """
     assert (isinstance(scores, np.ndarray)), "Error: input scores must be type np.ndarray."
@@ -427,9 +405,7 @@ def _assert_similarity_matrix(scores : np.ndarray, n_spectra : int) -> None:
     )
     assert np.logical_and(scores >= 0, scores <= 1).all(), "Error: all score values must be in range 0 to 1."
     return None
-
-
-def check_spectrum_information_availability(spectra : List[matchms.Spectrum]) -> None:
+def _check_spectrum_information_availability(spectra : List[matchms.Spectrum]) -> None:
     """ Checks if list of spectral data contains expected entries. Aborts code if not the case. """
     for spectrum in spectra:
         assert isinstance(spectrum, matchms.Spectrum), (
@@ -445,8 +421,7 @@ def check_spectrum_information_availability(spectra : List[matchms.Spectrum]) ->
             "Error: All spectra must have valid precursor_mz value."
         )
     return None
-
-def extract_feature_ids_from_spectra(spectra : List[matchms.Spectrum]) -> List[str]:
+def _extract_feature_ids_from_spectra(spectra : List[matchms.Spectrum]) -> List[str]:
     """ Extract feature ids from list of matchms spectra in string format. """
     # Extract feature ids from matchms spectra. 
     feature_ids = [str(spec.get("feature_id")) for spec in spectra]
@@ -479,6 +454,7 @@ def _check_perplexities(perplexity_values : List[Union[float, int]], max_perplex
             "Error: perplexity values must be numeric (int, float) and smaller than number of features." 
         )
     return None
+def _run_tsne_grid(
         distance_matrix : np.ndarray,
         perplexity_values : List[int], 
         random_states : Union[List, None] = None
@@ -492,7 +468,7 @@ def _check_perplexities(perplexity_values : List[Union[float, int]], max_perplex
     Returns: 
         A list of TsneGridEntry objects containing grid results. 
     """
-
+    _check_perplexities(perplexity_values, distance_matrix.shape[0])
     if random_states is None:
         random_states = [ 0 for _ in perplexity_values ]
     output_list = []
@@ -519,9 +495,7 @@ def _check_perplexities(perplexity_values : List[Union[float, int]], max_perplex
             )
         )
     return output_list
-
-
-def render_tsne_fitting_results_in_browser(tsne_list : List[TsneGridEntry]) -> None:
+def _plot_tsne_grid(tsne_list : List[TsneGridEntry]) -> None:
     """ Plots pearson and spearman scores vs perplexity for each entry in list of TsneGridEntry objects. """
     
     pearson_scores = [x.spearman_score for x in tsne_list]
@@ -532,26 +506,18 @@ def render_tsne_fitting_results_in_browser(tsne_list : List[TsneGridEntry]) -> N
     trace_pearson = go.Scatter(x = perplexities, y = pearson_scores, name="pearson_score", mode = "markers")
     fig = go.Figure([trace_pearson, trace_spearman])
     fig.update_layout(xaxis_title="Perplexity", yaxis_title="Score")
-    fig.show(renderer = "browser")
+    fig.show()
     return None
-
-
-def convert_similarity_to_distance(similarity_matrix : np.ndarray) -> np.ndarray:
+def _convert_similarity_to_distance(similarity_matrix : np.ndarray) -> np.ndarray:
     """ 
     Converts pairwise similarity matrix to distance matrix with values between 0 and 1. Assumes that the input is a
     similarity matrix with values in range 0 to 1 up to floating point error.
-
-    Developer Note:
-        spec2vec scores do not appear to be in this range.
     """
-
     distance_matrix = 1.- similarity_matrix
     distance_matrix = np.round(distance_matrix, 6) # Round to deal with floating point issues
     distance_matrix = np.clip(distance_matrix, a_min = 0, a_max = 1) # Clip to deal with floating point issues
     return distance_matrix
-
-
-def run_kmedoid_grid(
+def _run_kmedoid_grid(
         distance_matrix : np.ndarray, 
         k_values : List[int], 
         random_states : Union[List, None] = None
@@ -569,9 +535,15 @@ def run_kmedoid_grid(
     if random_states is None:
         random_states = [ 0 for _ in k_values ]
     output_list = []
-    for k in k_values:
-        assert isinstance(k, int), (
-            "k must be python int object. KMedoids module requires strict Python int object (np.int64 rejected!)"
+
+    assert isinstance(k_values, list), (
+        "Error: k values must be a list. If only running one value, specify input as [value]."
+    )
+    for k in k_values: 
+        assert isinstance(k, (int)) and k < distance_matrix.shape[0], (
+            "Error: k values must be python int object. "
+            "KMedoids module requires strict Python int object (np.int64 rejected!). "
+            "K must also be smaller than number of features." 
         )
     for idx, k in enumerate(k_values):
         cluster = KMedoids(
@@ -599,9 +571,7 @@ def run_kmedoid_grid(
             )
         )
     return output_list
-
-
-def render_kmedoid_fitting_results_in_browser(
+def _plot_kmedoid_grid(
         kmedoid_list : List[KmedoidGridEntry]
         ) -> None:
     """ Plots Silhouette Score vs k for each entry in list of KmedoidGridEntry objects. """
@@ -612,26 +582,23 @@ def render_kmedoid_fitting_results_in_browser(
         xaxis_title="K (Number of Clusters)", 
         yaxis_title="Silhouette Score"
     )
-    fig.show(renderer = "browser")
+    fig.show()
     return None
-
-
-def print_kmedoid_grid(grid : List[KmedoidGridEntry]) -> None:
+def _print_kmedoid_grid(grid : List[KmedoidGridEntry]) -> None:
     """ Prints all values in kmedoid grid in readable format. """
 
     print("iloc Number-of-Clusters Silhouette-Score")
     for iloc, elem in enumerate(grid):
         print(iloc, elem.k, round(elem.silhouette_score, 3))
     return None
-
-
-def print_tsne_grid(grid : List[TsneGridEntry]) -> None:   
+def _print_tsne_grid(grid : List[TsneGridEntry]) -> None:   
     """ Prints all values in tsne grid in readable format. """
 
     print('iloc Perplexity Pearson-score Spearman-score')
     for iloc, elem in enumerate(grid):
-        print(iloc, elem.perplexity, round(elem.pearson_score, 3), round(elem.spearman_score, 3))
-
+        print(
+            f" {iloc},     {elem.perplexity},     {round(elem.pearson_score, 3)},     {round(elem.spearman_score, 3)} "
+        )
 def _attach_columns_via_feature_id(init_table : pd.DataFrame, addon_data : pd.DataFrame,) -> pd.DataFrame:
     """ Attaches addon_data to data frame via join on 'feature_id'. 
     
@@ -668,9 +635,7 @@ def _attach_columns_via_feature_id(init_table : pd.DataFrame, addon_data : pd.Da
         value = "not_available"
     )
     return extended_init_table
-
-
-def remove_white_space_from_df(input_df : pd.DataFrame) -> pd.DataFrame:
+def _remove_white_space_from_df(input_df : pd.DataFrame) -> pd.DataFrame:
     ''' Removes whitespace from all entries in input_df. 
     
     White space removal is essential for accurate chemical classification parsing in node highlighting of specXplore.
@@ -683,8 +648,6 @@ def remove_white_space_from_df(input_df : pd.DataFrame) -> pd.DataFrame:
     # remove any remaining non numeric or letter
     output_df = output_df.replace(to_replace = '\W', value = '', regex = True)  
     return output_df
-
-
 def _return_model_filepath(path : str, model_suffix:str) -> str:
     """ Function parses path input into a model filepath. If a model filepath is provided, it is returned unaltered , if 
     a directory path is provided, the model filepath is searched for and returned.
@@ -710,10 +673,7 @@ def _return_model_filepath(path : str, model_suffix:str) -> str:
         "More than one possible model file detected in directory! Please provide non-ambiguous model directory or"
         "filepath!")
     return filepath[0]
-
-
-
-def compute_similarities_ms2ds(spectrum_list:List[matchms.Spectrum], model_path:str) -> np.ndarray:
+def _compute_similarities_ms2ds(spectrum_list:List[matchms.Spectrum], model_path:str) -> np.ndarray:
     """ Function computes pairwise similarity matrix for list of spectra using pretrained ms2deepscore model.
     
     Parameters
@@ -731,10 +691,7 @@ def compute_similarities_ms2ds(spectrum_list:List[matchms.Spectrum], model_path:
     scores_ndarray = scores_matchms.to_array()
     scores_ndarray = np.clip(scores_ndarray, a_min = 0, a_max = 1) # Clip to deal with floating point issues
     return scores_ndarray
-
-
-
-def compute_similarities_s2v(spectrum_list:List[matchms.Spectrum], model_path:str) -> np.ndarray:
+def _compute_similarities_s2v(spectrum_list:List[matchms.Spectrum], model_path:str) -> np.ndarray:
     """ Function computes pairwise similarity matrix for list of spectra using pretrained spec2vec model.
     
     Parameters:
@@ -758,10 +715,7 @@ def compute_similarities_s2v(spectrum_list:List[matchms.Spectrum], model_path:st
     # original value in this approach, e.g. the distance from -1 to 1 is 2, while in the new space 0 to 1 distance is
     # at most 1. This implies a subtle difference in interpreting this score.
     return scores_ndarray
-
-
-
-def compute_similarities_cosine(spectrum_list:List[matchms.Spectrum], cosine_type : str = "ModifiedCosine"):
+def _compute_similarities_cosine(spectrum_list:List[matchms.Spectrum], cosine_type : str = "ModifiedCosine"):
     """ Function computes pairwise similarity matrix for list of spectra using specified cosine score. 
     
     Parameters:
@@ -780,12 +734,10 @@ def compute_similarities_cosine(spectrum_list:List[matchms.Spectrum], cosine_typ
     elif cosine_type == "CosineGreedy":
         similarity_measure = CosineGreedy()
     tmp = calculate_scores(spectrum_list, spectrum_list, similarity_measure, is_symmetric=True, array_type = "numpy")
-    scores = extract_similarity_scores_from_matchms_cosine_array(tmp.to_array())
+    scores = _extract_similarity_scores_from_matchms_cosine_array(tmp.to_array())
     scores = np.clip(scores, a_min = 0, a_max = 1) 
     return scores
-
-
-def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray) -> np.ndarray:
+def _extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray) -> np.ndarray:
     """ 
     Function extracts similarity matrix from matchms cosine scores array.
     
@@ -804,9 +756,7 @@ def extract_similarity_scores_from_matchms_cosine_array(tuple_array : np.ndarray
         for elem in row:
             sim_data.append(float(elem[0]))
     return(np.array(sim_data).reshape(tuple_array.shape[0], tuple_array.shape[1]))
-
-
-def generate_processed_spectra(
+def _generate_processed_spectra(
         input_spectra : List[matchms.Spectrum],
         minimum_number_of_peaks : int = 5,
         maximum_number_of_peaks : int = 200,
