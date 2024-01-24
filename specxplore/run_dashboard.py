@@ -1,7 +1,7 @@
 from dash import dcc, html, ctx, dash_table, Dash
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
-from specxplore import degreemap, egonet, augmap, fragmap, netview, utils, specplot, identifiers, importing, layouts
+from specxplore import degreemap, egonet, augmap, fragmap, netview, utils, specplot, identifiers, layouts, session_data
 from specxplore.constants import COLORS, UNICODE_X
 
 import pickle
@@ -10,7 +10,7 @@ import os
 import numpy as np
 from typing import Union
 
-global GLOBAL_DATA
+global GLOBAL_SESSION_DATA
 
 
 # possible themes: VAPOR, UNITED, SKETCHY; see more:  https://bootswatch.com/
@@ -81,7 +81,7 @@ def cytoscape_trigger(
 
     node_degree_legend = [] # initialize to empty list. Only get filled if degree node selected
     warning_messages = "" # initialize to empty string. Only gets expanded if warnings necessary.
-    styles = GLOBAL_DATA.initial_style
+    styles = GLOBAL_SESSION_DATA.initial_style
 
     elements = node_elements_from_store
 
@@ -93,7 +93,7 @@ def cytoscape_trigger(
         tmp_colors = [{
             "selector" : f".{str(elem)}", "style" : {"background-color" : COLORS[idx]}} 
             for idx, elem in enumerate(classes_to_be_highlighted)]
-        styles = GLOBAL_DATA.initial_style + tmp_colors
+        styles = GLOBAL_SESSION_DATA.initial_style + tmp_colors
     if case_too_many_classes_to_be_highlighted:
         warning_messages += (
             f" \n{UNICODE_X}Number of classes selected = {len(classes_to_be_highlighted)}" 
@@ -112,15 +112,15 @@ def cytoscape_trigger(
     
     if case_generate_clustnet:
         elements, styles, n_omitted_edges = netview.generate_cluster_node_link_diagram_cythonized(
-            GLOBAL_DATA.tsne_coordinates_table, 
+            GLOBAL_SESSION_DATA.tsne_coordinates_table, 
             spec_id_selection,
-            GLOBAL_DATA.primary_score, 
+            GLOBAL_SESSION_DATA.primary_score, 
             all_class_level_assignments,
             threshold, 
-            GLOBAL_DATA.sources, 
-            GLOBAL_DATA.targets, 
-            GLOBAL_DATA.values, 
-            GLOBAL_DATA.get_spectrum_iloc_list(),
+            GLOBAL_SESSION_DATA.sources, 
+            GLOBAL_SESSION_DATA.targets, 
+            GLOBAL_SESSION_DATA.values, 
+            GLOBAL_SESSION_DATA.get_spectrum_iloc_list(),
             max_edges_clustnet, max_edges_per_node
         )
         if n_omitted_edges != int(0):
@@ -148,10 +148,10 @@ def cytoscape_trigger(
     if case_generate_egonet:
         elements, styles, n_omitted_edges = egonet.generate_egonet_cythonized(
             spec_id_selection, 
-            GLOBAL_DATA.sources, 
-            GLOBAL_DATA.targets, 
-            GLOBAL_DATA.values, 
-            GLOBAL_DATA.tsne_coordinates_table, 
+            GLOBAL_SESSION_DATA.sources, 
+            GLOBAL_SESSION_DATA.targets, 
+            GLOBAL_SESSION_DATA.values, 
+            GLOBAL_SESSION_DATA.tsne_coordinates_table, 
             threshold, 
             expand_level, 
             max_edges_egonet
@@ -171,25 +171,25 @@ def cytoscape_trigger(
 
     if btn == identifiers.BUTTON_RUN_DEGREE_MAP:
         styles, legend_plot = degreemap.generate_degree_colored_elements(
-            GLOBAL_DATA.sources, 
-            GLOBAL_DATA.targets, 
-            GLOBAL_DATA.values, 
+            GLOBAL_SESSION_DATA.sources, 
+            GLOBAL_SESSION_DATA.targets, 
+            GLOBAL_SESSION_DATA.values, 
             threshold
         )
         if styles and legend_plot:
-            styles = GLOBAL_DATA.initial_style + styles
+            styles = GLOBAL_SESSION_DATA.initial_style + styles
             node_degree_legend = [
                 dcc.Graph(id = "legend", figure = legend_plot, style={"height":"8vh", })
             ]
         else:
-            styles = GLOBAL_DATA.initial_style
+            styles = GLOBAL_SESSION_DATA.initial_style
             warning_messages += (f"  \n{UNICODE_X} Threshold too stringent. All node degrees are zero.")
     case_change_node_selection_but_keep_style = (
         btn == identifiers.DROPDOWN_FOCUS_SPECTRUM_ILOC_SELECTION
         and spec_id_selection
     )
     if case_change_node_selection_but_keep_style:
-        styles = GLOBAL_DATA.initial_style + previous_stylesheet 
+        styles = GLOBAL_SESSION_DATA.initial_style + previous_stylesheet 
         elements = previous_elements
     
     case_highlight_selected_classes_unless_other_view_requested = (
@@ -209,7 +209,7 @@ def cytoscape_trigger(
             for idx, elem 
             in enumerate(classes_to_be_highlighted)
         ]
-        styles = GLOBAL_DATA.initial_style + tmp_colors
+        styles = GLOBAL_SESSION_DATA.initial_style + tmp_colors
     
     return elements, styles, zoom_level, pan_location, node_degree_legend, warning_messages
     
@@ -229,7 +229,7 @@ def displaySelectedNodeData(
 
     btn = ctx.triggered_id
     if btn == identifiers.STORE_EMPTY_SESSION_DATA_TRIGGER:
-        new_options = GLOBAL_DATA.get_spectrum_iloc_list()
+        new_options = GLOBAL_SESSION_DATA.get_spectrum_iloc_list()
         new_focus_id_values = [] # always start wit empty set
         return new_focus_id_values, new_options
     
@@ -301,13 +301,13 @@ def details_trigger(
         and len(selection_data) >= 2 
         and len(selection_data) <= max_number_fragmap
         ):
-        panel = fragmap.generate_fragmap_panel(selection_data, GLOBAL_DATA.spectra, top_k_fragmap)
+        panel = fragmap.generate_fragmap_panel(selection_data, GLOBAL_SESSION_DATA.spectra_specxplore, top_k_fragmap)
     
     elif (
         btn == identifiers.BUTTON_RUN_METADATA_TABLE 
         and selection_data
         ):
-        tmpdf = GLOBAL_DATA.metadata_table.iloc[selection_data]
+        tmpdf = GLOBAL_SESSION_DATA.metadata_table.iloc[selection_data]
         panel = dash_table.DataTable(
             id=identifiers.PANEL_METADATA_TABLE,
             columns=[
@@ -334,12 +334,12 @@ def details_trigger(
         ):
         panel = augmap.generate_augmap_panel(
             selection_data, 
-            GLOBAL_DATA.primary_score, 
-            GLOBAL_DATA.secondary_score , 
-            GLOBAL_DATA.tertiary_score, 
+            GLOBAL_SESSION_DATA.primary_score, 
+            GLOBAL_SESSION_DATA.secondary_score , 
+            GLOBAL_SESSION_DATA.tertiary_score, 
             threshold, 
             colorblind_boolean,
-            GLOBAL_DATA.score_names
+            GLOBAL_SESSION_DATA.score_names
         )
         
     elif btn == identifiers.BUTTON_RUN_SPECPLOT and selection_data and len(selection_data) <=max_number_specplot:
@@ -347,19 +347,19 @@ def details_trigger(
             panel = dcc.Graph(
                 id=identifiers.PANEL_GRAPH_SPECPLOT, 
                 figure=specplot.generate_single_spectrum_plot(
-                    GLOBAL_DATA.spectra[selection_data[0]]
+                    GLOBAL_SESSION_DATA.spectra_specxplore[selection_data[0]]
                 )
             )
         if len(selection_data) == 2:
             panel = dcc.Graph(
                 id=identifiers.PANEL_GRAPH_SPECPLOT, 
                 figure=specplot.generate_mirror_plot(
-                    GLOBAL_DATA.spectra[selection_data[0]], 
-                    GLOBAL_DATA.spectra[selection_data[1]]
+                    GLOBAL_SESSION_DATA.spectra_specxplore[selection_data[0]], 
+                    GLOBAL_SESSION_DATA.spectra_specxplore[selection_data[1]]
                 )
             )
         if len(selection_data) > 2:
-            spectra = [GLOBAL_DATA.spectra[i] for i in selection_data]
+            spectra = [GLOBAL_SESSION_DATA.spectra_specxplore[i] for i in selection_data]
             panel = specplot.generate_multiple_spectra_figure_div_list(spectra)
     else:
         panel = []
@@ -393,9 +393,9 @@ def displaymouseoverData(data, selected_class_level):
     """ Callback Function renders class table information and id for hovered over node in text panel."""
     if data:
         spec_id = data["id"]
-        node_class_info = GLOBAL_DATA.class_table.iloc[int(spec_id)].to_dict()
+        node_class_info = GLOBAL_SESSION_DATA.classification_table.iloc[int(spec_id)].to_dict()
 
-        selected_class_info = GLOBAL_DATA.class_table.iloc[int(spec_id)].to_dict()[selected_class_level]
+        selected_class_info = GLOBAL_SESSION_DATA.classification_table.iloc[int(spec_id)].to_dict()[selected_class_level]
         del node_class_info[selected_class_level]
         class_string_list = []
         for key in node_class_info:
@@ -454,17 +454,17 @@ def class_update_trigger_handler(
         selected_class : str, 
         _ : None):
     """ Wrapper Function that construct class dcc.store data. """
-    class_levels = list(GLOBAL_DATA.class_dict.keys())
+    class_levels = list(GLOBAL_SESSION_DATA.class_dict.keys())
     btn = ctx.triggered_id
     # Update selected_class if the trigger for class updating is a new session data.
     if btn == identifiers.STORE_EMPTY_SESSION_DATA_TRIGGER:
-        selected_class = list(GLOBAL_DATA.class_dict.keys())[0]
-    class_assignments = GLOBAL_DATA.class_dict[selected_class]
+        selected_class = list(GLOBAL_SESSION_DATA.class_dict.keys())[0]
+    class_assignments = GLOBAL_SESSION_DATA.class_dict[selected_class]
     unique_assignments = list(np.unique(class_assignments))
     node_elements = utils.initialize_cytoscape_graph_elements(
-        GLOBAL_DATA.tsne_coordinates_table, 
+        GLOBAL_SESSION_DATA.tsne_coordinates_table, 
         class_assignments, 
-        GLOBAL_DATA.highlight_table["highlight_bool"].to_list()
+        GLOBAL_SESSION_DATA.highlight_table["highlight_bool"].to_list()
     )
     return selected_class, class_levels, class_assignments, unique_assignments, [], node_elements, selected_class
 
@@ -479,7 +479,7 @@ def update_histogram(
         ) -> go.Figure:
     fig = go.Figure()
     fig.add_trace(go.Histogram(
-        y=GLOBAL_DATA.values, opacity = 0.6, 
+        y=GLOBAL_SESSION_DATA.values, opacity = 0.6, 
         ybins=dict(start=0, end=1,size=0.05), marker_color = "grey")) #, histnorm="percent"
     fig.add_hline(y=threshold, line_dash = "dash", line_color = "magenta", line_width = 5)
     fig.update_traces(marker_line_width=1,marker_line_color="black")
@@ -512,7 +512,7 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
 
     Modifies:
     ---------
-        The global variable GLOBAL_DATA is modified by this function.
+        The global variable GLOBAL_SESSION_DATA is modified by this function.
     
     Returns: 
     --------
@@ -539,9 +539,9 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
         and scaler <= 9999
     )
     if case_update_scaling or case_upload_new_session_data:
-        global GLOBAL_DATA
+        global GLOBAL_SESSION_DATA
     if case_update_scaling:
-        GLOBAL_DATA.scale_coordinate_system(scaler)
+        GLOBAL_SESSION_DATA.scale_coordinate_system(scaler)
         print("Coordinate system scaled.")
     elif case_upload_new_session_data:
         # check for valid and existing file
@@ -549,9 +549,9 @@ def update_session_data(filename : str, scaler : Union[int, float]) -> dict:
         with open(filename, "rb") as handle:
             specxplore_object = pickle.load(handle) 
         # assess compatibility of output
-        if isinstance(specxplore_object, importing.SessionData):
-            GLOBAL_DATA = specxplore_object
-            GLOBAL_DATA.scale_coordinate_system(scaler)
+        if isinstance(specxplore_object, session_data.SpecxploreSessionData):
+            GLOBAL_SESSION_DATA = specxplore_object
+            GLOBAL_SESSION_DATA.scale_coordinate_system(scaler)
             print("Session data updated.")
         else: 
             print("Input file wrong format. No data update.")
