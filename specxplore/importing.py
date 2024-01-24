@@ -86,11 +86,33 @@ class TsneGridEntry():
             f"x coordinates = {', '.join(self.x_coordinates[0:4])}...",
             f"y coordinates = {', '.join(self.y_coordinates[0:4])}...")
         return custom_print
-
 @dataclass
 class specxploreImportingPipeline ():
     """ 
-    Class interface for specXplore importing pipeline functions & storing intermediate data structures for users. 
+    Class interface for specXplore importing pipeline functions & storing intermediate data structures. Run pipeline
+    methods in the following order with corresponding arguments for constructing a specxplore_session data object:
+
+    spectra_filepath = ... # USER INPUT
+    model_directory = ... # USER INPUT
+
+    pipeline = specXploreImportingPipeline(spectra_filepath)
+    pipeline.attach_spectral_data_from_file()
+    pipeline.run_spectral_processing()
+    pipeline.run_spectral_similarity_computationsmodel_directory(model_directory)
+    pipeline.run_ms2query(model_directory)
+    pipeline.run_and_attach_tsne_grid() --> prints tsne tuning output for selection of perplexity
+    pipeline.run_and_attach_kmedoid_grid() --> prints kmedoid tuning output for selection of k_values
+
+    selected_kmedoid_ilocs = [...] # USER INPUT: one or more kmedoid grid ilocs
+    selected_tsne_iloc = ... # USER INPUT: one tsne_grid iloc
+    pipeline.select_tsne_settings(selected_tsne_iloc)
+    pipeline.select_kmedoid_settings(selected_kmedoid_ilocs)
+
+    optional prior to export:
+    pipeline.attach_metadata_from_data_frame() # USER INPUT: provide any tabular data to be included in metadata
+    pipeline.attach_classes_from_data_frame() # USER INPUT: provide any classification data to be visually included 
+
+    pipeline.export_specxplore_session_data()
     """
     # All default states set to none. Use attach data to construct the actual data object.
     # MSMS spectral data. The core underlying data of specXplore.
