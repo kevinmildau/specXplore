@@ -582,10 +582,10 @@ def _plot_kmedoid_grid(
         ) -> None:
     """ Plots Silhouette Score vs k for each entry in list of KmedoidGridEntry objects. """
     scores = [x.silhouette_score for x in kmedoid_list]
-    ks = [x.k for x in kmedoid_list]
+    ks = [f"k = {x.k} / iloc = {iloc}" for iloc, x in enumerate(kmedoid_list)]
     fig = plotly.express.scatter(x = ks, y = scores)
     fig.update_layout(
-        xaxis_title="K (Number of Clusters)", 
+        xaxis_title="K (Number of Clusters) / iloc", 
         yaxis_title="Silhouette Score"
     )
     fig.show()
