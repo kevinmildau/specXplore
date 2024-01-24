@@ -591,20 +591,21 @@ def _plot_kmedoid_grid(
     fig.show()
     return None
 def _print_kmedoid_grid(grid : List[KmedoidGridEntry]) -> None:
-    """ Prints all values in kmedoid grid in readable format. """
-
-    print("iloc Number-of-Clusters Silhouette-Score")
-    for iloc, elem in enumerate(grid):
-        print(iloc, elem.k, round(elem.silhouette_score, 3))
+    """ Prints all values in kmedoid grid in readable format via pandas conversion """
+    kmedoid_results = pd.DataFrame.from_dict(data = grid).loc[
+        :, ["k", "silhouette_score", "random_seed_used"]
+    ]
+    kmedoid_results.insert(loc = 0, column = "iloc", value = [iloc for iloc in range(0, len(grid))])
+    print(kmedoid_results)
     return None
 def _print_tsne_grid(grid : List[TsneGridEntry]) -> None:   
-    """ Prints all values in tsne grid in readable format. """
-
-    print('iloc Perplexity Pearson-score Spearman-score')
-    for iloc, elem in enumerate(grid):
-        print(
-            f" {iloc},     {elem.perplexity},     {round(elem.pearson_score, 3)},     {round(elem.spearman_score, 3)} "
-        )
+    """ Prints all values in tsne grid in readable format via pandas conversion """
+    tsne_results = pd.DataFrame.from_dict(data = grid).loc[
+        :, ["perplexity", "pearson_score", "spearman_score", "random_seed_used"]
+    ]
+    tsne_results.insert(loc = 0, column = "iloc", value = [iloc for iloc in range(0, len(grid))])
+    print(tsne_results)
+    return None
 def _attach_columns_via_feature_id(init_table : pd.DataFrame, addon_data : pd.DataFrame,) -> pd.DataFrame:
     """ Attaches addon_data to data frame via join on 'feature_id'. 
     
