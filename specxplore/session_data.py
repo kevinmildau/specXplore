@@ -37,6 +37,7 @@ class SpecxploreSessionData ():
         frontend assumptions. """
         self._construct_edge_arrays()
         self.initialize_specxplore_dashboard_variables()
+        self.scale_coordinate_system(100) # give coordinate system a default scaling for visibility in the app
         return None
     def _construct_edge_arrays(self) -> None:
         ''' 
