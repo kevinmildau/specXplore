@@ -218,44 +218,6 @@ class specxploreImportingPipeline ():
         self._add_similarities_complete = True
         self._spectral_processing_complete = True # similarity matrices were computed, this step is skipped and locked
         return None
-
-    def _load_ms2query_results(self, filepath : str) -> None:
-        """ Loads ms2query data corresponding to the run of run_ms2query on self.spectra_matchms and attached results
-        to metadata and class tables.
-        Returns 
-        """
-        assert os.path.isfile(filepath), "Error: filepath does not point to existing file!"
-        ms2query_annotation_table = pd.read_csv(filepath)
-
-        # Create a mapping of feature_id to query_number
-        query_number = [iloc for iloc in range(1, len(self.spectra_matchms)+1)]
-        feature_ids = extract_feature_ids_from_spectra(self.spectra_matchms) 
-        query_number_to_iloc_to_feature_id_mapping = pd.DataFrame(
-            {
-                "feature_id": feature_ids, 
-                "query_spectrum_nr" : query_number
-            }
-        )
-        # all ms2query results collected into one table
-        ms2query_annotation_table = ms2query_annotation_table.merge(
-            query_number_to_iloc_to_feature_id_mapping, 
-            how = "left", 
-            on = "query_spectrum_nr"
-        )
-        # Rename ms2query feature identifier column and recast it as string type if not already
-        ms2query_annotation_table["feature_id"] = ms2query_annotation_table["feature_id"].astype("string")
-        # Extract class part
-        classification_table = ms2query_annotation_table.loc[:, [
-            'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent', 'npc_class_results', 
-            'npc_superclass_results', 'npc_pathway_results', 'feature_id'
-            ]
-        ]
-        # check requires these tables to be initialized to None. Otherwise an attribute error is produced. 
-        self.attach_classes_from_data_frame(classification_table)
-        self.attach_metadata_from_data_frame(ms2query_annotation_table)
-
-        return None
-
     def attach_ms2query_results(self, results_filepath : str):
         """ Function to attach existing ms2query results. Beware: ms2query works with query number identifiers that are
         the equivalent of specxplore spectrum_iloc +1. Making use of attach requires the matchms spectra list to be 
@@ -386,6 +348,42 @@ class specxploreImportingPipeline ():
             metadata : Union[pd.DataFrame, None]):
         # Attach the basic input data required by specXplore.
         ...
+    def _load_ms2query_results(self, filepath : str) -> None:
+        """ Loads ms2query data corresponding to the run of run_ms2query on self.spectra_matchms and attached results
+        to metadata and class tables.
+        Returns 
+        """
+        assert os.path.isfile(filepath), "Error: filepath does not point to existing file!"
+        ms2query_annotation_table = pd.read_csv(filepath)
+
+        # Create a mapping of feature_id to query_number
+        query_number = [iloc for iloc in range(1, len(self.spectra_matchms)+1)]
+        feature_ids = _extract_feature_ids_from_spectra(self.spectra_matchms) 
+        query_number_to_iloc_to_feature_id_mapping = pd.DataFrame(
+            {
+                "feature_id": feature_ids, 
+                "query_spectrum_nr" : query_number
+            }
+        )
+        # all ms2query results collected into one table
+        ms2query_annotation_table = ms2query_annotation_table.merge(
+            query_number_to_iloc_to_feature_id_mapping, 
+            how = "left", 
+            on = "query_spectrum_nr"
+        )
+        # Rename ms2query feature identifier column and recast it as string type if not already
+        ms2query_annotation_table["feature_id"] = ms2query_annotation_table["feature_id"].astype("string")
+        # Extract class part
+        classification_table = ms2query_annotation_table.loc[:, [
+            'cf_superclass', 'cf_class', 'cf_subclass', 'cf_direct_parent', 'npc_class_results', 
+            'npc_superclass_results', 'npc_pathway_results', 'feature_id'
+            ]
+        ]
+        # check requires these tables to be initialized to None. Otherwise an attribute error is produced. 
+        self.attach_classes_from_data_frame(classification_table)
+        self.attach_metadata_from_data_frame(ms2query_annotation_table)
+
+        return None
 
 def _construct_init_table(spectra : List[matchms.Spectrum]) -> pd.DataFrame:
     ''' Creates initialized table for metadata or classification in specXplore. Table is a pandas.DataFrame with
