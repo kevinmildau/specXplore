@@ -97,8 +97,8 @@ class specxploreImportingPipeline ():
     spectra_matchms : Union[List[matchms.Spectrum], None] = None
     spectra_specxplore : Union[List[Spectrum], None] = None
     # Metadata separated into classification style & generic
-    classificationTable : Union[pd.DataFrame, None] = None
-    metadataTable : Union[pd.DataFrame, None] = None
+    classification_table : Union[pd.DataFrame, None] = None
+    metadata_table : Union[pd.DataFrame, None] = None
     # Pairwise Similarity Matrices
     primary_score : Union[np.ndarray, None] = None
     secondary_score : Union[np.ndarray, None] = None
@@ -256,13 +256,40 @@ class specxploreImportingPipeline ():
     def select_tsne_settings(self, iloc : int):
         """ Select particular t-SNE coordinate setting using entry iloc. """
         # check iloc valid
-        # extract iloc specific coordinates and attach to self
+        assert self.tsne_grid is not None, (
+            "Error: tsne_grid is None. Please run 'run_and_attach_tsne_grid' before selecting a value."
+        )
+        assert iloc in [x for x in range(0, len(self.tsne_grid))], (
+            f"Error: must provide iloc in range of tsne grid 0 to {len(self.tsne_grid)}"
+        )
+        tsne_coordinates_table = _construct_init_table(self.spectra_matchms)
+        print(tsne_coordinates_table, type(tsne_coordinates_table))
+        tsne_coordinates_table["x"] = self.tsne_grid[iloc].x_coordinates
+        tsne_coordinates_table["y"] = self.tsne_grid[iloc].y_coordinates
+        self.tsne_coordinates_table = tsne_coordinates_table
         return None
-    def run_and_attach_kmedoid_grid(self, number_of_clusters : List[int] = [10, 30, 50]):
-        """ Run the k-medoid grid & attach the results to pipeline instance. """
-        # reduce number of clusters list to not exceed len(self.spectra_matchms)
-        # compute distance matrix from primary score
-        # run kmedoid grid
+    def plot_selected_embedding(self) -> None:
+        data = self.tsne_coordinates_table
+        fig  = plotly.express.scatter(
+            data_frame= data, x = "x", y = "y", hover_data=["spectrum_iloc", "feature_id"],
+            width=800, height=800
+        )
+        fig.show()
+        return None
+    def run_and_attach_kmedoid_grid(self, k_values : List[int] = [10, 30, 50]):
+        """ Run the k-medoid grid & attach the results to pipeline instance.
+
+        Parameters
+            k_values : List[int] of number of clusters to optimize for.
+        Returns
+            Attached kmedoid grid to self. Returns None.
+         """
+        # Subset k_values
+        k_values = [value for value in k_values if value < len(self.spectra_matchms)]
+        _check_perplexities(k_values, len(self.spectra_matchms))
+        distance_matrix = _convert_similarity_to_distance(self.primary_score)
+        self.kmedoid_grid = _run_kmedoid_grid(distance_matrix, k_values)
+        _print_kmedoid_grid(self.kmedoid_grid)
         return None
     def select_kmedoid_settings(self, ilocs : Union[int, List[int]]):
         """ Select and attach particular k-medoid clustering assignments using entry iloc or list of ilocs. """
@@ -270,17 +297,30 @@ class specxploreImportingPipeline ():
         assert isinstance(ilocs, list) or isinstance(ilocs, int), (
             "Unsupported input type, ilocs must be int or list of int!"
         )
+        valid_ilocs = set([iloc for iloc in range(0, len(self.kmedoid_grid))])
         if isinstance(ilocs, list):
             for entry in ilocs:
                 assert isinstance(entry, int), "Non-int entry found in ilocs list while all entries must be int!"
+                assert entry in valid_ilocs, (
+                    "Error: iloc provided not in range of valid ilocs for kmedoid grid! Values must be in set: "
+                    f"{valid_ilocs}"
+                )
+        # Make sure an initiated classification_table is available
+        if self.classification_table is None:
+            self.classification_table = _construct_init_table(self.spectra_matchms)
+        # Turn to list for selection handling
         if type(ilocs) == int:
-            # assert input iloc is withing range
-            # select and attach single assignment lists to classes table
-            pass
-        if type(ilocs) == list:
-            # assert input ilocs are withing range
-            # select and attach all assignment lists to classes table
-            pass
+            ilocs = [ilocs]
+        # Initialize classes table with only feature_id
+        kmedoid_classes = _construct_init_table(self.spectra_matchms) 
+        kmedoid_classes.drop('spectrum_iloc', axis=1, inplace=True)
+        # Add cluster assignments in string format
+        for selection_iloc in ilocs:
+            cluster_name = f"k_{self.kmedoid_grid[selection_iloc].k}"
+            cluster_assignments = [f"cluster_{elem}" for elem in self.kmedoid_grid[selection_iloc].cluster_assignments]
+            kmedoid_classes.insert(loc=0, column= cluster_name, value = cluster_assignments)
+        # remove spectrum_iloc
+        self.classification_table = _attach_columns_via_feature_id(self.classification_table, kmedoid_classes)
         return None
     def attach_metadata_from_data_frame(self, addon_data : pd.DataFrame) -> None:
         """ Attach additional metadata contained within pd.DataFrame to existing metadata via feature_id overlap. 
@@ -291,10 +331,10 @@ class specxploreImportingPipeline ():
         Returns 
             Attaches new data to metadatTable. Returns None.
         """
-        if self.metadataTable is None:
-            self.metadataTable = _construct_init_table(self.spectra_matchms)
-        self.metadataTable = _attach_columns_via_feature_id(
-            self.metadataTable, 
+        if self.metadata_table is None:
+            self.metadata_table = _construct_init_table(self.spectra_matchms)
+        self.metadata_table = _attach_columns_via_feature_id(
+            self.metadata_table, 
             addon_data
         )
         return None
@@ -310,10 +350,10 @@ class specxploreImportingPipeline ():
             Attaches new data to metadatTable. Returns None.
         """
         # Class table may not have been initiated
-        if self.classificationTable is None:
-            self.classificationTable = _construct_init_table(self.spectra_matchms)
-        self.classificationTable = _remove_white_space_from_df(
-            _attach_columns_via_feature_id(self.classificationTable, addon_data)
+        if self.classification_table is None:
+            self.classification_table = _construct_init_table(self.spectra_matchms)
+        self.classification_table = _remove_white_space_from_df(
+            _attach_columns_via_feature_id(self.classification_table, addon_data)
         )
         return None
     def export_specXplore_session_data(self, filepath : str = None):
