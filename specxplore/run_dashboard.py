@@ -15,8 +15,6 @@ global GLOBAL_SESSION_DATA
 
 # possible themes: VAPOR, UNITED, SKETCHY; see more:  https://bootswatch.com/
 app=Dash(external_stylesheets=[dbc.themes.UNITED])
-
-
 app.layout=html.Div(
     children=[
         layouts.LAYOUT_ROW_TITLE,
@@ -412,14 +410,14 @@ def displaymouseoverData(data, selected_class_level):
             ]
         return information_string_list
 
-#
+
 # expand level control setting
 @app.callback(
     Output(identifiers.STORE_HOP_DISTANCE, "data"),
     Output(identifiers.INPUT_HOP_DISTANCE, "placeholder"),
     Input(identifiers.INPUT_HOP_DISTANCE, "n_submit"),
-    Input(identifiers.INPUT_HOP_DISTANCE, "value"))
-
+    Input(identifiers.INPUT_HOP_DISTANCE, "value")
+)
 def expand_trigger_handler(_, new_expand_level):
     new_expand_level, new_placeholder=utils.update_expand_level(
         new_expand_level)
@@ -430,13 +428,11 @@ def expand_trigger_handler(_, new_expand_level):
     Output(identifiers.STORE_MAXIMUM_NODE_DEGREE, "data"),
     Output(identifiers.INPUT_MAXIMUM_NODE_DEGREE, "placeholder"),
     Input(identifiers.INPUT_MAXIMUM_NODE_DEGREE, "n_submit"),
-    Input(identifiers.INPUT_MAXIMUM_NODE_DEGREE, "value"))
-
+    Input(identifiers.INPUT_MAXIMUM_NODE_DEGREE, "value")
+)
 def max_degree_trigger_handler(_, new_max_degree):
     new_max_degree, new_placeholder=utils.update_max_degree(new_max_degree)
     return new_max_degree, new_placeholder
-
-
 
 # CLASS SELECTION UPDATE ------------------------------------------------------
 @app.callback(
@@ -491,7 +487,6 @@ def update_histogram(
         xaxis_title="Count", yaxis_title="Edge Weight Bins",
         margin = {"autoexpand":True, "b" : 10, "l":10, "r":10, "t":40})
     return fig
-
 
 @app.callback(
     Output(identifiers.STORE_EMPTY_SESSION_DATA_TRIGGER, "data"),
