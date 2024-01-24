@@ -465,9 +465,20 @@ def extract_feature_ids_from_spectra(spectra : List[matchms.Spectrum]) -> List[s
         "Error: Non-unique (duplicate) feature_ids detected. All feature_ids for spectra must be unique strings."
     )
     return feature_ids
-
-
-def run_tsne_grid(
+def _check_perplexities(perplexity_values : List[Union[float, int]], max_perplexity : Union[float, int]) -> None:
+    """ Function checks whether perplexity values match expected configuration. Aborts if note. """
+    assert len(perplexity_values) is not [], (
+        "Error: perplexity_values list is empty! This may be a result of post-processing: there must be a "
+        "perplexity value below the number of spectra for optimization to work."
+    )
+    assert isinstance(perplexity_values, list), (
+        "Error: perplexity values must be a list. If only running one value, specify input as [value]."
+    )
+    for perplexity_value in perplexity_values: 
+        assert isinstance(perplexity_value, (int, float)) and perplexity_value < max_perplexity, (
+            "Error: perplexity values must be numeric (int, float) and smaller than number of features." 
+        )
+    return None
         distance_matrix : np.ndarray,
         perplexity_values : List[int], 
         random_states : Union[List, None] = None
