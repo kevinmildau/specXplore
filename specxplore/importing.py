@@ -121,6 +121,7 @@ class specxploreImportingPipeline ():
     # Metadata separated into classification style & generic
     classification_table : Union[pd.DataFrame, None] = None
     metadata_table : Union[pd.DataFrame, None] = None
+    highlight_table : Union[pd.DataFrame, None] = None # contains "highlight_bool" column for each feature_id
     # Pairwise Similarity Matrices
     primary_score : Union[np.ndarray, None] = None
     secondary_score : Union[np.ndarray, None] = None
@@ -387,6 +388,10 @@ class specxploreImportingPipeline ():
         if os.path.exists(filepath) and force is True:
             os.remove(filepath)
 
+        if self.highlight_table is None: 
+            self.attach_feature_highlights() # will initiate feature highlight to all non-highlighted
+        
+        # convert matchms spectra to format used by dashboard code
         self.spectra_specxplore = _convert_matchms_spectra_to_specxplore_spectra(self.spectra_matchms)
         
         # Check for all data available to run session data constructor
@@ -401,26 +406,24 @@ class specxploreImportingPipeline ():
         # run session data constructor
 
         session_data = SpecxploreSessionData(
-            self.spectra_specxplore,
-            self.tsne_coordinates_table,
-            self.classification_table,
-            self.metadata_table, 
-            self.primary_score,
-            self.secondary_score,
-            self.tertiary_score,
-            self.score_names
+            self.spectra_specxplore, self.tsne_coordinates_table, self.classification_table, self.metadata_table, 
+            self.primary_score, self.secondary_score, self.tertiary_score, self.score_names, self.highlight_table
         )
         # pickle session_data object
-
-
+        with open(filepath, 'wb') as file:
+            pickle.dump(session_data, file)
         return None
-    def attachData (
-            self, 
-            spectra : List[matchms.Spectrum], 
-            classificationData : Union[pd.DataFrame, None], 
-            metadata : Union[pd.DataFrame, None]):
-        # Attach the basic input data required by specXplore.
-        ...
+    def attach_feature_highlights(self, feature_ids : List[str] = []) -> None:
+        """ Function attaches special interest feature_ids to be highlighted in specXplore. """
+        assert isinstance(feature_ids, list), "Error: provided feature_ids must be stored in list."
+        for elem in feature_ids:
+            assert isinstance(elem, str), f"Error: provided feature_id must be type str but is type {type(elem)}"
+        if self.highlight_table is None:
+            self.highlight_table = _construct_init_table(self.spectra_matchms)
+        self.highlight_table["highlight_bool"] = [
+            True if elem in feature_ids else False for elem in self.highlight_table["feature_id"]
+        ]
+        return None
     def _load_ms2query_results(self, filepath : str) -> None:
         """ Loads ms2query data corresponding to the run of run_ms2query on self.spectra_matchms and attached results
         to metadata and class tables.
