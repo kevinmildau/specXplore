@@ -456,6 +456,20 @@ def _check_perplexities(perplexity_values : List[Union[float, int]], max_perplex
             "Error: perplexity values must be numeric (int, float) and smaller than number of features." 
         )
     return None
+def _check_k_values(k_values : List[int], max_k : int) -> None:
+    """ Function checks whether k values match expected configuration. Aborts if not. """
+    assert k_values is not [], (
+        "Error: k_values list is empty! This may be a result of post-processing: there must be a "
+        "k value below the number of features/spectra for optimization to work."
+    )
+    assert isinstance(k_values, list), (
+        "Error: k_values must be a list. If only running one value, specify input as [value]."
+    )
+    for k_value in k_values: 
+        assert isinstance(k_value, int) and k_value < max_k, (
+            "Error: k_value must be numeric (int) and smaller than number of features/spectra." 
+        )
+    return None
 def _run_tsne_grid(
         distance_matrix : np.ndarray,
         perplexity_values : List[int], 
