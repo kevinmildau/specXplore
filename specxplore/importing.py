@@ -378,12 +378,43 @@ class specxploreImportingPipeline ():
             _attach_columns_via_feature_id(self.classification_table, addon_data)
         )
         return None
-    def export_specXplore_session_data(self, filepath : str = None):
-        # if filepath is None, construct filepath automatically using datetime
-        # check if all data available and pass to session_data constructor
-        # pickle session_data object
+    def export_specxplore_session_data(self, filepath : str = None, force : bool = False):
+        # if filepath is None, construct filepath automatically
+        if filepath is None:
+            filepath = os.path.join("output", "specxplore_session_data.pickle")
+        assert not (os.path.isfile(filepath) and force is False), (
+            f"File with filepath {filepath} already exists. Specify alternative filepath, " 
+            "delete or rename existing file, or rerun export_specxplore_session_data with force == True to "
+            "automatically overwrite the existing file.")
+        if os.path.exists(filepath) and force is True:
+            os.remove(filepath)
 
         self.spectra_specxplore = _convert_matchms_spectra_to_specxplore_spectra(self.spectra_matchms)
+        
+        # Check for all data available to run session data constructor
+        assert self.spectra_specxplore is not None, "Error: spectra_specxplore required but not available."
+        assert self.tsne_coordinates_table is not None, "Error: tsne_coordinates_table required but not available."
+        assert self.classification_table is not None, "Error: classification_table required but not available."
+        assert self.metadata_table is not None, "Error: metadata_table required but not available."
+        assert self.primary_score is not None, "Error: primary_score required but not available."
+        assert self.secondary_score is not None, "Error: secondary_score required but not available."
+        assert self.tertiary_score is not None, "Error: tertiary_score required but not available."
+        assert self.score_names is not None, "Error: score_names required but not available."
+        # run session data constructor
+
+        session_data = SpecxploreSessionData(
+            self.spectra_specxplore,
+            self.tsne_coordinates_table,
+            self.classification_table,
+            self.metadata_table, 
+            self.primary_score,
+            self.secondary_score,
+            self.tertiary_score,
+            self.score_names
+        )
+        # pickle session_data object
+
+
         return None
     def attachData (
             self, 
