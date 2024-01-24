@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from typing import List, TypedDict, Tuple, Dict, Union
 import copy
+from specxplore.session_data import SpecxploreSessionData
 from specxplore.spectrum import Spectrum
 from specxplore import importing_cython
 from specxplore import utils
@@ -56,7 +57,6 @@ class KmedoidGridEntry():
             f"k = {self.k}, silhoutte_score = {self.silhouette_score}, \n"
             f"cluster_assignment = {', '.join(self.cluster_assignments[0:7])}...")
         return custom_print
-
 @dataclass
 class TsneGridEntry():
     """ 
@@ -136,7 +136,6 @@ class specxploreImportingPipeline ():
     _spectral_data_loading_complete : bool = False
     _spectral_processing_complete : bool = False
     _add_similarities_complete : bool = False
-
     def attach_spectra_from_file(self, filepath : str) -> None:
         """ 
         Loads and attaches spectra from provided filepath (pointing to compatible .mgf file). Does not run any pre-
@@ -255,7 +254,6 @@ class specxploreImportingPipeline ():
         """
         if results_filepath is None:
             results_filepath = os.path.join("output", "ms2query_results.csv")
-        print(results_filepath)
         assert not (os.path.isfile(results_filepath) and force is False), (
             f"MS2Query Results with filepath {results_filepath} already exist. Specify alternative filepath, " 
             "delete or rename existing file, or rerun run_ms2query with force == True to automatically overwrite the"
