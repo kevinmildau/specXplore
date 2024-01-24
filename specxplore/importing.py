@@ -443,8 +443,8 @@ def _extract_feature_ids_from_spectra(spectra : List[matchms.Spectrum]) -> List[
     )
     return feature_ids
 def _check_perplexities(perplexity_values : List[Union[float, int]], max_perplexity : Union[float, int]) -> None:
-    """ Function checks whether perplexity values match expected configuration. Aborts if note. """
-    assert len(perplexity_values) is not [], (
+    """ Function checks whether perplexity values match expected configuration. Aborts if not. """
+    assert perplexity_values is not [], (
         "Error: perplexity_values list is empty! This may be a result of post-processing: there must be a "
         "perplexity value below the number of spectra for optimization to work."
     )
