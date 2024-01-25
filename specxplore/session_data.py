@@ -23,6 +23,9 @@ class SpecxploreSessionData ():
     score_names : List[str]
     highlight_table : pd.DataFrame
 
+    # Settings dictinonary  ; generic container with setting informaiton from the processing pipeline
+    pre_processing_settings : dict 
+    
     # Variables derived in post init
     targets : Union[np.ndarray, None] = None
     sources: Union[np.ndarray, None] = None

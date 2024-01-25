@@ -136,6 +136,10 @@ class specxploreImportingPipeline ():
     _spectral_data_loading_complete : bool = False
     _spectral_processing_complete : bool = False
     _add_similarities_complete : bool = False
+
+    # settings used dictionary, initialized as empty
+    _settings_used : dict = field(default_factory= lambda: {})
+
     def attach_spectra_from_file(self, filepath : str) -> None:
         """ 
         Loads and attaches spectra from provided filepath (pointing to compatible .mgf file). Does not run any pre-
@@ -185,6 +189,7 @@ class specxploreImportingPipeline ():
         processed_spectra = _generate_processed_spectra(self.spectra_matchms, **kwargs)
         self.spectra_matchms = processed_spectra
         self._spectral_processing_complete = True
+        self._attach_settings_used(**kwargs)
         return None
     def run_spectral_similarity_computations(self, model_directory_path : str = None, force : bool = False):
         """ Runs and attaches spectral similarity measures using self.spectra """
@@ -199,6 +204,7 @@ class specxploreImportingPipeline ():
         self.tertiary_score = _compute_similarities_s2v(self.spectra_matchms, model_directory_path)
         self._add_similarities_complete = True
         self._spectral_processing_complete = True # similarity matrices were computed, this step is skipped and locked
+        self._attach_settings_used(score_names = self.score_names)
         return None
     def attach_spectral_similarity_arrays(
         self, 
@@ -224,6 +230,7 @@ class specxploreImportingPipeline ():
         self.score_names = score_names
         self._add_similarities_complete = True
         self._spectral_processing_complete = True # similarity matrices were computed, this step is skipped and locked
+        self._attach_settings_used(score_names = self.score_names)
         return None
     def attach_ms2query_results(self, results_filepath : str):
         """ Function to attach existing ms2query results. Beware: ms2query works with query number identifiers that are
@@ -233,6 +240,7 @@ class specxploreImportingPipeline ():
             f"Error: no file found in provided results_filepath = {results_filepath}"
         )
         self._load_ms2query_results(results_filepath)
+        self._attach_settings_used(ms2query_settings = "attached-from-file")
         return None
     def run_ms2query(
         self, 
@@ -263,6 +271,10 @@ class specxploreImportingPipeline ():
         ms2library = create_library_object_from_one_dir(model_directory_path)
         ms2library.analog_search_store_in_csv(self.spectra_matchms, results_filepath, ms2querySettings)
         self._load_ms2query_results(results_filepath)
+        if ms2querySettings is None:
+            self._attach_settings_used(ms2query_settings = "default-settings")
+        else:
+            self._attach_settings_used(ms2query_settings = "non-default-settings")
         return None
     def run_and_attach_tsne_grid(self, perplexity_values : List[int] = [10, 30, 50]) -> None:
         """ Run the t-SNE grid & attach the results to pipeline instance. """
@@ -286,6 +298,7 @@ class specxploreImportingPipeline ():
         tsne_coordinates_table["x"] = self.tsne_grid[iloc].x_coordinates
         tsne_coordinates_table["y"] = self.tsne_grid[iloc].y_coordinates
         self.tsne_coordinates_table = tsne_coordinates_table
+        self._attach_settings_used(tsne_perplexity = self.tsne_grid[iloc].perplexity)
         return None
     def plot_selected_embedding(self) -> None:
         data = self.tsne_coordinates_table
@@ -334,12 +347,15 @@ class specxploreImportingPipeline ():
         kmedoid_classes = _construct_init_table(self.spectra_matchms) 
         kmedoid_classes.drop('spectrum_iloc', axis=1, inplace=True)
         # Add cluster assignments in string format
+        selected_k = []
         for selection_iloc in ilocs:
             cluster_name = f"k_{self.kmedoid_grid[selection_iloc].k}"
+            selected_k.append(self.kmedoid_grid[selection_iloc].k)
             cluster_assignments = [f"cluster_{elem}" for elem in self.kmedoid_grid[selection_iloc].cluster_assignments]
             kmedoid_classes.insert(loc=0, column= cluster_name, value = cluster_assignments)
         # remove spectrum_iloc
         self.classification_table = _attach_columns_via_feature_id(self.classification_table, kmedoid_classes)
+        self._attach_settings_used(k_medoid_k_values = selected_k)
         return None
     def attach_metadata_from_data_frame(self, addon_data : pd.DataFrame) -> None:
         """ Attach additional metadata contained within pd.DataFrame to existing metadata via feature_id overlap. 
@@ -401,11 +417,13 @@ class specxploreImportingPipeline ():
         assert self.secondary_score is not None, "Error: secondary_score required but not available."
         assert self.tertiary_score is not None, "Error: tertiary_score required but not available."
         assert self.score_names is not None, "Error: score_names required but not available."
+        assert self._settings_used is not None, "Error: score_names required but not available."
         # run session data constructor
 
         session_data = SpecxploreSessionData(
             self.spectra_specxplore, self.tsne_coordinates_table, self.classification_table, self.metadata_table, 
-            self.primary_score, self.secondary_score, self.tertiary_score, self.score_names, self.highlight_table
+            self.primary_score, self.secondary_score, self.tertiary_score, self.score_names, self.highlight_table,
+            self._settings_used
         )
         # pickle session_data object
         with open(filepath, 'wb') as file:
@@ -458,7 +476,12 @@ class specxploreImportingPipeline ():
         self.attach_metadata_from_data_frame(ms2query_annotation_table)
 
         return None
-
+    def _attach_settings_used(self, **kwargs) -> None:
+        """Attaches used settings to settings dictionary. """
+        for key, value in kwargs.items():
+            if key is not None and value is not None:
+                self._settings_used[key] = value
+        return None
 def _construct_init_table(spectra : List[matchms.Spectrum]) -> pd.DataFrame:
     ''' Creates initialized table for metadata or classification in specXplore. Table is a pandas.DataFrame with
     string and int columns indicating the feature_id, and spectrum_iloc.
