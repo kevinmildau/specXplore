@@ -35,7 +35,8 @@ setup(
     install_requires = [
         'numpy', 
         'jupyter',
-        'onnxruntime-silicon',
+        "ipykernel",
+        # 'onnxruntime-silicon',
         'ms2query==1.3.0', # requires "conda install cmake" to make onnxruntime work! onnx problems...
         'matchms==0.24.1',
         "matchmsextras==0.4.0",
