@@ -32,7 +32,7 @@ pip install "git+https://github.com/kevinmildau/specXplore.git"
 
 Note that depending on the operating system, developer tools including pip, python, and conda may need to be installed first. This will be the case if the console indicates that the conda or pip commands are not known. Please refer to [conda getting started](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html) guide for information on how to set up conda. The pip installation may also fail because of a lack of C++ compilers which are not covered by the python package manager. For operating system specific instructions on how to set up compilers required by Cython, please refer to the [Cython Installation Guide](https://cython.readthedocs.io/en/latest/src/quickstart/install.html).
 
-To run ms2query, ms2deepscore, and spec2vec, model and library files are required. Pre-trained models are available via ms2query for both [positive](https://zenodo.org/records/10527997) and [negative](https://zenodo.org/records/10528030) mode data.
+To run ms2query, ms2deepscore, and spec2vec, model and library files are required. Pre-trained models are available via ms2query for both [positive](https://zenodo.org/records/10527997) and [negative](https://zenodo.org/records/10528030) mode data. Model and library files for positive or negative mode should be put into separate folders. The importing pipeline requires the appropriate model files to function.
 
 ## Installation Guide - WINDOWS
 
