@@ -4,18 +4,7 @@
 __pycache__
 specxplore/__pycache__
 
-notebooks/models/ALL_GNPS_210409_positive_processed_annotated_CF_NPC_classes.txt
-notebooks/models/library_GNPS_15_12_2021_ms2ds_embeddings.pickle
-notebooks/models/library_GNPS_15_12_2021_s2v_embeddings.pickle
-notebooks/models/library_GNPS_15_12_2021.sqlite
-notebooks/models/ms2ds_model_GNPS_15_12_2021.hdf5
-notebooks/models/ms2query_random_forest_model.onnx
-notebooks/models/spec2vec_model_GNPS_15_12_2021.model
-notebooks/models/spec2vec_model_GNPS_15_12_2021.model.syn1neg.npy
-notebooks/models/spec2vec_model_GNPS_15_12_2021.model.wv.vectors.npy
-notebooks/models/ms2query_library.sqlite
-notebooks/models/archive/library_GNPS_15_12_2021.sqlite
-notebooks/models_updated_2024
+notebooks/models_pos
 .ipynb_checkpoints
 build
 
