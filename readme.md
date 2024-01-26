@@ -79,8 +79,3 @@ Using ctrl+mouse drag/click one can select more than one node in the t-SNE overv
 With appropriate node selections made, the various buttons can be used to trigger different overlay or add-on views. Overlay views are directly visualized on top of the t-SNE graph and disappear upon the next overlay visualization request. Add-on views are visualized below the t-SNE overview and the hover text box, and disappear upon the next add-on visualization request.
 
 Changing settings in the settings panel does not immediately cause reruns of the open visualizations. Instead, the button has to be explicitly pressed again to redraw the respective visualization. Note that node selections are not altered when setting new settings, omitting any need to reselect nodes for redrawing.
-
-# Developer Notes
-
-* When opening the dashboard, the initial dashboard will be empty. Any triggered callbacks will cause some form no-data error to be shown in the console, this can safely be ignored.
-* To circumvent costly json conversions required by dash callbacks, specxplore makes use of a global variable to store the session data and update it. This global variable is part of the python process started with the terminal. To properly end a specXplore session, the python console needs to be closed as well. 
