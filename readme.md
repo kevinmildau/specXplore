@@ -32,6 +32,8 @@ pip install "git+https://github.com/kevinmildau/specXplore.git"
 
 Note that depending on the operating system, developer tools including pip, python, and conda may need to be installed first. This will be the case if the console indicates that the conda or pip commands are not known. Please refer to [conda getting started](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html) guide for information on how to set up conda. The pip installation may also fail because of a lack of C++ compilers which are not covered by the python package manager. For operating system specific instructions on how to set up compilers required by Cython, please refer to the [Cython Installation Guide](https://cython.readthedocs.io/en/latest/src/quickstart/install.html).
 
+To run ms2query, ms2deepscore, and spec2vec, model and library files are required. Pre-trained models are available via ms2query for both [positive](https://zenodo.org/records/10527997) and [negative](https://zenodo.org/records/10528030) mode data.
+
 ## Installation Guide - WINDOWS
 
 **WARNING:** The current version of specXplore **does not run** on Windows machines. Differences in how operating systems handle integer types cause importing pipeline function crashes that affect only Windows systems.
@@ -42,38 +44,12 @@ Installation of specxplore in windows will require the installation of ANACONDA 
 
 ### Jupyter Notebook Pre-processing
 
-One of the installed dependencies will be jupyter-notebook, which can be used to open the demo.ipynb book files to run any pre-processing or start the specXplore interactive dashboard. To open the demo notebook, make sure to use ```conda activate specxplore_environment``` to activate the environment with all specXplore dependencies installed, and run the ```jupyter-notebook``` command. Jupyter notebook will now open within the conda environment within which specxplore and all its dependencies are available. From here, navigate the jupyter graphical user interface towards a download of the [demo.ipynb jupyter notebook](https://github.com/kevinmildau/specXplore/blob/e601141c817a9ea8f9f0654957a718c7da80b8af/notebooks/demo.ipynb) file to run the example as provided or replace the demo data mgf filepath with your own data. Following the steps in this jupyter notebook allows the user to process their input data and run an interactive specxplore session. Note that specXplore currently requires a .mgf formatted file with MS/MS spectral data. 
+One of the installed dependencies will be jupyter-notebook, which can be used to open the demo.ipynb book files to run any pre-processing or start the specXplore interactive dashboard. To open the demo notebook, make sure to use ```conda activate specxplore_environment``` to activate the environment with all specXplore dependencies installed, and run the ```jupyter-notebook``` command. Jupyter notebook will now open within the conda environment within which specxplore and all its dependencies are available. From here, navigate the jupyter graphical user interface towards a download of the [demo.ipynb jupyter notebook](https://github.com/kevinmildau/specXplore/blob/e601141c817a9ea8f9f0654957a718c7da80b8af/notebooks/demo.ipynb) file to run the example as provided or replace the demo data mgf filepath with your own data. Following the steps in this jupyter notebook allows the user to process their input data and run an interactive specxplore session. 
 
-To generate a .MGF file from your raw data please refer to processing options in your vendor specific software or the workflows described in MZmine [MZmine Getting Started](https://mzmine.github.io/mzmine_documentation/getting_started.html). MZmine3 provides [exporting options](https://mzmine.github.io/mzmine_documentation/module_docs/io/data-exchange-with-other-software.html#gnps-fbmniimn-export) for the .MGF file format. Feature lists should always contain some form of feature identifier, and specXplore expects the feature identifier key to be "feature_id". Renaming the feature identifying key in a .MGF file is possible using [matchms](https://matchms.readthedocs.io/en/latest/), specifically the [matchms.Spectrum module](https://matchms.readthedocs.io/en/latest/api/matchms.html#matchms.Spectrum) which provides a means of adding metadata keys to existing spectra in Python. A code example can be found [here](https://github.com/kevinmildau/specXplore/blob/e601141c817a9ea8f9f0654957a718c7da80b8af/notebooks/demo.ipynb). Alternatively, as a quick fix, any text editor may be used to replace any instance of the existing feature identifying key of format "wrong_key=" with "feature_id=". 
+Note that specXplore currently requires a .mgf formatted file with MS/MS spectral data. To generate a .MGF file from your raw data please refer to processing options in your vendor specific software or the workflows described in MZmine [MZmine Getting Started](https://mzmine.github.io/mzmine_documentation/getting_started.html). MZmine3 provides [exporting options](https://mzmine.github.io/mzmine_documentation/module_docs/io/data-exchange-with-other-software.html#gnps-fbmniimn-export) for the .MGF file format. Feature lists should always contain some form of feature identifier, and specXplore expects the feature identifier key to be "feature_id". Renaming the feature identifying key in a .MGF file is possible using [matchms](https://matchms.readthedocs.io/en/latest/), specifically the [matchms.Spectrum module](https://matchms.readthedocs.io/en/latest/api/matchms.html#matchms.Spectrum) which provides a means of adding metadata keys to existing spectra in Python. A code example can be found [here](https://github.com/kevinmildau/specXplore/blob/e601141c817a9ea8f9f0654957a718c7da80b8af/notebooks/demo.ipynb). Alternatively, as a quick fix, any text editor may be used to replace any instance of the existing feature identifying key of format "wrong_key=" with "feature_id=". 
 
-### Dashboard Use
-
-To start the dashboard, follow the install guidelines above and then proceed to use the following code lines in the terminal:
-
-```{bash}
-conda activate specxplore_environment
-python3
-```
-
-This will change the terminal to the python console. Within the python console, run the following two commands:
-
-```{Python}
-import specxplore.run_dashboard
-specxplore.run_dashboard.app.run_server()
-```
-
-This will prompt a command line output specifying the following: "Dash is running on http://127.0.0.1:8050/". Open this link in your browser (Firefox tested) to open the empty specXplore dashboard. 
-To load in data, open the settings panel and navigate to the final text input widget. 
-Here, copy paste the full filepath (e.g. "/Users/janedoe/Documents/specxplore_session.pickle", each file explorer will have different options for obtaining this file path easily for a file) of the .pickle file containing the specxplore session data. 
-Make sure that only the filepath is pasted, avoiding any quotation marks (i.e. '' or ""). 
-The data will now be loaded into specXplore and can be interacted with. 
-If the dataset looks highly compressed in the t-SNE overview figure with many nodes overlapping, make use of the scale input above the filepath input and increase the number to get updated scale informaiton. 
-To quit specxplore, navigate to the console with the running server instance and press ctrl+c on the console (macos & linux). 
-In addition, enter quit() in the then active python console to terminate the python process. 
-Just closing the console also works.
-
-# Dashboard Commands
-Once the specXplore dashboard is there are a number of possible ways to interact with the visualizations. 
+# Dashboard Use Commands
+Once the specXplore dashboard is opened, there are a number of possible ways to interact with the visualizations. 
 
 Clicking on a node in the t-SNE overview selects it. Starting a new selection may also reset previously triggered overlays. 
 Hovering over a node will display node information in a textbox below the main t-SNE panel.
