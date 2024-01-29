@@ -195,13 +195,20 @@ class specxploreImportingPipeline ():
         self._spectral_processing_complete = True
         self._attach_settings_used(**kwargs)
         return None
-    def run_spectral_similarity_computations(self, model_directory_path : str = None, force : bool = False):
-        """ Runs and attaches spectral similarity measures using self.spectra """
+    def run_spectral_similarity_computations(self, model_directory_path : str, force : bool = False) -> None:
+        """ Runs and attaches spectral similarity measures using self.spectra. Requires model_directory_path as input.
+        
+        Parameters
+            model_directory_path : str path to directory containing model files. Assumes one set of model files only!
+            force : bool defaulting to false indicating whether existing similarity matrices can be overwritten or not.
+        Returns
+            Attaches similarity matrices to self. Returns None.
+        """
         assert os.path.isdir(model_directory_path), "model directory path must point to an existing directory!"
         if force is False:
             assert (self._add_similarities_complete is not True), (
-                "Error: Similarities were already set. To replace existing scores set Force to True or restart "
-                "the pipeline."
+                "Error: Similarities were already computed or set. "
+                "To replace existing scores set Force to True or re-initialize the pipeline."
             )
         self.primary_score = _compute_similarities_ms2ds(self.spectra_matchms, model_directory_path)
         self.secondary_score = _compute_similarities_cosine(self.spectra_matchms, cosine_type="ModifiedCosine")
