@@ -340,6 +340,8 @@ class specxploreImportingPipeline ():
         self._attach_settings_used(tsne_perplexity = self.tsne_grid[iloc].perplexity)
         return None
     def plot_selected_embedding(self) -> None:
+        """ Plots the selected t-sne embedding. """
+        assert self.tsne_coordinates_table is not None, "Error: tsne coordinates must be selected to plot embedding."
         data = self.tsne_coordinates_table
         fig  = plotly.express.scatter(
             data_frame= data, x = "x", y = "y", hover_data=["spectrum_iloc", "feature_id"],
