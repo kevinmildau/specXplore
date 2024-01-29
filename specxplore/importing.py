@@ -492,7 +492,13 @@ class specxploreImportingPipeline ():
     def _load_ms2query_results(self, filepath : str) -> None:
         """ Loads ms2query data corresponding to the run of run_ms2query on self.spectra_matchms and attached results
         to metadata and class tables.
+        
+        Parameters: 
+            filepath : str pointing towards the ms2query results csv file.
+        
         Returns 
+            Attaches ms2query matching and analog classification results to self.classification_table and
+            self.metadata_table. Returns None.
         """
         assert os.path.isfile(filepath), "Error: filepath does not point to existing file!"
         ms2query_annotation_table = pd.read_csv(filepath)
