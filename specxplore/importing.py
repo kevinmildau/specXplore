@@ -224,7 +224,20 @@ class specxploreImportingPipeline ():
         tertiary_score, 
         score_names : List[str] = ["primary", "secondary", "tertiary"], 
         verbose : bool = True) -> None:
-        """ Attaches spectral similarity array computed elsewhere & checks compatibility with spectra. """
+        """ Attaches spectral similarity array computed elsewhere & checks compatibility with spectra. 
+        
+        Parameters:
+            primary_score : np.ndarray of square shape of len(self.spectra_matchs) with values between 0 and 1 
+                indicating spectral similarity.
+            secondary_score : np.ndarray of square shape of len(self.spectra_matchs) with values between 0 and 1 
+                indicating spectral similarity.
+            tertiary_score : np.ndarray of square shape of len(self.spectra_matchs) with values between 0 and 1 
+                indicating spectral similarity.
+            score_names : List[str] with score names. If not provided, defaults to ["primary", "secondary", "tertiary"]
+            verbose : bool = True that prints warning message about iloc alignment requirement. Set to false to suppress.
+        Returns:
+            Attaches similarity matrices to self. Returns None.
+        """
         n_spectra = len(self.spectra_matchms)
         _assert_similarity_matrix(primary_score, n_spectra)
         _assert_similarity_matrix(secondary_score, n_spectra)
