@@ -532,7 +532,7 @@ class specxploreImportingPipeline ():
 
         return None
     def _attach_settings_used(self, **kwargs) -> None:
-        """Attaches used settings to settings dictionary. """
+        """Helper function attaches used settings to settings dictionary via key value pairs passed as kwargs. """
         for key, value in kwargs.items():
             if key is not None and value is not None:
                 self._settings_used[key] = value
