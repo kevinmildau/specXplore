@@ -349,7 +349,7 @@ class specxploreImportingPipeline ():
         )
         fig.show()
         return None
-    def run_and_attach_kmedoid_grid(self, k_values : List[int] = [10, 30, 50]):
+    def run_and_attach_kmedoid_grid(self, k_values : List[int] = [8, 10, 20, 30, 50]):
         """ Run the k-medoid grid & attach the results to pipeline instance.
 
         Parameters
