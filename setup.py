@@ -36,7 +36,7 @@ setup(
         'numpy', 
         'jupyter',
         "ipykernel",
-        'ms2query==1.3.0'
+        'ms2query==1.3.0',
         'matchms==0.24.1',
         "matchmsextras==0.4.0",
         'spec2vec==0.8.0',
