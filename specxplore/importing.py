@@ -94,24 +94,28 @@ class specxploreImportingPipeline ():
     spectra_filepath = ... # USER INPUT
     model_directory = ... # USER INPUT
 
-    pipeline = specXploreImportingPipeline(spectra_filepath)
-    pipeline.attach_spectral_data_from_file()
-    pipeline.run_spectral_processing()
-    pipeline.run_spectral_similarity_computationsmodel_directory(model_directory)
-    pipeline.run_ms2query(model_directory)
-    pipeline.run_and_attach_tsne_grid() --> prints tsne tuning output for selection of perplexity
-    pipeline.run_and_attach_kmedoid_grid() --> prints kmedoid tuning output for selection of k_values
-
-    selected_kmedoid_ilocs = [...] # USER INPUT: one or more kmedoid grid ilocs
-    selected_tsne_iloc = ... # USER INPUT: one tsne_grid iloc
+    pipeline = specXploreImportingPipeline() # to initiate the pipeline object
+    pipeline.attach_spectral_data_from_file(spectra_filepath) # to load spectral data
+    pipeline.run_spectral_processing() # to process spectral data
+    pipeline.run_spectral_similarity_computations(model_directory) # to compute similarity scores
+    pipeline.run_ms2query(model_directory) # to obtain ms2query analog annotations
+    pipeline.run_and_attach_tsne_grid() # to run the tsne tuning grid
+    pipeline.run_and_attach_kmedoid_grid() # to run the kmedoid tuning grid
+    
+    selected_kmedoid_ilocs = [...] # select one or more kmedoid grid entries via list of ilocs
+    selected_tsne_iloc = ... # select one tsne grid entry via iloc
     pipeline.select_tsne_settings(selected_tsne_iloc)
     pipeline.select_kmedoid_settings(selected_kmedoid_ilocs)
-
+    
     optional prior to export:
-    pipeline.attach_metadata_from_data_frame() # USER INPUT: provide any tabular data to be included in metadata
-    pipeline.attach_classes_from_data_frame() # USER INPUT: provide any classification data to be visually included 
-
+    pipeline.attach_metadata_from_data_frame() # USER INPUT: provide tabular data to be included in metadata
+    pipeline.attach_classes_from_data_frame() # USER INPUT: provide classification data to be visually included 
     pipeline.export_specxplore_session_data()
+
+    For a full running example please refer to the demo notebook on the project repo 
+    https://github.com/kevinmildau/specXplore 
+    & 
+    https://github.com/kevinmildau/specXplore/blob/master/notebooks/demo.ipynb
     """
     # All default states set to none. Use attach data to construct the actual data object.
     # MSMS spectral data. The core underlying data of specXplore.
