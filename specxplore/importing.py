@@ -365,7 +365,15 @@ class specxploreImportingPipeline ():
         _print_kmedoid_grid(self.kmedoid_grid)
         return None
     def select_kmedoid_settings(self, ilocs : Union[int, List[int]]):
-        """ Select and attach particular k-medoid clustering assignments using entry iloc or list of ilocs. """
+        """ Select and attach particular k-medoid clustering assignments using entry iloc or list of ilocs. Attaching
+        is done via adding the kmedoid assignments to self.classification_table, making kmedoid clustering results 
+        available for visual highlighting in the specXplore dashboard.
+
+        Parameters:
+            ilocs : int or List[int] with kmedoid assignment entries to exctract from the tuning grid.
+        Returns:
+            Attaches cluster assignment columns to classification_table. Returns None.        
+        """
         # assert input is int or list of int
         assert isinstance(ilocs, list) or isinstance(ilocs, int), (
             "Unsupported input type, ilocs must be int or list of int!"
