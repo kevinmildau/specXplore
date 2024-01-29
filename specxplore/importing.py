@@ -232,10 +232,13 @@ class specxploreImportingPipeline ():
         self._spectral_processing_complete = True # similarity matrices were computed, this step is skipped and locked
         self._attach_settings_used(score_names = self.score_names)
         return None
-    def attach_ms2query_results(self, results_filepath : str):
+    def attach_ms2query_results(self, results_filepath : Union[str, None]):
         """ Function to attach existing ms2query results. Beware: ms2query works with query number identifiers that are
         the equivalent of specxplore spectrum_iloc +1. Making use of attach requires the matchms spectra list to be 
         equivalent to self.spectra_matchms (same spectra, same processing, same order). """
+        # if no filepath provided assume default filepath and check whether exists in either case
+        if results_filepath is None:
+            results_filepath = os.path.join("output", "ms2query_results.csv") 
         assert os.path.isfile(results_filepath), (
             f"Error: no file found in provided results_filepath = {results_filepath}"
         )
@@ -253,7 +256,7 @@ class specxploreImportingPipeline ():
         
         Parameters
             model_directory_path : str path pointing to model and library folder directory
-            results_filepath : str optional path to results filename, defaults to output/ms2query_results.csv
+            results_filepath : str optional path to results filename, defaults to os.path.join("output", "ms2query_results.csv")
             force : bool defaults to false and prevents the running of ms2query when a ms2query file already exists.
             ms2querySettings : SettingsRunMS2Query defaults to None. For control over ms2query settings please refer to 
                 ms2query documentation.
