@@ -467,8 +467,8 @@ class specxploreImportingPipeline ():
         assert self.tertiary_score is not None, "Error: tertiary_score required but not available."
         assert self.score_names is not None, "Error: score_names required but not available."
         assert self._settings_used is not None, "Error: score_names required but not available."
+        
         # run session data constructor
-
         session_data = SpecxploreSessionData(
             self.spectra_specxplore, self.tsne_coordinates_table, self.classification_table, self.metadata_table, 
             self.primary_score, self.secondary_score, self.tertiary_score, self.score_names, self.highlight_table,
