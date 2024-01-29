@@ -304,7 +304,13 @@ class specxploreImportingPipeline ():
             self._attach_settings_used(ms2query_settings = "non-default-settings")
         return None
     def run_and_attach_tsne_grid(self, perplexity_values : List[int] = [10, 30, 50]) -> None:
-        """ Run the t-SNE grid & attach the results to pipeline instance. """
+        """ Run the t-SNE grid & attach the results to pipeline instance.
+
+        Parameters:
+            perplexity_values : List[int] with the preplexity values to run tsne optimization with.
+        Returns:
+            Attaches tsne optimization results to self. Returns None.
+        """
         # Subset perplexity values
         perplexity_values = [perplexity for perplexity in perplexity_values if perplexity < len(self.spectra_matchms)]
         _check_perplexities(perplexity_values, len(self.spectra_matchms))
@@ -312,8 +318,14 @@ class specxploreImportingPipeline ():
         self.tsne_grid = _run_tsne_grid(distance_matrix, perplexity_values)
         _print_tsne_grid(self.tsne_grid)
         return None
-    def select_tsne_settings(self, iloc : int):
-        """ Select particular t-SNE coordinate setting using entry iloc. """
+    def select_tsne_settings(self, iloc : int) -> None:
+        """ Select particular t-SNE coordinate setting using entry iloc. 
+        
+        Parameters:
+            iloc : int pointing towards entry in tsne grid to select for coordinates extraction.
+        Returns:
+            Attaches t-sne coordinates table to self. Returns None.
+        """
         # check iloc valid
         assert self.tsne_grid is not None, (
             "Error: tsne_grid is None. Please run 'run_and_attach_tsne_grid' before selecting a value."
