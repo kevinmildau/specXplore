@@ -1,11 +1,12 @@
 import numpy as np
 from functools import reduce
 import re
+import os
 
-def scale_array_to_minus1_plus1(array : np.ndarray) -> np.ndarray:
-    """ Rescales array to lie between -1 and 1."""
-    out = 2.*(array - np.min(array))/np.ptp(array)-1
-    return out
+def save_numpy_array_to_file (array : np.ndarray, filepath : str) -> None:
+    """ Saves numpy array to text file with extension .npy """
+    np.save(os.path.join(filepath, ".npy"), array, allow_pickle=False)
+    return None
 
 def initialize_cytoscape_graph_elements(tsne_df, selected_class_data, highlight_bool):
     n_nodes = tsne_df.shape[0]

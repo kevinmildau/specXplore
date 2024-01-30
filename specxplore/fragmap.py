@@ -2,7 +2,7 @@ from dash import html, dcc
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-from specxplore.importing import Spectrum, SpectraDF, filter_spectrum_top_k_intensity_fragments
+from specxplore.spectrum import Spectrum, SpectraDF, filter_spectrum_top_k_intensity_fragments
 from typing import List, Union
 import copy
 

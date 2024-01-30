@@ -6,7 +6,7 @@ import os
 
 directory_name = './specxplore'
 
-module_name_list = [
+cython_module_name_list = [
     'egonet_cython', 
     'netview_cython', 
     'utils_cython', 
@@ -17,32 +17,37 @@ module_paths = [
         sources = [os.path.join(directory_name, name + '.pyx')],
         language = 'c++'
         ) 
-     for name in module_name_list]
+     for name in cython_module_name_list]
+
+# Read the version string from version.py
+version = {}
+with open(os.path.join('specxplore', 'version.py')) as fp:
+    exec(fp.read(), version)
 
 setup(
     name='specxplore',
+    version = version["__version__"],
     ext_modules=cythonize(module_paths, compiler_directives = {'language_level': '3'}),
     include_package_data=True, 
-    package_data={"specxplore" : [os.path.join("specxplore", "data", "default_app_data.pickle")]},
+    package_data={"specxplore" : [os.path.join("specxplore")]},
     packages=['specxplore'],
-    python_requires='>=3.8',
-    version = '0.0.1',
+    python_requires='>=3.8,<3.9',
     install_requires = [
         'numpy', 
-        'ms2query', 
-        'matchms>=0.11.0,<=0.13.0',
-        'matchmsextras>=0.3.0,<0.4.0',
-        'spec2vec>=0.6.0, <=0.7.0',
-        'ms2deepscore<0.3.1',
-        'h5py',
+        'jupyter',
+        "ipykernel",
+        'ms2query==1.3.0',
+        'matchms==0.24.1',
+        "matchmsextras==0.4.0",
+        'spec2vec==0.8.0',
+        'ms2deepscore==0.4.0',
+        'kmedoids==0.5.0',
         'dash',
         'plotly',
         'dash-cytoscape',
-        'kmedoids',
         'pandas',
         'cython',
         'scipy',
-        'protobuf<=3.20.2', # older version needed for ms2query to be importable
         'dash_daq',
         'dash_bootstrap_components'
         ],

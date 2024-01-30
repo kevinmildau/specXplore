@@ -1,8 +1,7 @@
 # distutils: language = c++
 # cython: c_string_type=unicode, c_string_encoding=utf8
+
 import cython
-#from libcpp.string cimport string # <-- TODO CHECK NEEDED
-from libcpp.vector cimport vector
 import numpy as np
 from cython cimport boundscheck, wraparound
 import plotly.express as px
@@ -10,14 +9,14 @@ from collections import Counter
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-def creating_branching_dict_new(
-        long long[:] source, 
-        long long[:] target, 
-        long long root, 
-        long long n_levels, 
-        int max_edges):
+def creating_branching_dict(
+        signed long long[:] source, 
+        signed long long[:] target, 
+        signed long long root, 
+        signed long long n_levels, 
+        signed long long max_edges): # Returns: tuple ( Dict, signed long long int)
     """
-    Function creates edge branching edge lists.
+    Function creates edge branching edge lists and returns the number of removed edges as a integer.
     
     Assumes all edges defined by source and target pairs are already above threshold!
 
@@ -32,15 +31,15 @@ def creating_branching_dict_new(
             Repeat until no new nodes or edges are found, or until n_levels is reached.
     """
     
-    cdef vector[int] edge_ids = np.arange(0, source.shape[0], dtype = np.int64)
-    cdef int index
-    cdef int inner_index
+    cdef signed long long[:] edge_ids = np.arange(0, source.shape[0], dtype = np.int64)
+    cdef signed long long index
+    cdef signed long long inner_index
     cdef set all_nodes = set()
     cdef set all_edges = set()
-    cdef int n_edges = source.shape[0]
+    cdef signed long long n_edges = source.shape[0]
     cdef set tmp_nodes
     cdef set tmp_edges
-    cdef long zero = int(0)
+    cdef signed long long zero = np.int64(0)
     all_nodes.add(root)
     cdef dict branching_dict = dict()
     cdef max_edge_counter = Counter()
@@ -79,7 +78,7 @@ def creating_branching_dict_new(
         # Find level i edges, and level i+1 nodes
         for inner_index in range(0, n_edges):
             # if the edge connects to any previous nodes, but edge_id isn't captured yet.
-            # BEWARE OF LONG AND INT TYPING!
+            # BEWARE OF LONG AND INT TYPING! These need to match for matching to work.
             if (source[inner_index] in all_nodes or target[inner_index] in all_nodes) and not (edge_ids[inner_index] in all_edges): 
                 max_edge_counter.update([source[index]])
                 max_edge_counter.update([target[index]])
@@ -106,10 +105,10 @@ def creating_branching_dict_new(
     
     # Post process branching dict to remove any number of edges exceeding the max edge count (
     # Removal done level by level, within level the implicit weight order of edges is used 
-    cdef int edge_counter = 0
-    cdef int edges_omitted = 0
-    cdef int new_edges
-    cdef int allowed_new_edges
+    cdef signed long long edge_counter = 0
+    cdef signed long long edges_omitted = 0
+    cdef signed long long new_edges
+    cdef signed long long allowed_new_edges
     for level in branching_dict.keys():
         new_edges = len(branching_dict[level]["edges"])
         if edge_counter + len(branching_dict[level]["edges"]) > max_edges:
@@ -127,27 +126,26 @@ def creating_branching_dict_new(
 
 def generate_edge_elements_and_styles(
         branching_dict, 
-        long long[:] source, 
-        long long[:] target, 
+        signed long long[:] source, 
+        signed long long[:] target, 
         nodes):
     """ 
     Generates an edge list and style list for a given branching dict.
     """
-    
     n_colors = max(2, len(branching_dict) + 1)
-    # "ice" might be a good alternative color
     colors = px.colors.sample_colorscale("Viridis", [n/(n_colors -1) for n in range(n_colors)])
     opacities = np.arange(0.8, 0.4, step = -(0.8 - 0.4) / n_colors)
-    # widths = np.arange(5, 0.5, step = -(5 - 0.5) / n_colors)
-    cdef long long idx, key, edge
-    cdef long long node_count = 0
-    cdef long long node_counter = 0
-    cdef long long edge_count = 0
-    cdef long long edge_counter = 0
     
+    cdef signed long long idx, key, edge
+    cdef signed long long node_count = 0
+    cdef signed long long node_counter = 0
+    cdef signed long long edge_count = 0
+    cdef signed long long edge_counter = 0
+
     for idx, key in enumerate(branching_dict):
         edge_count += len(branching_dict[key]['edges'])
         node_count += len(branching_dict[key]['nodes'])
+    
     edge_elems = [{}] * edge_count
     styles = [{}] * (len(branching_dict.keys()))
     
@@ -157,7 +155,6 @@ def generate_edge_elements_and_styles(
             "style":{
                 "line-color":colors[idx], 
                 'opacity':opacities[idx], 
-                #'width':widths[idx],
                 "background-color":colors[idx], 
                 'border-width':'2'}}
         for edge in branching_dict[key]["edges"]:

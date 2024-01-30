@@ -10,7 +10,7 @@ def generate_degree_colored_elements(sources, targets, values, threshold):
     """
     # edge case: there are no edges at current threshold
     # edge case: min and max degree are the same, and no discrete color scale can be established, only one color needed
-    _, tmp_sources, tmp_targets = utils_cython.extract_edges_above_threshold(
+    _, tmp_sources, tmp_targets = utils_cython.extract_edges_above_threshold_from_descending_array(
         sources, targets, values, threshold)
     if tmp_sources.size >=1 and tmp_targets.size >=1:
         # Count how often each unique node occurs. in edge list. If once, there is an edge

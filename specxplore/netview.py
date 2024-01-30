@@ -19,11 +19,7 @@ def generate_cluster_node_link_diagram_cythonized(
     selected_nodes_np = np.array(selected_nodes)
     
     # Get source and target identifier arrays
-    #v,s,t = utils_cython.extract_selected_above_threshold(
-    #    SOURCE, TARGET, VALUE, selected_nodes_np, threshold)
-    
-    # Get source and target identifier arrays
-    v,s,t, n_omitted_edges_topk = utils_cython.extract_selected_above_threshold_top_k(
+    v,s,t, n_omitted_edges_topk = utils_cython.extract_edges_for_selected_above_threshold_from_descending_array_topk(
         SOURCE, TARGET, VALUE, selected_nodes_np, threshold, max_edges_per_node)
 
     connected_nodes = set(list(np.unique(np.concatenate([s, t]))))             # <---------- for filtering
@@ -38,7 +34,7 @@ def generate_cluster_node_link_diagram_cythonized(
 
     n_omitted_edges = n_omitted_edges_topk + n_omitted_edges_max_limit
     # Create Edge list
-    edges = netview_cython.create_cluster_edge_list(s,t,selected_nodes_np)
+    edges = netview_cython.create_edge_list_for_selection(s, t, selected_nodes_np)
 
     cluster_set = set(selected_nodes)
     n_nodes = TSNE_DF.shape[0]
