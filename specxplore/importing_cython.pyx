@@ -44,4 +44,4 @@ def construct_long_format_sim_arrays(
         value_array[index] = similarity_matrix[index_array[index][0]][index_array[index][1]]
         source_array[index] = index_array[index][0]
         target_array[index] = index_array[index][1]
-    return np.array(source_array), np.array(target_array), np.array(value_array)
+    return np.array(source_array, dtype = np.int64), np.array(target_array, dtype = np.int64), np.array(value_array, dtype = np.double)
