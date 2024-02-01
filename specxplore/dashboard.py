@@ -127,14 +127,14 @@ class SpecxploreDashboard():
                 elements, styles, n_omitted_edges = netview.generate_cluster_node_link_diagram_cythonized(
                     self.session_data.tsne_coordinates_table, 
                     spec_id_selection,
-                    self.session_data.primary_score, 
                     all_class_level_assignments,
                     threshold, 
                     self.session_data.sources, 
                     self.session_data.targets, 
                     self.session_data.values, 
                     self.session_data.get_spectrum_iloc_list(),
-                    max_edges_clustnet, max_edges_per_node
+                    max_edges_clustnet, 
+                    max_edges_per_node
                 )
                 if n_omitted_edges != int(0):
                     warning_messages += (
