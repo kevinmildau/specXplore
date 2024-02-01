@@ -36,9 +36,7 @@ To run ms2query, ms2deepscore, and spec2vec, model and library files are require
 
 ## Installation Guide - WINDOWS
 
-**WARNING:** The current version of specXplore **does not run** on Windows machines. Differences in how operating systems handle integer types cause importing pipeline function crashes that affect only Windows systems.
-
-Installation of specxplore in windows will require the installation of ANACONDA for python environment management and its terminal, and Microsoft Visual C++ Redistributable for cython backend computation. Unfortunately, the latter package involves a rather large installation taking up more than 7GB of space. The specXplore developers are not aware of any smaller installers for this in Windows. Once these two packages are installed, installation should work identically to the one in mac and linux systems from the **ANCONDA power shell**.
+Installation of specxplore in windows will require the installation of ANACONDA for python environment management and its terminal, and [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#visual-studio-2015-2017-2019-and-2022) for cython backend computation (see [Cython Installation Guide](https://cython.readthedocs.io/en/latest/src/quickstart/install.html)). Once these two packages are installed, installation should work identically to the one in mac and linux systems from the **ANCONDA power shell**.
 
 ## Workflow
 
