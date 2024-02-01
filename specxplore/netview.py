@@ -15,7 +15,7 @@ def generate_cluster_node_link_diagram_cythonized(
         ):
     
     # Extract all nodes and edges connected to the selection
-    selected_nodes_np = np.array(selected_nodes)
+    selected_nodes_np = np.array(selected_nodes, dtype = np.int64)
     
     # Get source and target identifier arrays
     v,s,t, n_omitted_edges_topk = utils_cython.extract_edges_for_selected_above_threshold_from_descending_array_topk(
