@@ -4,7 +4,6 @@ from specxplore import utils_cython, netview_cython, constants
 def generate_cluster_node_link_diagram_cythonized(
         TSNE_DF, 
         selected_nodes, 
-        SM_MS2DEEPSCORE, 
         selected_class_data, 
         threshold, 
         SOURCE, 
