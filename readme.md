@@ -18,6 +18,8 @@ Before the specXplore workflow can be used, the package and its dependencies nee
 
 ## Installation Guide - Macos and Linux
 
+**Warning:** users making use of macos arm64 computers should be aware of issue 199 for ms2deepscore https://github.com/matchms/ms2deepscore/issues/199. The current ms2deepscore package version may lead to ms2deepscore similarity predictions that are not in accordance with results on other systems (windows, ubuntu, macos intel). This issue does not result in any errors or warning messages, but makes ms2deepscore results unreliable! This directly affects the specXplore importing pipeline when making use of default ms2deepscore similarity scores on the affected systems. The model files and similarity predictions are working on other systems.
+
 To install and work with specXplore, we highly recommend using conda package management and will assume conda to be available in the guide below. 
 To install specXplore, open the command line terminal and create a new conda environment with python version 3.8 as in the first code line below. 
 Here, the conda environment is named specxplore_environment, but you are free to choose any name without spaces. 
