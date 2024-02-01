@@ -888,7 +888,7 @@ def _compute_similarities_s2v(spectrum_list:List[matchms.Spectrum], model_path:s
     # Dev Note: spec2vec scores appear to be in range -1 to 1 (with floating point errors). For specXplore they must
     # be in range 0 to 1. Apply linear scaling to put spec2vec scores into range between 0 and 1 
     # (from their original -1 to 1 range)
-    scores_ndarray = (scores_ndarray + 1) / 2 # linear scaling
+    scores_ndarray = (scores_ndarray + 1) / 2 # linear scaling from range -1 to 1 to 0 to 1
     scores_ndarray = np.clip(scores_ndarray, a_min = 0, a_max = 1) # Clip to deal with floating point issues
     # Dev Note: note that numeric distance between lowest and highest number in the score vector will be half of the
     # original value in this approach, e.g. the distance from -1 to 1 is 2, while in the new space 0 to 1 distance is
