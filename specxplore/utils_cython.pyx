@@ -29,18 +29,18 @@ def extract_edges_for_selected_above_threshold_from_descending_array(
     cdef signed long long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
 
     cdef signed long long index
-    cdef signed long long counter = 0
-    for index in range(0, max_number_edges):
+    cdef signed long long counter = np.int64(0)
+    for index in np.arange(0, max_number_edges, 1, dtype = np.int64):
         # OR is used to allow for edges out of the selection set to be saved as well. Those will be visualizaed
         # differently in downstream processing. TODO: improve function name to reflect this.
         if (source[index] in selected_set or target[index] in selected_set) and value[index] > threshold:
             out_value[counter] = value[index]
             out_source[counter] = source[index]
             out_target[counter] = target[index]
-            counter += 1
+            counter += np.int64(1)
         if value[index] < threshold:
             break
-    return np.array(out_value[0:counter]), np.array(out_source[0:counter]), np.array(out_target[0:counter])
+    return np.array(out_value[0:counter], dtype = np.double), np.array(out_source[0:counter], dtype = np.int64), np.array(out_target[0:counter], dtype = np.int64)
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
@@ -50,7 +50,7 @@ def extract_edges_for_selected_above_threshold_from_descending_array_topk(
     double[:] value, 
     signed long long[:] selected_indexes, 
     double threshold,
-    int top_k):
+    signed long long top_k):
     """ Cython function loops source target value arrays and extracts those tuples with value above threshold and have
     source or target matching eny entry in selected_indexes. In addition, limits the number of occurences of each source
     or target id to the topmost 25 corresponding to the index over the whole edge set. Aborts seach as soon as a value 
@@ -59,7 +59,7 @@ def extract_edges_for_selected_above_threshold_from_descending_array_topk(
     IMPORTANT: assumes the value vector and hence the entire edge list to be sorted in descending order. If not the 
     case, the edge filter will stop pre-maturely! """
     assert source.size == target.size == value.size, "Input arrays must be of equal size."
-    cdef signed long long max_number_edges = int(source.shape[0])
+    cdef signed long long max_number_edges = np.int64((source.shape[0]))
 
     cdef set selected_set = set(selected_indexes)
 
@@ -68,11 +68,11 @@ def extract_edges_for_selected_above_threshold_from_descending_array_topk(
     cdef signed long long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
 
     cdef signed long long index
-    cdef signed long long counter = 0
+    cdef signed long long counter = np.int64(0)
 
-    cdef signed long long n_omitted_edges = 0
+    cdef signed long long n_omitted_edges = np.int64(0)
     cdef max_edge_counter = Counter()
-    for index in range(0, max_number_edges):
+    for index in np.arange(0, max_number_edges, 1, dtype = np.int64):
         if (source[index] in selected_set or target[index] in selected_set) and value[index] > threshold:
             if max_edge_counter[source[index]] >= top_k or max_edge_counter[target[index]] >= top_k:
                 # omitt edge and skip adding edge to 
@@ -86,7 +86,7 @@ def extract_edges_for_selected_above_threshold_from_descending_array_topk(
             max_edge_counter.update([target[index]])
         if value[index] < threshold:
             break
-    return np.array(out_value[0:counter]), np.array(out_source[0:counter]), np.array(out_target[0:counter]), n_omitted_edges
+    return np.array(out_value[0:counter], dtype = np.double), np.array(out_source[0:counter], dtype = np.int64), np.array(out_target[0:counter], dtype = np.int64), n_omitted_edges
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
@@ -102,13 +102,13 @@ def extract_edges_above_threshold_from_descending_array(
     edge list to be sorted in descending order. If not the case, the edge filter will stop pre-maturely! 
     """
     #assert source.shape == target.shape == value.shape
-    cdef signed long long max_number_edges = int(source.shape[0])
+    cdef signed long long max_number_edges = np.int64(source.shape[0])
     cdef double[::1] out_value = np.zeros(max_number_edges, dtype=np.double)
     cdef signed long long[::1] out_source = np.zeros(max_number_edges, dtype=np.int64)
     cdef signed long long[::1] out_target = np.zeros(max_number_edges, dtype=np.int64)
 
     cdef signed long long index
-    cdef signed long long counter = 0
+    cdef signed long long counter = np.int64(0)
     for index in range(0, max_number_edges):
         if value[index] > threshold:
             out_value[counter] = value[index]
@@ -117,4 +117,4 @@ def extract_edges_above_threshold_from_descending_array(
             counter += 1
         if value[index] < threshold:
             break
-    return np.array(out_value[0:counter]), np.array(out_source[0:counter]), np.array(out_target[0:counter])
+    return np.array(out_value[0:counter], dtype = np.double), np.array(out_source[0:counter], dtype = np.int64), np.array(out_target[0:counter], dtype = np.int64)
