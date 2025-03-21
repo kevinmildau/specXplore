@@ -49,7 +49,8 @@ setup(
         'cython',
         'scipy',
         'dash_daq',
-        'dash_bootstrap_components'
+        'dash_bootstrap_components',
+        'dash<3.0' 
         ],
         extras_require={
             'dev': ['pytest']}
